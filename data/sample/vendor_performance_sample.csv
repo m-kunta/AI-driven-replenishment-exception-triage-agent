@@ -1,0 +1,6 @@
+vendor_id,vendor_name,fill_rate_90d,late_shipments_30d,open_pos_count,last_incident_date
+VND-100,National Dairy Co-op,0.94,3,12,2026-03-01
+VND-200,Heartland Foods Inc,0.88,7,8,2026-03-10
+VND-300,Pacific Fresh Suppliers,0.97,1,15,2026-01-15
+VND-400,CleanHome Distributors,0.72,12,5,2026-03-14
+VND-500,BabyCare National,0.96,2,10,2026-02-20
