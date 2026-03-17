@@ -1,0 +1,21 @@
+item_id,item_name,category,subcategory,velocity_rank,perishable,retail_price,margin_pct,vendor_id
+ITM-1001,Organic Whole Milk 1gal,Dairy,Milk,1,True,5.99,0.28,VND-100
+ITM-1002,Large Eggs 12ct,Dairy,Eggs,2,True,4.49,0.32,VND-100
+ITM-1003,Sliced White Bread,Bakery,Bread,3,True,3.99,0.35,VND-200
+ITM-1004,Banana Bundle 1lb,Produce,Fruit,4,True,0.69,0.4,VND-300
+ITM-1005,Chicken Breast 2lb,Meat,Poultry,5,True,9.99,0.22,VND-300
+ITM-1006,Cheddar Cheese Block 8oz,Dairy,Cheese,8,False,4.99,0.3,VND-100
+ITM-1007,Paper Towels 6-roll,Household,Paper,10,False,8.99,0.25,VND-400
+ITM-1008,Laundry Detergent 64oz,Household,Cleaning,12,False,11.99,0.2,VND-400
+ITM-1009,Peanut Butter 16oz,Grocery,Spreads,15,False,3.49,0.38,VND-200
+ITM-1010,Pasta Sauce 24oz,Grocery,Sauces,18,False,4.29,0.35,VND-200
+ITM-1011,Greek Yogurt 32oz,Dairy,Yogurt,6,True,6.49,0.3,VND-100
+ITM-1012,Baby Formula 12.5oz,Baby,Formula,20,False,24.99,0.15,VND-500
+ITM-1013,Diapers Size 3 28ct,Baby,Diapers,22,False,12.99,0.18,VND-500
+ITM-1014,Coffee Ground 12oz,Grocery,Beverages,7,False,8.99,0.33,VND-200
+ITM-1015,Orange Juice 52oz,Dairy,Juice,9,True,4.99,0.28,VND-100
+ITM-1016,Frozen Pizza 12in,Frozen,Pizza,11,False,6.99,0.3,VND-300
+ITM-1017,Ice Cream 1.5qt,Frozen,Dessert,13,False,5.99,0.32,VND-300
+ITM-1018,Toilet Paper 12-roll,Household,Paper,14,False,9.99,0.22,VND-400
+ITM-1019,Dish Soap 22oz,Household,Cleaning,16,False,3.99,0.28,VND-400
+ITM-1020,Cereal Box 18oz,Grocery,Breakfast,17,False,4.49,0.35,VND-200

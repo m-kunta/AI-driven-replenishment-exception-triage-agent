@@ -1,0 +1,16 @@
+store_id,store_name,tier,weekly_sales_k,region,competitor_proximity_miles,competitor_event
+STR-001,Flagship Manhattan,1,2800.0,NORTHEAST,0.3,Competitor grand opening sale
+STR-002,Chicago Loop,1,2200.0,MIDWEST,0.5,
+STR-003,LA Century City,1,1900.0,WEST,0.8,Competitor clearance event
+STR-004,Houston Galleria,1,1650.0,SOUTHWEST,1.2,
+STR-005,Atlanta Midtown,2,1200.0,SOUTHEAST,2.0,
+STR-006,Denver Tech Center,2,1050.0,WEST,3.5,
+STR-007,Phoenix Scottsdale,2,980.0,SOUTHWEST,1.5,Competitor BOGO week
+STR-008,Boston Back Bay,2,890.0,NORTHEAST,0.7,
+STR-009,Minneapolis Uptown,2,850.0,MIDWEST,4.0,
+STR-010,Nashville Green Hills,3,650.0,SOUTHEAST,5.0,
+STR-011,Portland Pearl,3,580.0,WEST,2.5,
+STR-012,Columbus Easton,3,420.0,MIDWEST,6.0,
+STR-013,Charlotte SouthPark,3,390.0,SOUTHEAST,3.0,
+STR-014,Rural Topeka,4,180.0,MIDWEST,15.0,
+STR-015,Small Town Boise,4,120.0,WEST,20.0,
