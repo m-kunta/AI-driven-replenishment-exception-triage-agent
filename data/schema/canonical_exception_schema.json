@@ -1,0 +1,78 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "CanonicalException",
+  "description": "Schema for normalized exception records between Layer 1 (Ingestion) and all downstream layers.",
+  "type": "object",
+  "required": [
+    "exception_id",
+    "item_id",
+    "item_name",
+    "store_id",
+    "store_name",
+    "exception_type",
+    "exception_date",
+    "units_on_hand",
+    "days_of_supply",
+    "source_system",
+    "batch_id",
+    "ingested_at"
+  ],
+  "properties": {
+    "exception_id": {
+      "type": "string",
+      "description": "Unique identifier for this exception instance"
+    },
+    "item_id": {
+      "type": "string",
+      "description": "Internal SKU identifier"
+    },
+    "item_name": {
+      "type": "string",
+      "description": "Human-readable item description"
+    },
+    "store_id": {
+      "type": "string",
+      "description": "Store identifier"
+    },
+    "store_name": {
+      "type": "string",
+      "description": "Human-readable store name"
+    },
+    "exception_type": {
+      "type": "string",
+      "enum": ["OOS", "LOW_STOCK", "FORECAST_VARIANCE", "ORDER_FAILURE", "VENDOR_LATE", "DATA_INTEGRITY"],
+      "description": "Type of replenishment exception"
+    },
+    "exception_date": {
+      "type": "string",
+      "format": "date",
+      "description": "ISO date string YYYY-MM-DD"
+    },
+    "units_on_hand": {
+      "type": "integer",
+      "description": "Current units on hand"
+    },
+    "days_of_supply": {
+      "type": "number",
+      "description": "Calculated days of supply at current velocity"
+    },
+    "variance_pct": {
+      "type": ["number", "null"],
+      "description": "Forecast vs actual variance percentage, null if not applicable"
+    },
+    "source_system": {
+      "type": "string",
+      "description": "Name of originating planning system"
+    },
+    "batch_id": {
+      "type": "string",
+      "description": "UUID for the ingestion batch this exception belongs to"
+    },
+    "ingested_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO datetime string of ingestion timestamp"
+    }
+  },
+  "additionalProperties": false
+}

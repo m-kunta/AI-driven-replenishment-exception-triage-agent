@@ -1,0 +1,91 @@
+ingestion:
+  adapter: csv                          # csv | api | sql
+  csv:
+    path: data/sample/exceptions_sample.csv
+    delimiter: ","
+    date_format: "%Y-%m-%d"
+  api:
+    endpoint: ${EXCEPTION_API_ENDPOINT}
+    api_key: ${EXCEPTION_API_KEY}
+    method: GET
+    response_path: data.exceptions     # JSONPath to exception array
+  sql:
+    connection_string: ${DB_CONNECTION_STRING}
+    query_file: config/exception_query.sql
+  field_mapping:
+    exception_id: exception_id
+    item_id: item_id
+    item_name: item_name
+    store_id: store_id
+    store_name: store_name
+    exception_type: exception_type
+    exception_date: exception_date
+    units_on_hand: units_on_hand
+    days_of_supply: days_of_supply
+    variance_pct: variance_pct
+    source_system: source_system
+
+enrichment:
+  store_master_path: data/sample/store_master_sample.csv
+  item_master_path: data/sample/item_master_sample.csv
+  promo_calendar_path: data/sample/promo_calendar_sample.csv
+  vendor_performance_path: data/sample/vendor_performance_sample.csv
+  dc_inventory_path: data/sample/dc_inventory_sample.csv
+  regional_signals_path: data/regional_signals.json
+  parallel_workers: 4
+  null_threshold_low_confidence: 3     # exceptions with >= 3 null enrichment fields = LOW confidence
+  null_threshold_medium_confidence: 1  # 1-2 null fields = MEDIUM confidence
+  promo_lift_factor: 1.4              # multiplier for promo velocity lift
+
+agent:
+  anthropic_api_key: ${ANTHROPIC_API_KEY}
+  model: claude-sonnet-4-20250514
+  max_tokens: 4000
+  batch_size: 30
+  retry_attempts: 3
+  retry_backoff_seconds: 5
+  reasoning_trace_enabled: false       # set true to include chain-of-thought in output
+  phantom_webhook_enabled: true
+  phantom_webhook_url: ${PHANTOM_WEBHOOK_URL}  # optional; leave blank to disable
+  pattern_threshold: 3                 # minimum exceptions to flag a pattern
+
+store_tiers:
+  tier_1_min_weekly_sales_k: 1500
+  tier_2_min_weekly_sales_k: 800
+  tier_3_min_weekly_sales_k: 300
+  tier_4_min_weekly_sales_k: 0
+
+priority_rules:
+  critical_max_days_supply_tier_1_on_promo: 1.5
+  critical_max_days_supply_perishable: 1.0
+  critical_min_vendor_pattern_count: 5
+  high_max_days_supply_tier_1_2: 3.0
+
+alerting:
+  channels:
+    - type: email
+      enabled: false
+      smtp_host: ${SMTP_HOST}
+      smtp_port: 587
+      from_address: ${ALERT_FROM_EMAIL}
+      to_addresses:
+        - ${PLANNER_EMAIL}
+    - type: slack
+      enabled: false
+      webhook_url: ${SLACK_WEBHOOK_URL}
+    - type: teams
+      enabled: false
+      webhook_url: ${TEAMS_WEBHOOK_URL}
+  critical_sla_minutes: 60
+  secondary_escalation_contact: ${CATEGORY_MANAGER_EMAIL}
+
+output:
+  briefing_dir: output/briefings
+  log_dir: output/logs
+  format: markdown                     # markdown | json | both
+  include_low_priority: true
+  max_exceptions_in_briefing: 10       # top N shown in morning briefing
+
+backtest:
+  log_dir: output/backtest
+  outcome_check_weeks: [4, 8]
