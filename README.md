@@ -48,7 +48,7 @@ The agent ingests raw replenishment exceptions, enriches them with 15+ contextua
 │           CSV → field mapping → type coercion → dedup            │
 │           → quarantine → CanonicalException schema               │
 ├──────────────────────────────────────────────────────────────────┤
-│  Layer 2: Context Enrichment          ← 🔲 IN PROGRESS          │
+│  Layer 2: Context Enrichment          ← 🔧 PLANNED (stubs ready) │
 │           Store master · Item master · Promo calendar            │
 │           Vendor fill rates · DC inventory · Regional signals    │
 ├──────────────────────────────────────────────────────────────────┤
@@ -98,7 +98,9 @@ AI-driven-replenishment-exception-triage-agent/
 │   │   ├── base_adapter.py        # Abstract base: fetch(), validate_connection()
 │   │   ├── csv_adapter.py         # CSV reader (BOM, delimiter, empty rows)
 │   │   └── normalizer.py          # Field mapping, coercion, dedup, quarantine
-│   ├── enrichment/                # ← Layer 2 (IN PROGRESS)
+│   ├── enrichment/                # ← Layer 2 (PLANNED — stubs in place)
+│   │   ├── data_loader.py         # TODO: load & index 6 reference datasets
+│   │   └── engine.py              # TODO: EnrichmentEngine (join + derive + score)
 │   ├── agent/                     # ← Layer 3 (NOT STARTED)
 │   ├── output/                    # ← Layer 4 (NOT STARTED)
 │   └── utils/
@@ -118,7 +120,8 @@ AI-driven-replenishment-exception-triage-agent/
 │   │   └── dc_inventory_sample.csv
 │   └── regional_signals.json      # 2 active disruptions
 ├── tests/
-│   └── test_ingestion.py          # 25 tests — all passing
+│   ├── test_ingestion.py          # 25 tests — all passing
+│   └── test_enrichment.py         # TODO: ~15 tests (stubs documented)
 ├── scripts/
 │   └── generate_sample_data.py    # Synthetic data generator
 ├── output/
@@ -185,9 +188,29 @@ pytest tests/ -v
 | Layer | Status | Details |
 |---|---|---|
 | **Layer 1 — Ingestion** | ✅ Complete | CSV adapter, normalizer, 25 tests passing |
-| **Layer 2 — Enrichment** | 🔲 In Progress | Joining 6 contextual data sources |
+| **Layer 2 — Enrichment** | 🔧 Planned | `DataLoader` + `EnrichmentEngine` stubs in place; see below |
 | **Layer 3 — Claude Engine** | 🔲 Not Started | Batched inference, triage output, patterns |
 | **Layer 4 — Output & Alerts** | 🔲 Not Started | Morning briefing, Slack/email routing |
+
+### Layer 2 — What's Next
+
+Stub files are in place at `src/enrichment/`. The implementation plan:
+
+| File | TODO |
+|---|---|
+| `src/enrichment/data_loader.py` | `DataLoader` — reads 6 CSVs/JSON at startup into O(1) lookup dicts |
+| `src/enrichment/engine.py` | `EnrichmentEngine` — joins each `CanonicalException` across all 6 sources, derives financial fields, assigns confidence |
+| `tests/test_enrichment.py` | ~15 tests covering each join, promo date logic, financial math, and confidence scoring |
+
+**Join keys:**
+- `store_id` → store tier, region, competitor signal
+- `item_id` → category, perishability, vendor ID, price
+- `(item_id, store_id)` → active promo, TPR depth (date-filtered)
+- `vendor_id` → fill rate, open PO status
+- `item_id` → DC days-of-supply, next receipt date
+- `region` → active disruption flag (date-filtered)
+
+**Key design choice:** `EnrichmentEngine` accepts a `reference_date` parameter (defaults to `date.today()`) so all date-sensitive checks (promo active, disruption active) are fully testable with a fixed date.
 
 ---
 
