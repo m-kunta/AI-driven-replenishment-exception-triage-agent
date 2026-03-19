@@ -1,121 +1,121 @@
 exception_id,item_id,item_name,store_id,store_name,exception_type,exception_date,units_on_hand,days_of_supply,variance_pct,source_system
-9996d426-099e-4475-9342-f419c416e083,ITM-1001,Organic Whole Milk 1gal,STR-001,Flagship Manhattan,OOS,2026-03-16,0,0.0,5.2,BlueYonder
-6e7e5cff-1b82-4255-ab3d-3e47b7ea195c,ITM-1001,Organic Whole Milk 1gal,STR-005,Atlanta Midtown,OOS,2026-03-16,0,0.0,2.1,BlueYonder
-98e6a495-a431-40db-8d1d-4dc78569429f,ITM-1007,Paper Towels 6-roll,STR-005,Atlanta Midtown,LOW_STOCK,2026-03-16,4,1.5,0.5,BlueYonder
-ab47ce2c-503f-497d-99e7-79d428940a18,ITM-1007,Paper Towels 6-roll,STR-002,Chicago Loop,LOW_STOCK,2026-03-16,3,1.0,5.1,BlueYonder
-e7669163-a477-43eb-b9b2-20f77481ea06,ITM-1007,Paper Towels 6-roll,STR-008,Boston Back Bay,LOW_STOCK,2026-03-16,1,1.4,-2.4,BlueYonder
-30924313-2a79-4ac9-96d5-8a73be365db8,ITM-1007,Paper Towels 6-roll,STR-006,Denver Tech Center,LOW_STOCK,2026-03-16,2,0.7,0.7,BlueYonder
-31485b3f-d61f-4b4b-ad2e-07f7b06a136b,ITM-1008,Laundry Detergent 64oz,STR-013,Charlotte SouthPark,LOW_STOCK,2026-03-16,1,0.8,-4.5,BlueYonder
-eedcddf8-f7a9-4d12-9356-f30a13f55c7b,ITM-1008,Laundry Detergent 64oz,STR-011,Portland Pearl,LOW_STOCK,2026-03-16,3,1.1,-4.0,BlueYonder
-06ff45f1-fa55-4291-a428-153c890b0b92,ITM-1008,Laundry Detergent 64oz,STR-005,Atlanta Midtown,LOW_STOCK,2026-03-16,5,1.8,-0.3,BlueYonder
-a1cca1db-7d06-4a1c-87d1-3fbe6128879c,ITM-1008,Laundry Detergent 64oz,STR-007,Phoenix Scottsdale,LOW_STOCK,2026-03-16,4,1.1,8.7,BlueYonder
-b54eca89-b961-4d36-a6cf-9b522cb27257,ITM-1018,Toilet Paper 12-roll,STR-010,Nashville Green Hills,LOW_STOCK,2026-03-16,2,1.6,3.1,BlueYonder
-2f1382ae-1c77-4c59-845e-e9c91e9664da,ITM-1018,Toilet Paper 12-roll,STR-003,LA Century City,LOW_STOCK,2026-03-16,5,1.1,3.8,BlueYonder
-1ea75ec3-99f9-489a-ad87-2091bc84395f,ITM-1018,Toilet Paper 12-roll,STR-006,Denver Tech Center,LOW_STOCK,2026-03-16,3,0.8,10.0,BlueYonder
-b2ebd3b2-96cc-4b7f-a0cd-75d257e8362e,ITM-1018,Toilet Paper 12-roll,STR-013,Charlotte SouthPark,LOW_STOCK,2026-03-16,5,1.2,6.3,BlueYonder
-306a1499-2813-4211-a71f-0988bbc56f26,ITM-1019,Dish Soap 22oz,STR-002,Chicago Loop,LOW_STOCK,2026-03-16,5,0.6,0.7,BlueYonder
-ef9e2cd5-a49e-40a3-8d56-447cad0f0182,ITM-1019,Dish Soap 22oz,STR-003,LA Century City,LOW_STOCK,2026-03-16,4,1.3,9.6,BlueYonder
-fe541e9f-5a88-4ea8-9de5-744d54e64df3,ITM-1020,Cereal Box 18oz,STR-014,Rural Topeka,FORECAST_VARIANCE,2026-03-16,47,9.7,70.6,BlueYonder
-a503bfbb-de68-43f8-9a89-00a227e110a2,ITM-1010,Pasta Sauce 24oz,STR-015,Small Town Boise,FORECAST_VARIANCE,2026-03-16,23,8.4,64.2,BlueYonder
-d818240e-0f98-4ead-bf32-5ed4a2f43f8b,ITM-1009,Peanut Butter 16oz,STR-014,Rural Topeka,FORECAST_VARIANCE,2026-03-16,28,8.8,55.3,BlueYonder
-71bda92b-a5c0-4809-a30e-397516b39065,ITM-1020,Cereal Box 18oz,STR-015,Small Town Boise,FORECAST_VARIANCE,2026-03-16,29,7.2,60.4,BlueYonder
-cb087444-befa-493b-8126-859216ce7d91,ITM-1010,Pasta Sauce 24oz,STR-012,Columbus Easton,FORECAST_VARIANCE,2026-03-16,50,8.6,72.4,BlueYonder
-df34b61e-4a19-4e0b-b56f-b26ca51387d1,ITM-1017,Ice Cream 1.5qt,STR-013,Charlotte SouthPark,OOS,2026-03-16,0,0.5,11.8,BlueYonder
-895bf3a6-e1a6-411d-be6e-f3df736bfc38,ITM-1010,Pasta Sauce 24oz,STR-014,Rural Topeka,LOW_STOCK,2026-03-16,10,1.0,-0.7,BlueYonder
-d8fc10be-1fff-477b-b302-7028b19c9e8b,ITM-1006,Cheddar Cheese Block 8oz,STR-009,Minneapolis Uptown,VENDOR_LATE,2026-03-16,38,3.8,,BlueYonder
-59d3fa39-dae4-4a61-b141-1453e6641467,ITM-1020,Cereal Box 18oz,STR-006,Denver Tech Center,LOW_STOCK,2026-03-16,2,2.8,12.0,BlueYonder
-0b6e23c5-7256-4289-8e46-5749be3c1fde,ITM-1010,Pasta Sauce 24oz,STR-004,Houston Galleria,OOS,2026-03-16,0,0.4,13.7,BlueYonder
-f2cef1ba-7dea-49d3-b42d-49d0dc23ebf0,ITM-1003,Sliced White Bread,STR-012,Columbus Easton,LOW_STOCK,2026-03-16,2,2.9,3.3,BlueYonder
-aa13c540-d646-4292-a7d3-3f7a263ea19c,ITM-1005,Chicken Breast 2lb,STR-003,LA Century City,LOW_STOCK,2026-03-16,9,0.9,3.2,BlueYonder
-e3321daf-3bcc-4372-80b4-ea64bd0d0bd7,ITM-1020,Cereal Box 18oz,STR-007,Phoenix Scottsdale,VENDOR_LATE,2026-03-16,39,3.3,,BlueYonder
-0c5689b2-c93c-406d-8856-126a0cd6179a,ITM-1007,Paper Towels 6-roll,STR-012,Columbus Easton,OOS,2026-03-16,0,0.5,6.2,BlueYonder
-20404216-a743-4647-a84c-a7db41a18630,ITM-1015,Orange Juice 52oz,STR-015,Small Town Boise,LOW_STOCK,2026-03-16,2,1.1,-8.4,BlueYonder
-c96b4868-4e03-459c-a75a-71c5042b5389,ITM-1001,Organic Whole Milk 1gal,STR-010,Nashville Green Hills,LOW_STOCK,2026-03-16,10,1.1,-8.2,BlueYonder
-2df3d520-0013-4252-a755-c2f105782ba6,ITM-1002,Large Eggs 12ct,STR-004,Houston Galleria,OOS,2026-03-16,0,0.0,-1.7,BlueYonder
-56254f43-7a21-437c-aade-1d489ec082d6,ITM-1017,Ice Cream 1.5qt,STR-004,Houston Galleria,OOS,2026-03-16,0,0.2,3.5,BlueYonder
-b44e8603-7ad4-4dda-8a6a-c4521c2bb289,ITM-1019,Dish Soap 22oz,STR-010,Nashville Green Hills,LOW_STOCK,2026-03-16,13,1.7,0.2,BlueYonder
-59c4a331-f356-4c08-a634-b2218f09ed23,ITM-1004,Banana Bundle 1lb,STR-002,Chicago Loop,LOW_STOCK,2026-03-16,6,1.6,1.7,BlueYonder
-1ac72408-b789-4fc0-9072-f9055c438562,ITM-1002,Large Eggs 12ct,STR-011,Portland Pearl,LOW_STOCK,2026-03-16,11,0.7,0.1,BlueYonder
-7e2f1abe-5421-44ba-ad9c-93e04a9eba41,ITM-1011,Greek Yogurt 32oz,STR-013,Charlotte SouthPark,ORDER_FAILURE,2026-03-16,20,1.8,,BlueYonder
-a52173de-b4dd-4603-9282-c4dd653552f6,ITM-1018,Toilet Paper 12-roll,STR-008,Boston Back Bay,OOS,2026-03-16,0,0.1,1.6,BlueYonder
-0d9a5972-0752-480b-8368-9aa059330695,ITM-1003,Sliced White Bread,STR-008,Boston Back Bay,FORECAST_VARIANCE,2026-03-16,40,2.8,62.4,BlueYonder
-0b8cfdc7-0790-4eb0-9dd1-b71e0fb33307,ITM-1018,Toilet Paper 12-roll,STR-014,Rural Topeka,OOS,2026-03-16,0,0.0,8.8,BlueYonder
-594bcc05-54f1-4a5f-8943-f92273609596,ITM-1008,Laundry Detergent 64oz,STR-003,LA Century City,LOW_STOCK,2026-03-16,8,1.0,0.0,BlueYonder
-d3b4c37c-fdf6-4356-93b2-ef210bdf4f01,ITM-1002,Large Eggs 12ct,STR-003,LA Century City,OOS,2026-03-16,0,0.5,-3.4,BlueYonder
-b8fc5cbd-0378-4def-932e-1029a0acd958,ITM-1015,Orange Juice 52oz,STR-005,Atlanta Midtown,LOW_STOCK,2026-03-16,12,3.0,3.9,BlueYonder
-6075f269-221e-4bc6-8c67-0e93cbe5b0bc,ITM-1016,Frozen Pizza 12in,STR-003,LA Century City,OOS,2026-03-16,0,0.1,-8.5,BlueYonder
-c4ac8273-f1af-4914-94da-6f6709566d8e,ITM-1018,Toilet Paper 12-roll,STR-001,Flagship Manhattan,FORECAST_VARIANCE,2026-03-16,8,2.4,51.0,BlueYonder
-f9703389-7c3a-4090-85e0-605cdc4e1e1f,ITM-1017,Ice Cream 1.5qt,STR-003,LA Century City,OOS,2026-03-16,0,0.3,11.3,BlueYonder
-5d275a80-1168-4a37-b6ac-5b4bbc39f2ea,ITM-1003,Sliced White Bread,STR-010,Nashville Green Hills,OOS,2026-03-16,0,0.4,0.1,BlueYonder
-65cb98dd-3795-4176-bea5-525df2491fbb,ITM-1019,Dish Soap 22oz,STR-004,Houston Galleria,LOW_STOCK,2026-03-16,1,2.0,0.5,BlueYonder
-c35a5bdb-f7fa-472b-b6a5-a3ca1b6d422d,ITM-1009,Peanut Butter 16oz,STR-004,Houston Galleria,LOW_STOCK,2026-03-16,6,1.1,-0.1,BlueYonder
-5d14dbef-08d0-431c-beae-249ace48380a,ITM-1010,Pasta Sauce 24oz,STR-008,Boston Back Bay,OOS,2026-03-16,0,0.4,-8.2,BlueYonder
-d2b3014c-40cb-4e06-bf9d-4dd8136bb46c,ITM-1015,Orange Juice 52oz,STR-010,Nashville Green Hills,VENDOR_LATE,2026-03-16,11,1.2,,BlueYonder
-8ce3e9fd-84b3-4f0f-b97a-8bfe31280b1e,ITM-1007,Paper Towels 6-roll,STR-009,Minneapolis Uptown,OOS,2026-03-16,0,0.5,12.0,BlueYonder
-c06c333d-393f-4209-8bef-f34961753a52,ITM-1008,Laundry Detergent 64oz,STR-006,Denver Tech Center,OOS,2026-03-16,0,0.2,3.6,BlueYonder
-72144ac7-995f-4c67-819d-dc30a5989dba,ITM-1010,Pasta Sauce 24oz,STR-010,Nashville Green Hills,VENDOR_LATE,2026-03-16,46,2.6,,BlueYonder
-89411f0e-f544-4102-a5b1-db830dd9a638,ITM-1018,Toilet Paper 12-roll,STR-005,Atlanta Midtown,ORDER_FAILURE,2026-03-16,11,4.8,,BlueYonder
-9bcd5df6-64d2-4bd0-ba3a-788dc9ab1b9a,ITM-1005,Chicken Breast 2lb,STR-005,Atlanta Midtown,OOS,2026-03-16,0,0.1,3.8,BlueYonder
-86c87fe6-9cf4-4006-a4d8-d1ad00c7bed6,ITM-1009,Peanut Butter 16oz,STR-005,Atlanta Midtown,LOW_STOCK,2026-03-16,12,1.4,7.2,BlueYonder
-460ce213-c08f-46c2-a2e4-bc5299bd05f8,ITM-1009,Peanut Butter 16oz,STR-009,Minneapolis Uptown,LOW_STOCK,2026-03-16,15,2.8,-8.7,BlueYonder
-033c0bae-9930-4f00-a10e-a605730f8e0d,ITM-1014,Coffee Ground 12oz,STR-014,Rural Topeka,OOS,2026-03-16,0,0.0,9.3,BlueYonder
-c21c44dc-2ec9-436a-b0ae-27abf519593a,ITM-1009,Peanut Butter 16oz,STR-003,LA Century City,FORECAST_VARIANCE,2026-03-16,40,7.6,56.5,BlueYonder
-601b7181-547a-4c89-a609-1ec3e0f228ca,ITM-1004,Banana Bundle 1lb,STR-002,Chicago Loop,ORDER_FAILURE,2026-03-16,49,4.6,,BlueYonder
-9617566d-8272-4048-9b1f-9ce8c59d374c,ITM-1019,Dish Soap 22oz,STR-009,Minneapolis Uptown,OOS,2026-03-16,0,0.1,-2.3,BlueYonder
-ced597cf-26f8-4a39-ac29-de7c279c1455,ITM-1002,Large Eggs 12ct,STR-015,Small Town Boise,OOS,2026-03-16,0,0.3,6.7,BlueYonder
-7c602c7a-79ba-492f-98d0-9384e0582d8d,ITM-1012,Baby Formula 12.5oz,STR-013,Charlotte SouthPark,LOW_STOCK,2026-03-16,14,1.5,5.5,BlueYonder
-3b0a502a-629d-4069-8cd8-a68637e2b3e8,ITM-1005,Chicken Breast 2lb,STR-015,Small Town Boise,ORDER_FAILURE,2026-03-16,15,4.9,,BlueYonder
-85edf0bb-8de9-4fdf-a0e5-42f1ed5354d3,ITM-1006,Cheddar Cheese Block 8oz,STR-015,Small Town Boise,LOW_STOCK,2026-03-16,3,2.3,-1.7,BlueYonder
-6a00bb5e-4ff7-4362-84f4-245800e60e3f,ITM-1014,Coffee Ground 12oz,STR-013,Charlotte SouthPark,LOW_STOCK,2026-03-16,12,2.5,-3.3,BlueYonder
-2fb83baa-177d-4e19-a175-eef2b1ae80e3,ITM-1004,Banana Bundle 1lb,STR-007,Phoenix Scottsdale,ORDER_FAILURE,2026-03-16,35,1.9,,BlueYonder
-748d42b0-fed5-4998-b71c-34bbcfe01015,ITM-1015,Orange Juice 52oz,STR-006,Denver Tech Center,OOS,2026-03-16,0,0.4,-4.3,BlueYonder
-212996d3-ad19-4006-9dbf-06c68af0ae3a,ITM-1001,Organic Whole Milk 1gal,STR-011,Portland Pearl,OOS,2026-03-16,0,0.2,11.6,BlueYonder
-093ba15f-468e-445f-8b70-6f6bb8f57278,ITM-1009,Peanut Butter 16oz,STR-006,Denver Tech Center,LOW_STOCK,2026-03-16,7,2.2,11.1,BlueYonder
-959bd58f-254c-4182-89e3-c21fe8cf7539,ITM-1011,Greek Yogurt 32oz,STR-001,Flagship Manhattan,OOS,2026-03-16,0,0.5,-5.5,BlueYonder
-f20569ba-34f6-4400-a21c-eb9ff0b1c082,ITM-1009,Peanut Butter 16oz,STR-001,Flagship Manhattan,OOS,2026-03-16,0,0.2,8.2,BlueYonder
-bf1372d4-6dfb-41fa-a8eb-a4dec4c965e2,ITM-1011,Greek Yogurt 32oz,STR-007,Phoenix Scottsdale,LOW_STOCK,2026-03-16,9,0.8,12.5,BlueYonder
-c809e1db-1154-4762-83f4-bf6e2edd30f6,ITM-1007,Paper Towels 6-roll,STR-005,Atlanta Midtown,OOS,2026-03-16,0,0.2,3.0,BlueYonder
-e17820f7-3490-4e35-aa48-53b8786e6d26,ITM-1018,Toilet Paper 12-roll,STR-011,Portland Pearl,FORECAST_VARIANCE,2026-03-16,47,3.6,48.0,BlueYonder
-f1467503-b8f5-4613-8da8-3989c393db92,ITM-1011,Greek Yogurt 32oz,STR-010,Nashville Green Hills,OOS,2026-03-16,0,0.4,8.0,BlueYonder
-399251a9-1562-4858-83c5-3630faa17723,ITM-1010,Pasta Sauce 24oz,STR-009,Minneapolis Uptown,OOS,2026-03-16,0,0.2,0.1,BlueYonder
-ff9f5321-f547-45ab-bae5-70035c6dbfcf,ITM-1014,Coffee Ground 12oz,STR-011,Portland Pearl,ORDER_FAILURE,2026-03-16,48,4.0,,BlueYonder
-219237cd-6eb9-4c92-8de0-8cfe94854512,ITM-1006,Cheddar Cheese Block 8oz,STR-010,Nashville Green Hills,LOW_STOCK,2026-03-16,7,1.9,-10.0,BlueYonder
-96c1a268-f5d9-4fdd-96d9-235735f33be8,ITM-1010,Pasta Sauce 24oz,STR-004,Houston Galleria,LOW_STOCK,2026-03-16,10,2.0,-1.9,BlueYonder
-35182f38-b81c-40ac-a7df-3d50474e6eb0,ITM-1015,Orange Juice 52oz,STR-008,Boston Back Bay,LOW_STOCK,2026-03-16,9,1.7,12.5,BlueYonder
-81a2f877-9017-4c13-acb8-7b15182787c3,ITM-1006,Cheddar Cheese Block 8oz,STR-011,Portland Pearl,OOS,2026-03-16,0,0.3,5.8,BlueYonder
-6c039dbd-c239-4927-8fc6-c4ed5b5952f7,ITM-1011,Greek Yogurt 32oz,STR-002,Chicago Loop,FORECAST_VARIANCE,2026-03-16,20,7.4,34.6,BlueYonder
-d6074c0b-015a-4bc1-ac35-4ce81b0daa10,ITM-1007,Paper Towels 6-roll,STR-003,LA Century City,OOS,2026-03-16,0,0.1,1.9,BlueYonder
-5ac253f5-24c6-4b0d-8f76-a264a3319f82,ITM-1003,Sliced White Bread,STR-008,Boston Back Bay,LOW_STOCK,2026-03-16,11,1.9,8.0,BlueYonder
-71042a41-c6a7-4224-b96a-6f0c9da6c57e,ITM-1013,Diapers Size 3 28ct,STR-008,Boston Back Bay,OOS,2026-03-16,0,0.1,7.2,BlueYonder
-64c61fa5-dc34-422e-8e82-4b52567711f7,ITM-1004,Banana Bundle 1lb,STR-013,Charlotte SouthPark,LOW_STOCK,2026-03-16,3,2.5,7.4,BlueYonder
-f10ac37b-4ccf-482d-9b6f-18980aabbd2b,ITM-1015,Orange Juice 52oz,STR-001,Flagship Manhattan,LOW_STOCK,2026-03-16,15,2.6,1.4,BlueYonder
-a42ed043-0812-4a15-b294-5463c1ef3331,ITM-1015,Orange Juice 52oz,STR-011,Portland Pearl,LOW_STOCK,2026-03-16,9,2.0,13.8,BlueYonder
-a874de52-f4c5-40bb-be45-39cc2754b193,ITM-1015,Orange Juice 52oz,STR-010,Nashville Green Hills,FORECAST_VARIANCE,2026-03-16,37,5.4,78.9,BlueYonder
-391ceebd-681d-4e62-9bad-3572f32de5c9,ITM-1015,Orange Juice 52oz,STR-015,Small Town Boise,OOS,2026-03-16,0,0.4,1.3,BlueYonder
-4ce4d019-2e03-44b4-b1b1-d3ec1142337e,ITM-1008,Laundry Detergent 64oz,STR-014,Rural Topeka,LOW_STOCK,2026-03-16,13,2.4,2.1,BlueYonder
-6824c7ff-6f09-4412-a72d-3c90f00183be,ITM-1011,Greek Yogurt 32oz,STR-015,Small Town Boise,LOW_STOCK,2026-03-16,3,0.9,-0.4,BlueYonder
-e10a911a-f73e-429a-848d-7357a2d4d782,ITM-1005,Chicken Breast 2lb,STR-012,Columbus Easton,OOS,2026-03-16,0,0.2,-1.7,BlueYonder
-4591d104-639b-4dc0-897d-f0d8e87746c0,ITM-1015,Orange Juice 52oz,STR-007,Phoenix Scottsdale,OOS,2026-03-16,0,0.4,-0.3,BlueYonder
-53dcd95c-9d9a-4440-84e1-c05fe59d5286,ITM-1019,Dish Soap 22oz,STR-012,Columbus Easton,OOS,2026-03-16,0,0.4,4.4,BlueYonder
-87ebef63-2c11-4827-b0c8-49ff9ab9fc4f,ITM-1016,Frozen Pizza 12in,STR-001,Flagship Manhattan,ORDER_FAILURE,2026-03-16,24,4.0,,BlueYonder
-81cfe4e5-1fde-40d7-99b6-98348d17328c,ITM-1014,Coffee Ground 12oz,STR-009,Minneapolis Uptown,FORECAST_VARIANCE,2026-03-16,39,8.4,78.4,BlueYonder
-0afcac1f-937a-4b4f-873e-f3adc867e036,ITM-1016,Frozen Pizza 12in,STR-004,Houston Galleria,OOS,2026-03-16,0,0.2,-0.3,BlueYonder
-d20fcc8b-1e35-43d9-8780-9d7493b83667,ITM-1013,Diapers Size 3 28ct,STR-012,Columbus Easton,OOS,2026-03-16,0,0.2,-6.8,BlueYonder
-68325b44-bd70-49b0-b795-77c36fbe696d,ITM-1020,Cereal Box 18oz,STR-009,Minneapolis Uptown,OOS,2026-03-16,0,0.2,4.1,BlueYonder
-a87dcee1-0dcc-4a6f-8d63-55eacd96744e,ITM-1001,Organic Whole Milk 1gal,STR-002,Chicago Loop,LOW_STOCK,2026-03-16,3,2.7,-5.5,BlueYonder
-16a738f9-cd01-43db-a3e4-1f357b49ac0c,ITM-1009,Peanut Butter 16oz,STR-007,Phoenix Scottsdale,OOS,2026-03-16,0,0.2,-1.6,BlueYonder
-d734721c-6e84-4660-b0ab-d8edf8ecd470,ITM-1013,Diapers Size 3 28ct,STR-005,Atlanta Midtown,FORECAST_VARIANCE,2026-03-16,31,4.0,25.3,BlueYonder
-ccaacfc5-5be9-404d-9de4-4c2898a47623,ITM-1001,Organic Whole Milk 1gal,STR-012,Columbus Easton,LOW_STOCK,2026-03-16,6,1.1,-8.3,BlueYonder
-fe4d467a-8b57-405f-b532-da32dd80dc74,ITM-1002,Large Eggs 12ct,STR-013,Charlotte SouthPark,OOS,2026-03-16,0,0.1,11.0,BlueYonder
-5b0684e2-8260-4568-b559-8b2715387fde,ITM-1020,Cereal Box 18oz,STR-003,LA Century City,OOS,2026-03-16,0,0.2,-7.1,BlueYonder
-ec29c099-73ee-4e9e-b768-fc4308ab87db,ITM-1012,Baby Formula 12.5oz,STR-003,LA Century City,LOW_STOCK,2026-03-16,12,2.3,9.4,BlueYonder
-793eb614-abe9-4ffa-a082-e3dc75b552ee,ITM-1006,Cheddar Cheese Block 8oz,STR-005,Atlanta Midtown,OOS,2026-03-16,0,0.0,-2.2,BlueYonder
-4ed5a2e9-dee2-42f6-8bf9-d47837a095bf,ITM-1013,Diapers Size 3 28ct,STR-007,Phoenix Scottsdale,ORDER_FAILURE,2026-03-16,17,1.3,,BlueYonder
-c6fa8244-e0b1-4489-9247-2be13361e6cd,ITM-1008,Laundry Detergent 64oz,STR-002,Chicago Loop,LOW_STOCK,2026-03-16,5,2.6,5.0,BlueYonder
-eb9d6527-bf23-49ed-80d4-8e4bb54885c4,ITM-1004,Banana Bundle 1lb,STR-013,Charlotte SouthPark,VENDOR_LATE,2026-03-16,7,2.0,,BlueYonder
-34f3b357-be00-423f-8bd9-6937e1a46d07,ITM-1014,Coffee Ground 12oz,STR-011,Portland Pearl,OOS,2026-03-16,0,0.3,-1.5,BlueYonder
-d6e14a93-1efe-4d92-8201-9d0e6a0bbab9,ITM-1014,Coffee Ground 12oz,STR-014,Rural Topeka,LOW_STOCK,2026-03-16,7,2.9,5.9,BlueYonder
-6fd83821-fbe2-494d-843e-421f400aa420,ITM-1015,Orange Juice 52oz,STR-012,Columbus Easton,OOS,2026-03-16,0,0.1,3.0,BlueYonder
-3472cdfe-a500-4f39-948d-e227423f0859,ITM-1009,Peanut Butter 16oz,STR-010,Nashville Green Hills,FORECAST_VARIANCE,2026-03-16,39,8.2,50.2,BlueYonder
-81dd5fbc-b4e7-444d-abe7-f91b799b5bca,ITM-1019,Dish Soap 22oz,STR-005,Atlanta Midtown,OOS,2026-03-16,0,0.1,13.4,BlueYonder
-0441cfac-440f-4f31-8e01-26a440e54a6e,ITM-1009,Peanut Butter 16oz,STR-015,Small Town Boise,LOW_STOCK,2026-03-16,13,1.7,5.3,BlueYonder
+da331eaa-46f8-4036-9cef-72e9361cbee5,ITM-1001,Organic Whole Milk 1gal,STR-001,Flagship Manhattan,OOS,2026-03-16,0,0.0,5.2,BlueYonder
+de189e64-170b-4685-be2e-c743335774d0,ITM-1001,Organic Whole Milk 1gal,STR-005,Atlanta Midtown,OOS,2026-03-16,0,0.0,2.1,BlueYonder
+e223031f-4af2-41e5-addb-22a5de63d64c,ITM-1007,Paper Towels 6-roll,STR-005,Atlanta Midtown,LOW_STOCK,2026-03-16,4,1.5,0.5,BlueYonder
+50ee10e7-6e28-45b4-992c-ef71d323dc5b,ITM-1007,Paper Towels 6-roll,STR-002,Chicago Loop,LOW_STOCK,2026-03-16,3,1.0,5.1,BlueYonder
+299b5298-c2b4-475a-ae6d-788c743e2530,ITM-1007,Paper Towels 6-roll,STR-008,Boston Back Bay,LOW_STOCK,2026-03-16,1,1.4,-2.4,BlueYonder
+f87275c3-b587-4519-ba5d-2746df09797a,ITM-1007,Paper Towels 6-roll,STR-006,Denver Tech Center,LOW_STOCK,2026-03-16,2,0.7,0.7,BlueYonder
+4e178263-af28-47ab-98d3-51a090c2493c,ITM-1008,Laundry Detergent 64oz,STR-013,Charlotte SouthPark,LOW_STOCK,2026-03-16,1,0.8,-4.5,BlueYonder
+a79afedb-f967-4527-be24-8fa6ffc8b3e7,ITM-1008,Laundry Detergent 64oz,STR-011,Portland Pearl,LOW_STOCK,2026-03-16,3,1.1,-4.0,BlueYonder
+05498898-97fc-44c8-b577-ce9ef47d0a01,ITM-1008,Laundry Detergent 64oz,STR-005,Atlanta Midtown,LOW_STOCK,2026-03-16,5,1.8,-0.3,BlueYonder
+72b02111-d31e-4f76-b64b-021a3fa40197,ITM-1008,Laundry Detergent 64oz,STR-007,Phoenix Scottsdale,LOW_STOCK,2026-03-16,4,1.1,8.7,BlueYonder
+36e3916f-be8a-4aec-b61d-3892fb3ac96d,ITM-1018,Toilet Paper 12-roll,STR-010,Nashville Green Hills,LOW_STOCK,2026-03-16,2,1.6,3.1,BlueYonder
+df1e1102-0ec3-4a49-855c-a7af1ac03b51,ITM-1018,Toilet Paper 12-roll,STR-003,LA Century City,LOW_STOCK,2026-03-16,5,1.1,3.8,BlueYonder
+cd748ed5-9935-4156-bff7-9d9ac145513f,ITM-1018,Toilet Paper 12-roll,STR-006,Denver Tech Center,LOW_STOCK,2026-03-16,3,0.8,10.0,BlueYonder
+93d7dafd-b551-41c1-9653-f7f81d10b4de,ITM-1018,Toilet Paper 12-roll,STR-013,Charlotte SouthPark,LOW_STOCK,2026-03-16,5,1.2,6.3,BlueYonder
+e8b97a02-307c-482a-b9f4-28a664f989cf,ITM-1019,Dish Soap 22oz,STR-002,Chicago Loop,LOW_STOCK,2026-03-16,5,0.6,0.7,BlueYonder
+89c3ef0e-e4bc-4c74-82de-88bb71192aa0,ITM-1019,Dish Soap 22oz,STR-003,LA Century City,LOW_STOCK,2026-03-16,4,1.3,9.6,BlueYonder
+46067e4e-c2a3-4cd4-ab86-8fe7deba134a,ITM-1020,Cereal Box 18oz,STR-014,Rural Topeka,FORECAST_VARIANCE,2026-03-16,47,9.7,70.6,BlueYonder
+a6d14ba6-d606-40ca-8209-9865b8a4f76b,ITM-1010,Pasta Sauce 24oz,STR-015,Small Town Boise,FORECAST_VARIANCE,2026-03-16,23,8.4,64.2,BlueYonder
+e292ed46-6a68-4a73-a9f8-5296a18ef01a,ITM-1009,Peanut Butter 16oz,STR-014,Rural Topeka,FORECAST_VARIANCE,2026-03-16,28,8.8,55.3,BlueYonder
+66be82e7-d4a2-48a3-a925-c29369a7e48a,ITM-1020,Cereal Box 18oz,STR-015,Small Town Boise,FORECAST_VARIANCE,2026-03-16,29,7.2,60.4,BlueYonder
+56cf4d1f-22be-4485-8aa5-6be805dd5bd6,ITM-1010,Pasta Sauce 24oz,STR-012,Columbus Easton,FORECAST_VARIANCE,2026-03-16,50,8.6,72.4,BlueYonder
+07d3a4ff-c150-4661-b86e-9ea91feb92d2,ITM-1017,Ice Cream 1.5qt,STR-013,Charlotte SouthPark,OOS,2026-03-16,0,0.5,11.8,BlueYonder
+2f4a6aeb-f889-49b2-ba07-14f17cc570c6,ITM-1010,Pasta Sauce 24oz,STR-014,Rural Topeka,LOW_STOCK,2026-03-16,10,1.0,-0.7,BlueYonder
+0d53e216-44c1-4c20-b15b-24d8bea3b420,ITM-1006,Cheddar Cheese Block 8oz,STR-009,Minneapolis Uptown,VENDOR_LATE,2026-03-16,38,3.8,,BlueYonder
+02fb4eb6-78ac-49d5-a988-60155d19b6b0,ITM-1020,Cereal Box 18oz,STR-006,Denver Tech Center,LOW_STOCK,2026-03-16,2,2.8,12.0,BlueYonder
+0c52d90c-cc7e-4837-83c0-0e3fc97e1710,ITM-1010,Pasta Sauce 24oz,STR-004,Houston Galleria,OOS,2026-03-16,0,0.4,13.7,BlueYonder
+adbf8080-120b-462a-ae23-e1aee6a9e845,ITM-1003,Sliced White Bread,STR-012,Columbus Easton,LOW_STOCK,2026-03-16,2,2.9,3.3,BlueYonder
+129d21f1-2b30-4dc2-a786-056ecc6f80bb,ITM-1005,Chicken Breast 2lb,STR-003,LA Century City,LOW_STOCK,2026-03-16,9,0.9,3.2,BlueYonder
+29876db6-ef45-438c-ae75-30024aa2af60,ITM-1020,Cereal Box 18oz,STR-007,Phoenix Scottsdale,VENDOR_LATE,2026-03-16,39,3.3,,BlueYonder
+2bbe335d-6033-48d2-ba0d-ed15088be556,ITM-1007,Paper Towels 6-roll,STR-012,Columbus Easton,OOS,2026-03-16,0,0.5,6.2,BlueYonder
+3b04ef0f-e296-4c42-b3f7-b79f3377d04d,ITM-1015,Orange Juice 52oz,STR-015,Small Town Boise,LOW_STOCK,2026-03-16,2,1.1,-8.4,BlueYonder
+52c4cfca-8d6f-44fc-b9cc-eeb8e1279321,ITM-1001,Organic Whole Milk 1gal,STR-010,Nashville Green Hills,LOW_STOCK,2026-03-16,10,1.1,-8.2,BlueYonder
+27491820-60c5-4958-96f7-b721cbdca62a,ITM-1002,Large Eggs 12ct,STR-004,Houston Galleria,OOS,2026-03-16,0,0.0,-1.7,BlueYonder
+6c6f40d9-dba5-47fa-b178-b48f2af04ab0,ITM-1017,Ice Cream 1.5qt,STR-004,Houston Galleria,OOS,2026-03-16,0,0.2,3.5,BlueYonder
+d3b062e3-8ff0-4aa5-8887-71a3d7dfe3a0,ITM-1019,Dish Soap 22oz,STR-010,Nashville Green Hills,LOW_STOCK,2026-03-16,13,1.7,0.2,BlueYonder
+06ac5789-d9c4-48bd-9289-4847ad194d12,ITM-1004,Banana Bundle 1lb,STR-002,Chicago Loop,LOW_STOCK,2026-03-16,6,1.6,1.7,BlueYonder
+a17a05cd-d338-4f1a-b014-91f4ee2f64a9,ITM-1002,Large Eggs 12ct,STR-011,Portland Pearl,LOW_STOCK,2026-03-16,11,0.7,0.1,BlueYonder
+5af4ca32-417a-4067-a9eb-e432beee21f2,ITM-1011,Greek Yogurt 32oz,STR-013,Charlotte SouthPark,ORDER_FAILURE,2026-03-16,20,1.8,,BlueYonder
+f4869e42-f27e-4c8e-bc27-ff3abad00bae,ITM-1018,Toilet Paper 12-roll,STR-008,Boston Back Bay,OOS,2026-03-16,0,0.1,1.6,BlueYonder
+975b4105-06c7-4798-8924-41e74329cbdf,ITM-1003,Sliced White Bread,STR-008,Boston Back Bay,FORECAST_VARIANCE,2026-03-16,40,2.8,62.4,BlueYonder
+613a794d-a2d4-42d8-96ea-b8b8b009e8d5,ITM-1018,Toilet Paper 12-roll,STR-014,Rural Topeka,OOS,2026-03-16,0,0.0,8.8,BlueYonder
+5a21d17a-a1a4-42cf-9e5f-2230ff8e24f0,ITM-1008,Laundry Detergent 64oz,STR-003,LA Century City,LOW_STOCK,2026-03-16,8,1.0,0.0,BlueYonder
+156528e6-1a74-4231-befc-e3aac2390f08,ITM-1002,Large Eggs 12ct,STR-003,LA Century City,OOS,2026-03-16,0,0.5,-3.4,BlueYonder
+5412fc20-4eb4-4a1c-8d5a-147d79e1cc2b,ITM-1015,Orange Juice 52oz,STR-005,Atlanta Midtown,LOW_STOCK,2026-03-16,12,3.0,3.9,BlueYonder
+c198efd2-a7d5-478a-abed-f86a8ad0ca1d,ITM-1016,Frozen Pizza 12in,STR-003,LA Century City,OOS,2026-03-16,0,0.1,-8.5,BlueYonder
+8cb48064-5abd-460a-b55d-dd82e7f7251a,ITM-1018,Toilet Paper 12-roll,STR-001,Flagship Manhattan,FORECAST_VARIANCE,2026-03-16,8,2.4,51.0,BlueYonder
+0b9fb982-605e-4306-83ac-ad4c3590c841,ITM-1017,Ice Cream 1.5qt,STR-003,LA Century City,OOS,2026-03-16,0,0.3,11.3,BlueYonder
+ae8889e4-c392-4fe8-8679-fa05a76c2832,ITM-1003,Sliced White Bread,STR-010,Nashville Green Hills,OOS,2026-03-16,0,0.4,0.1,BlueYonder
+339e3d48-00e6-4483-ad60-70b7d53cce94,ITM-1019,Dish Soap 22oz,STR-004,Houston Galleria,LOW_STOCK,2026-03-16,1,2.0,0.5,BlueYonder
+0220abce-3420-4417-9a99-2a92c8588a91,ITM-1009,Peanut Butter 16oz,STR-004,Houston Galleria,LOW_STOCK,2026-03-16,6,1.1,-0.1,BlueYonder
+1208ac52-24b6-47b8-8b5e-e06ac2a9ad67,ITM-1010,Pasta Sauce 24oz,STR-008,Boston Back Bay,OOS,2026-03-16,0,0.4,-8.2,BlueYonder
+c473bf2a-2853-42c3-8516-f39f5fbf979c,ITM-1015,Orange Juice 52oz,STR-010,Nashville Green Hills,VENDOR_LATE,2026-03-16,11,1.2,,BlueYonder
+747ea2a0-ef01-4399-ad12-7f5bedd7e34e,ITM-1007,Paper Towels 6-roll,STR-009,Minneapolis Uptown,OOS,2026-03-16,0,0.5,12.0,BlueYonder
+2b69ebfa-b2ba-4c07-b7e4-a393ca927ebc,ITM-1008,Laundry Detergent 64oz,STR-006,Denver Tech Center,OOS,2026-03-16,0,0.2,3.6,BlueYonder
+abd2c46e-c905-4c6b-b4de-781beb61b3ef,ITM-1010,Pasta Sauce 24oz,STR-010,Nashville Green Hills,VENDOR_LATE,2026-03-16,46,2.6,,BlueYonder
+a547ed69-6fc0-4492-97c2-1968b90a7323,ITM-1018,Toilet Paper 12-roll,STR-005,Atlanta Midtown,ORDER_FAILURE,2026-03-16,11,4.8,,BlueYonder
+dc6dffd1-c04b-48c4-af36-cf736b202468,ITM-1005,Chicken Breast 2lb,STR-005,Atlanta Midtown,OOS,2026-03-16,0,0.1,3.8,BlueYonder
+b1a289d7-dac6-439b-b07c-c6e40251103f,ITM-1009,Peanut Butter 16oz,STR-005,Atlanta Midtown,LOW_STOCK,2026-03-16,12,1.4,7.2,BlueYonder
+1774b409-24ad-4d3a-b0d2-8ecf7c315ddf,ITM-1009,Peanut Butter 16oz,STR-009,Minneapolis Uptown,LOW_STOCK,2026-03-16,15,2.8,-8.7,BlueYonder
+f00829df-e735-42e9-9282-1840a72d181f,ITM-1014,Coffee Ground 12oz,STR-014,Rural Topeka,OOS,2026-03-16,0,0.0,9.3,BlueYonder
+e63877b5-d43b-42c1-9983-b111488af3fe,ITM-1009,Peanut Butter 16oz,STR-003,LA Century City,FORECAST_VARIANCE,2026-03-16,40,7.6,56.5,BlueYonder
+8af4f678-158f-43d3-aee8-cdb5587f852a,ITM-1004,Banana Bundle 1lb,STR-002,Chicago Loop,ORDER_FAILURE,2026-03-16,49,4.6,,BlueYonder
+cdb9a3fd-f2fc-456b-9744-7d7bd062daca,ITM-1019,Dish Soap 22oz,STR-009,Minneapolis Uptown,OOS,2026-03-16,0,0.1,-2.3,BlueYonder
+68480151-c24f-4233-ad37-6bd7e4995bca,ITM-1002,Large Eggs 12ct,STR-015,Small Town Boise,OOS,2026-03-16,0,0.3,6.7,BlueYonder
+1ec81348-6392-47b1-8b6f-a9032da28242,ITM-1012,Baby Formula 12.5oz,STR-013,Charlotte SouthPark,LOW_STOCK,2026-03-16,14,1.5,5.5,BlueYonder
+1054c89b-7744-40c0-856d-51f1e7437e54,ITM-1005,Chicken Breast 2lb,STR-015,Small Town Boise,ORDER_FAILURE,2026-03-16,15,4.9,,BlueYonder
+d883607d-d6c4-414a-803d-6141a99c8a10,ITM-1006,Cheddar Cheese Block 8oz,STR-015,Small Town Boise,LOW_STOCK,2026-03-16,3,2.3,-1.7,BlueYonder
+f5c8ac3a-2cc5-40be-994a-48a32a403351,ITM-1014,Coffee Ground 12oz,STR-013,Charlotte SouthPark,LOW_STOCK,2026-03-16,12,2.5,-3.3,BlueYonder
+85b7ec2f-abf8-44f5-a8a0-68ecbada89e9,ITM-1004,Banana Bundle 1lb,STR-007,Phoenix Scottsdale,ORDER_FAILURE,2026-03-16,35,1.9,,BlueYonder
+85b50c19-41d1-4d7c-98c4-6738f0d8ab5d,ITM-1015,Orange Juice 52oz,STR-006,Denver Tech Center,OOS,2026-03-16,0,0.4,-4.3,BlueYonder
+849b33b8-ca97-4954-9a60-ef1fcdaff072,ITM-1001,Organic Whole Milk 1gal,STR-011,Portland Pearl,OOS,2026-03-16,0,0.2,11.6,BlueYonder
+90221247-2140-4221-b887-a5f4155da6b3,ITM-1009,Peanut Butter 16oz,STR-006,Denver Tech Center,LOW_STOCK,2026-03-16,7,2.2,11.1,BlueYonder
+0709e506-5fe2-4d42-8186-72647d01b4ff,ITM-1011,Greek Yogurt 32oz,STR-001,Flagship Manhattan,OOS,2026-03-16,0,0.5,-5.5,BlueYonder
+21bff2e6-f2cd-4ee2-8603-9dff8b6f813d,ITM-1009,Peanut Butter 16oz,STR-001,Flagship Manhattan,OOS,2026-03-16,0,0.2,8.2,BlueYonder
+277f8382-3e74-4bda-aa21-4f5b06b8c795,ITM-1011,Greek Yogurt 32oz,STR-007,Phoenix Scottsdale,LOW_STOCK,2026-03-16,9,0.8,12.5,BlueYonder
+1b20b66f-1cf9-4937-b9df-87730cbd80ff,ITM-1007,Paper Towels 6-roll,STR-005,Atlanta Midtown,OOS,2026-03-16,0,0.2,3.0,BlueYonder
+74a27ef8-1ed8-47f8-ba14-14f5b7451e7f,ITM-1018,Toilet Paper 12-roll,STR-011,Portland Pearl,FORECAST_VARIANCE,2026-03-16,47,3.6,48.0,BlueYonder
+2d58b4db-c499-48a9-8b3b-fc354c9b7787,ITM-1011,Greek Yogurt 32oz,STR-010,Nashville Green Hills,OOS,2026-03-16,0,0.4,8.0,BlueYonder
+67495a0b-270f-4e9d-8a6a-32e2178f51ec,ITM-1010,Pasta Sauce 24oz,STR-009,Minneapolis Uptown,OOS,2026-03-16,0,0.2,0.1,BlueYonder
+28d82f6d-3e9a-43a8-9bcc-c57eb706dcd6,ITM-1014,Coffee Ground 12oz,STR-011,Portland Pearl,ORDER_FAILURE,2026-03-16,48,4.0,,BlueYonder
+969365e8-1944-431c-ab59-eee4ca010e19,ITM-1006,Cheddar Cheese Block 8oz,STR-010,Nashville Green Hills,LOW_STOCK,2026-03-16,7,1.9,-10.0,BlueYonder
+0e21ac07-b6da-4eb1-bb53-425ae30ede2c,ITM-1010,Pasta Sauce 24oz,STR-004,Houston Galleria,LOW_STOCK,2026-03-16,10,2.0,-1.9,BlueYonder
+4b556895-0b81-49ee-9075-a1482070cc39,ITM-1015,Orange Juice 52oz,STR-008,Boston Back Bay,LOW_STOCK,2026-03-16,9,1.7,12.5,BlueYonder
+325e2b69-f1fc-453e-a74a-c9bc104ac34a,ITM-1006,Cheddar Cheese Block 8oz,STR-011,Portland Pearl,OOS,2026-03-16,0,0.3,5.8,BlueYonder
+b8235cca-57b2-4dd5-8593-1d8ac87c4168,ITM-1011,Greek Yogurt 32oz,STR-002,Chicago Loop,FORECAST_VARIANCE,2026-03-16,20,7.4,34.6,BlueYonder
+0d0894e8-5588-49f9-bcd6-10160771427b,ITM-1007,Paper Towels 6-roll,STR-003,LA Century City,OOS,2026-03-16,0,0.1,1.9,BlueYonder
+b537ee0f-a22e-4c9a-8ea2-71772f5de1c0,ITM-1003,Sliced White Bread,STR-008,Boston Back Bay,LOW_STOCK,2026-03-16,11,1.9,8.0,BlueYonder
+b3197fef-a302-4c5f-9de2-94b3910248c9,ITM-1013,Diapers Size 3 28ct,STR-008,Boston Back Bay,OOS,2026-03-16,0,0.1,7.2,BlueYonder
+ac8f8edc-ee60-456c-a763-feeb8ff2b2e8,ITM-1004,Banana Bundle 1lb,STR-013,Charlotte SouthPark,LOW_STOCK,2026-03-16,3,2.5,7.4,BlueYonder
+b0dde3cd-747a-40ce-80ec-d83aacfb3c6a,ITM-1015,Orange Juice 52oz,STR-001,Flagship Manhattan,LOW_STOCK,2026-03-16,15,2.6,1.4,BlueYonder
+645de017-cb9c-445d-b8e9-06c24348bb35,ITM-1015,Orange Juice 52oz,STR-011,Portland Pearl,LOW_STOCK,2026-03-16,9,2.0,13.8,BlueYonder
+31b06718-1de5-416c-89dc-7d1145b6c8e8,ITM-1015,Orange Juice 52oz,STR-010,Nashville Green Hills,FORECAST_VARIANCE,2026-03-16,37,5.4,78.9,BlueYonder
+8eb760f7-0f0a-48dc-a087-e2bf9341f60d,ITM-1015,Orange Juice 52oz,STR-015,Small Town Boise,OOS,2026-03-16,0,0.4,1.3,BlueYonder
+539c4bd0-01dd-4fed-bcbc-8638074bdac0,ITM-1008,Laundry Detergent 64oz,STR-014,Rural Topeka,LOW_STOCK,2026-03-16,13,2.4,2.1,BlueYonder
+671af096-6aa6-4f8b-9cf6-47efe3fbc0a2,ITM-1011,Greek Yogurt 32oz,STR-015,Small Town Boise,LOW_STOCK,2026-03-16,3,0.9,-0.4,BlueYonder
+836cea8c-de69-46eb-90d9-20d2d04e4822,ITM-1005,Chicken Breast 2lb,STR-012,Columbus Easton,OOS,2026-03-16,0,0.2,-1.7,BlueYonder
+24790298-b5f2-48ea-b796-e307e835f68a,ITM-1015,Orange Juice 52oz,STR-007,Phoenix Scottsdale,OOS,2026-03-16,0,0.4,-0.3,BlueYonder
+79f38970-6968-4280-ad54-b2a80f0fe104,ITM-1019,Dish Soap 22oz,STR-012,Columbus Easton,OOS,2026-03-16,0,0.4,4.4,BlueYonder
+1385c4e9-16a9-4dad-be8a-31955029ad2e,ITM-1016,Frozen Pizza 12in,STR-001,Flagship Manhattan,ORDER_FAILURE,2026-03-16,24,4.0,,BlueYonder
+25c63193-ff6c-4c9e-bb69-2d87b8a10a4d,ITM-1014,Coffee Ground 12oz,STR-009,Minneapolis Uptown,FORECAST_VARIANCE,2026-03-16,39,8.4,78.4,BlueYonder
+c2bf7c46-68c0-499b-9546-513cd5f23df6,ITM-1016,Frozen Pizza 12in,STR-004,Houston Galleria,OOS,2026-03-16,0,0.2,-0.3,BlueYonder
+a2d05098-7287-42b9-9a5b-b631b7715958,ITM-1013,Diapers Size 3 28ct,STR-012,Columbus Easton,OOS,2026-03-16,0,0.2,-6.8,BlueYonder
+940255ac-d560-409a-8d73-e3ceb9a02a58,ITM-1020,Cereal Box 18oz,STR-009,Minneapolis Uptown,OOS,2026-03-16,0,0.2,4.1,BlueYonder
+ecd8dbe4-0147-4a6f-ab18-a8078c7f2794,ITM-1001,Organic Whole Milk 1gal,STR-002,Chicago Loop,LOW_STOCK,2026-03-16,3,2.7,-5.5,BlueYonder
+6f79811d-f441-4e7e-b518-26e5a896c295,ITM-1009,Peanut Butter 16oz,STR-007,Phoenix Scottsdale,OOS,2026-03-16,0,0.2,-1.6,BlueYonder
+7e257d65-5cca-4923-9ee9-f90495ded68d,ITM-1013,Diapers Size 3 28ct,STR-005,Atlanta Midtown,FORECAST_VARIANCE,2026-03-16,31,4.0,25.3,BlueYonder
+63a86a7e-493d-4fc2-8c0b-1caf19e56138,ITM-1001,Organic Whole Milk 1gal,STR-012,Columbus Easton,LOW_STOCK,2026-03-16,6,1.1,-8.3,BlueYonder
+b9e78aca-977c-4cd9-8fcf-d94ac894cf2b,ITM-1002,Large Eggs 12ct,STR-013,Charlotte SouthPark,OOS,2026-03-16,0,0.1,11.0,BlueYonder
+7f218e4f-7463-4bf8-8e45-9d44a8d87410,ITM-1020,Cereal Box 18oz,STR-003,LA Century City,OOS,2026-03-16,0,0.2,-7.1,BlueYonder
+42edc770-e1b8-4502-bacf-612830d7c103,ITM-1012,Baby Formula 12.5oz,STR-003,LA Century City,LOW_STOCK,2026-03-16,12,2.3,9.4,BlueYonder
+94f4a937-1d31-4813-bdb4-8a7f1af02af7,ITM-1006,Cheddar Cheese Block 8oz,STR-005,Atlanta Midtown,OOS,2026-03-16,0,0.0,-2.2,BlueYonder
+1a62c483-de59-4500-bc86-b70cb8b8aef2,ITM-1013,Diapers Size 3 28ct,STR-007,Phoenix Scottsdale,ORDER_FAILURE,2026-03-16,17,1.3,,BlueYonder
+f81de63c-b8c5-49ef-8eab-02d7f530aadf,ITM-1008,Laundry Detergent 64oz,STR-002,Chicago Loop,LOW_STOCK,2026-03-16,5,2.6,5.0,BlueYonder
+87f80a19-6cd1-4d03-8d49-423b66f66129,ITM-1004,Banana Bundle 1lb,STR-013,Charlotte SouthPark,VENDOR_LATE,2026-03-16,7,2.0,,BlueYonder
+5a0ca5ec-60d4-461e-aa79-c3d46951e799,ITM-1014,Coffee Ground 12oz,STR-011,Portland Pearl,OOS,2026-03-16,0,0.3,-1.5,BlueYonder
+207b6604-a189-4803-8a4c-37f8fda14a2c,ITM-1014,Coffee Ground 12oz,STR-014,Rural Topeka,LOW_STOCK,2026-03-16,7,2.9,5.9,BlueYonder
+90f6331b-c2e8-40e8-bd9a-20865a65fa4c,ITM-1015,Orange Juice 52oz,STR-012,Columbus Easton,OOS,2026-03-16,0,0.1,3.0,BlueYonder
+25abcff5-ceae-4d6f-8e6c-6a845e16ad69,ITM-1009,Peanut Butter 16oz,STR-010,Nashville Green Hills,FORECAST_VARIANCE,2026-03-16,39,8.2,50.2,BlueYonder
+b26f3b1c-8d9e-4f78-90f5-d90ce09557d8,ITM-1019,Dish Soap 22oz,STR-005,Atlanta Midtown,OOS,2026-03-16,0,0.1,13.4,BlueYonder
+5770a839-7d23-4261-b616-1cdfb74e32b6,ITM-1009,Peanut Butter 16oz,STR-015,Small Town Boise,LOW_STOCK,2026-03-16,13,1.7,5.3,BlueYonder
