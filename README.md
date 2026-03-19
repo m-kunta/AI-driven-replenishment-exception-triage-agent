@@ -120,7 +120,7 @@ AI-driven-replenishment-exception-triage-agent/
 │   │   └── dc_inventory_sample.csv
 │   └── regional_signals.json      # 2 active disruptions
 ├── tests/
-│   ├── test_ingestion.py          # 25 tests — all passing
+│   ├── test_ingestion.py          # Ingestion layer tests
 │   └── test_enrichment.py         # TODO: ~15 tests (stubs documented)
 ├── scripts/
 │   └── generate_sample_data.py    # Synthetic data generator
