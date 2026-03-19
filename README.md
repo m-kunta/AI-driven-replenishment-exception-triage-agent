@@ -178,7 +178,7 @@ python scripts/generate_sample_data.py
 
 ```bash
 pytest tests/ -v
-# 25 tests — all should pass
+# 31 tests — all should pass
 ```
 
 ### Verify Current Implemented Scope
