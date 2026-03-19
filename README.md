@@ -181,6 +181,22 @@ pytest tests/ -v
 # 25 tests — all should pass
 ```
 
+### Verify Current Implemented Scope
+
+The repository currently includes production-ready ingestion and a working enrichment data loader foundation.  
+These are the fastest checks to verify your environment end-to-end:
+
+```bash
+# 1) Regenerate deterministic sample data
+python scripts/generate_sample_data.py
+
+# 2) Validate ingestion layer
+pytest tests/test_ingestion.py -v
+
+# 3) Validate enrichment data loading contracts
+pytest tests/test_enrichment.py -v
+```
+
 ---
 
 ## Project Status
@@ -188,7 +204,7 @@ pytest tests/ -v
 | Layer | Status | Details |
 |---|---|---|
 | **Layer 1 — Ingestion** | ✅ Complete | CSV adapter, normalizer, 25 tests passing |
-| **Layer 2 — Enrichment** | 🔧 Planned | `DataLoader` + `EnrichmentEngine` stubs in place; see below |
+| **Layer 2 — Enrichment** | 🛠️ In Progress | `DataLoader` implemented and tested; `EnrichmentEngine` scaffold + remaining enrichment logic in progress |
 | **Layer 3 — Claude Engine** | 🔲 Not Started | Batched inference, triage output, patterns |
 | **Layer 4 — Output & Alerts** | 🔲 Not Started | Morning briefing, Slack/email routing |
 
@@ -214,6 +230,25 @@ Stub files are in place at `src/enrichment/`. The implementation plan:
 
 ---
 
+## Current Capabilities vs Planned
+
+This project is intentionally staged. To avoid confusion, use this guide when evaluating what is runnable now:
+
+| Area | Current State | Notes |
+|---|---|---|
+| Sample data generation | ✅ Implemented | `scripts/generate_sample_data.py` |
+| CSV ingestion adapter | ✅ Implemented | UTF-8/BOM, delimiter support, empty-row handling |
+| Canonical normalization | ✅ Implemented | Type coercion, dedup, quarantine |
+| Enrichment data loading | ✅ Implemented | Loads and indexes store/item/promo/vendor/DC/regional sources |
+| Full enrichment engine output | 🚧 Partial | Engine scaffold exists; complete join/calculation logic is in progress |
+| Claude triage agent loop | ⏳ Planned | Layer 3 not implemented yet |
+| Routing/alerts/briefing outputs | ⏳ Planned | Layer 4 not implemented yet |
+| CLI pipeline run (`run_triage.py`) | ⏳ Planned | Not yet available in `scripts/` |
+
+If you are onboarding today, start with ingestion and data-loader tests before extending enrichment logic.
+
+---
+
 ## Tech Stack
 
 | Layer | Technology |
@@ -225,6 +260,28 @@ Stub files are in place at `src/enrichment/`. The implementation plan:
 | Logging | loguru |
 | HTTP | httpx |
 | Tests | pytest |
+
+---
+
+## Documentation Map
+
+- `README.md`: project overview, status, and getting started
+- `REPLENISHMENT_TRIAGE_AGENT_PROMPT.md`: full phased build spec and acceptance criteria
+- `CLAUDE.md`: developer-focused context and implementation patterns
+- `CONTRIBUTING.md`: contribution workflow, coding and test expectations
+
+---
+
+## Contributing
+
+Contributions are welcome while the project moves through Layers 2–4.
+
+1. Open an issue describing the scope (bug, enhancement, or missing task from the spec).
+2. Keep changes focused to a single layer/task where possible.
+3. Run the relevant test modules locally before opening a PR.
+4. Update docs whenever behavior, interfaces, or status changes.
+
+See `CONTRIBUTING.md` for detailed guidelines.
 
 ---
 
