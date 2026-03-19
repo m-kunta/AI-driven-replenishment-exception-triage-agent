@@ -96,4 +96,4 @@ The generated sample data includes intentional scenarios for testing triage qual
 - **Normalizer** dedup key: `(item_id, store_id, exception_type, exception_date)`
 - **Quarantine** writes invalid records to `output/logs/quarantine_{date}_{batch_id}.json`
 - **Field mapping** in config allows source field names to differ from canonical names
-- All imports use `from __future__ import annotations` for Python 3.9 compatibility
+- All imports use `from __future__ import annotations` for Python 3.9+ compatibility
