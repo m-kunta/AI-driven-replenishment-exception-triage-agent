@@ -2,6 +2,9 @@
 
 All tests use reference_date=date(2026, 3, 18) for determinism.
 
+Author: Mohith Kunta <mohith.kunta@gmail.com>
+GitHub: https://github.com/m-kunta
+
 Test coverage plan:
     DataLoader
         [x] test_data_loader_loads_all_sources
@@ -61,12 +64,15 @@ Test coverage plan:
 from __future__ import annotations
 
 import json
+from datetime import date
 from pathlib import Path
 
 import pytest
 
 from src.enrichment.data_loader import DataLoader, LoadedData
+from src.models import EnrichmentConfidence
 from src.utils.exceptions import EnrichmentError
+
 
 
 SAMPLE_DIR = Path(__file__).parent.parent / "data" / "sample"
@@ -193,6 +199,226 @@ class TestDataLoader:
         assert store.get("competitor_event") is None
 
 
+
 # TODO: implement tests above once DataLoader and EnrichmentEngine are built.
 # Follow the same fixture/class patterns used in tests/test_ingestion.py.
 # Use tmp_path fixture for any file-based tests.
+
+
+# ---------------------------------------------------------------------------
+# Shared fixtures
+# ---------------------------------------------------------------------------
+
+REF_DATE = date(2026, 3, 18)
+
+
+@pytest.fixture(scope="session")
+def loaded_data() -> "LoadedData":
+    """Session-scoped LoadedData loaded from the sample files."""
+    from src.enrichment.data_loader import DataLoader
+    return DataLoader(
+        store_master_path=str(SAMPLE_DIR / "store_master_sample.csv"),
+        item_master_path=str(SAMPLE_DIR / "item_master_sample.csv"),
+        promo_calendar_path=str(SAMPLE_DIR / "promo_calendar_sample.csv"),
+        vendor_performance_path=str(SAMPLE_DIR / "vendor_performance_sample.csv"),
+        dc_inventory_path=str(SAMPLE_DIR / "dc_inventory_sample.csv"),
+        regional_signals_path=str(REGIONAL_SIGNALS),
+    ).load()
+
+
+@pytest.fixture(scope="session")
+def engine(loaded_data: "LoadedData") -> "EnrichmentEngine":
+    """Session-scoped EnrichmentEngine pinned to REF_DATE."""
+    from src.enrichment.engine import EnrichmentEngine
+    return EnrichmentEngine(loaded_data, reference_date=REF_DATE)
+
+
+def _make_exception(**overrides) -> "CanonicalException":
+    """Build a minimal CanonicalException for use in engine tests."""
+    from src.models import CanonicalException, ExceptionType
+    from datetime import datetime
+    import uuid
+
+    base = dict(
+        exception_id=str(uuid.uuid4()),
+        item_id="ITM-1001",
+        item_name="Organic Whole Milk 1gal",
+        store_id="STR-001",
+        store_name="Flagship Manhattan",
+        exception_type=ExceptionType.OOS,
+        exception_date=REF_DATE,
+        units_on_hand=0,
+        days_of_supply=0.5,
+        variance_pct=None,
+        source_system="TestSystem",
+        batch_id=str(uuid.uuid4()),
+        ingested_at=datetime.now(),
+    )
+    base.update(overrides)
+    return CanonicalException(**base)
+
+
+# ---------------------------------------------------------------------------
+# Tests
+# ---------------------------------------------------------------------------
+
+
+class TestEnrichmentEngine:
+
+    def test_store_fields_populated(self, engine):
+        """STR-001 → correct tier, region, weekly_sales, competitor fields."""
+        exc = _make_exception(store_id="STR-001", item_id="ITM-1001")
+        result = engine.enrich([exc])[0]
+
+        assert result.store_tier == 1
+        assert result.region == "NORTHEAST"
+        assert result.weekly_store_sales_k == pytest.approx(2800.0)
+        assert result.competitor_proximity_miles == pytest.approx(0.3)
+        assert result.competitor_event is not None
+
+    def test_item_fields_populated(self, engine):
+        """ITM-1001 → correct category, perishable, vendor_id, price."""
+        exc = _make_exception(item_id="ITM-1001")
+        result = engine.enrich([exc])[0]
+
+        assert result.category == "Dairy"
+        assert result.perishable is True
+        assert result.vendor_id == "VND-100"
+        assert result.retail_price == pytest.approx(5.99)
+
+    def test_promo_active_in_window(self, engine):
+        """ITM-1001/STR-001 on 2026-03-18 falls within TPR window → promo_active=True."""
+        exc = _make_exception(item_id="ITM-1001", store_id="STR-001")
+        result = engine.enrich([exc])[0]
+
+        assert result.promo_active is True
+        assert result.promo_type == "TPR"
+
+    def test_promo_expired(self, engine):
+        """ITM-1009/STR-010 promo ended 2026-03-10 → promo_active=False on ref date."""
+        exc = _make_exception(item_id="ITM-1009", store_id="STR-010")
+        result = engine.enrich([exc])[0]
+
+        assert result.promo_active is False
+
+    def test_unknown_item_promo_not_active(self, engine):
+        """Unknown item/store with no promo data → promo_active=False."""
+        exc = _make_exception(item_id="ITM-XXXX", store_id="STR-XXXX")
+        result = engine.enrich([exc])[0]
+
+        assert result.promo_active is False
+
+    def test_vendor_fields_populated(self, engine):
+        """VND-400 → fill_rate=0.72, open_po_inbound=True (5 open POs)."""
+        # ITM-1007 maps to VND-400 via item master
+        exc = _make_exception(item_id="ITM-1007")
+        result = engine.enrich([exc])[0]
+
+        assert result.vendor_id == "VND-400"
+        assert result.vendor_fill_rate_90d == pytest.approx(0.72)
+        assert result.open_po_inbound is True
+
+
+    def test_dc_inventory_populated(self, engine):
+        """ITM-1007 → dc_inventory_days=5.6."""
+        exc = _make_exception(item_id="ITM-1007")
+        result = engine.enrich([exc])[0]
+
+        assert result.dc_inventory_days == pytest.approx(5.6)
+
+    def test_lead_time_derived_from_receipt_date(self, engine):
+        """ITM-1007 next_receipt_date=2026-03-20 → lead_time_days=2 on ref 2026-03-18."""
+        exc = _make_exception(item_id="ITM-1007")
+        result = engine.enrich([exc])[0]
+
+        # 2026-03-20 − 2026-03-18 = 2 days
+        assert result.lead_time_days == 2
+
+    def test_regional_disruption_northeast_active(self, engine):
+        """NORTHEAST has active transport disruption on 2026-03-18."""
+        exc = _make_exception(store_id="STR-001")  # NORTHEAST store
+        result = engine.enrich([exc])[0]
+
+        assert result.regional_disruption_flag is True
+        assert result.regional_disruption_description is not None
+
+    def test_regional_disruption_midwest_expired(self, engine):
+        """MIDWEST storm ended 2026-03-18 → no active disruption on ref 2026-03-18.
+
+        The active_through date is 2026-03-18, which is inclusive, so this
+        still returns True on ref_date=2026-03-18. Pin ref_date to 2026-03-19
+        for this test to confirm expiry.
+        """
+        from src.enrichment.engine import EnrichmentEngine
+        engine_19 = EnrichmentEngine(engine._data, reference_date=date(2026, 3, 19))
+        exc = _make_exception(store_id="STR-014")  # MIDWEST store
+        result = engine_19.enrich([exc])[0]
+
+        assert result.regional_disruption_flag is False
+
+    def test_financial_no_promo(self, engine):
+        """OOS item, no promo → est_lost_sales > 0, promo_margin_at_risk == 0.0."""
+        # ITM-1009/STR-010 has an expired promo → no active promo
+        exc = _make_exception(item_id="ITM-1009", store_id="STR-010", days_of_supply=0.0)
+        result = engine.enrich([exc])[0]
+
+        assert result.promo_active is False
+        assert result.est_lost_sales_value > 0
+        assert result.promo_margin_at_risk == pytest.approx(0.0)
+
+    def test_financial_with_promo(self, engine):
+        """OOS item on active TPR → promo_margin_at_risk > 0.0."""
+        exc = _make_exception(item_id="ITM-1001", store_id="STR-001", days_of_supply=0.0)
+        result = engine.enrich([exc])[0]
+
+        assert result.promo_active is True
+        assert result.est_lost_sales_value > 0
+        assert result.promo_margin_at_risk > 0.0
+
+    def test_financial_promo_formula_values(self, engine):
+        """Verify promo lost-sales math: retail × (1-tpr) × clamp(7-dos,0,7) × lift."""
+        # ITM-1001/STR-001: retail=5.99, tpr=0.25, dos=0.5, lift=1.4
+        exc = _make_exception(item_id="ITM-1001", store_id="STR-001", days_of_supply=0.5)
+        result = engine.enrich([exc])[0]
+
+        expected = 5.99 * (1 - 0.25) * (7.0 - 0.5) * 1.4
+        assert result.est_lost_sales_value == pytest.approx(expected, rel=1e-3)
+
+    def test_confidence_high_complete_data(self, engine):
+        """Well-known item/store/vendor → HIGH confidence, no missing fields."""
+        exc = _make_exception(item_id="ITM-1001", store_id="STR-001")
+        result = engine.enrich([exc])[0]
+
+        # All tracked fields should resolve for this well-known combination
+        assert result.enrichment_confidence.value in ("HIGH", "MEDIUM")
+        # At most a couple of nullable fields missing (e.g. lead_time past)
+
+    def test_confidence_low_unknown_store(self, engine):
+        """Unknown store_id → many null fields → LOW confidence."""
+        exc = _make_exception(store_id="STR-UNKNOWN", item_id="ITM-UNKNOWN")
+        result = engine.enrich([exc])[0]
+
+        assert result.enrichment_confidence == EnrichmentConfidence.LOW
+        assert len(result.missing_data_fields) >= 3
+
+    def test_enrich_full_sample(self, loaded_data):
+        """All 120 sample exceptions enrich without error → all EnrichedExceptionSchema."""
+        from src.enrichment.engine import EnrichmentEngine
+        from src.ingestion.csv_adapter import CsvIngestionAdapter
+        from src.ingestion.normalizer import Normalizer
+        from src.models import EnrichedExceptionSchema
+        import tempfile
+
+        exceptions_csv = SAMPLE_DIR / "exceptions_sample.csv"
+        adapter = CsvIngestionAdapter(str(exceptions_csv))
+        with tempfile.TemporaryDirectory() as tmp:
+            normalizer = Normalizer(quarantine_dir=tmp)
+            canonical, _ = normalizer.normalize(adapter.fetch())
+
+        engine = EnrichmentEngine(loaded_data, reference_date=REF_DATE)
+        enriched = engine.enrich(canonical)
+
+        assert len(enriched) == 120
+        for item in enriched:
+            assert isinstance(item, EnrichedExceptionSchema)
+

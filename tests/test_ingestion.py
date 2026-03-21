@@ -1,4 +1,8 @@
-"""Tests for the ingestion layer: CSV adapter, normalizer, and end-to-end pipeline."""
+"""Tests for the ingestion layer: CSV adapter, normalizer, and end-to-end pipeline.
+
+Author: Mohith Kunta <mohith.kunta@gmail.com>
+GitHub: https://github.com/m-kunta
+"""
 
 from __future__ import annotations
 

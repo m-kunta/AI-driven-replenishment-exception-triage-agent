@@ -1,4 +1,8 @@
-"""CSV ingestion adapter for reading exception data from CSV files."""
+"""CSV ingestion adapter for reading exception data from CSV files.
+
+Author: Mohith Kunta <mohith.kunta@gmail.com>
+GitHub: https://github.com/m-kunta
+"""
 
 from __future__ import annotations
 
