@@ -15,6 +15,9 @@ Usage:
     loader = DataLoader()
     data = loader.load()
     engine = EnrichmentEngine(data)
+
+Author: Mohith Kunta <mohith.kunta@gmail.com>
+GitHub: https://github.com/m-kunta
 """
 
 from __future__ import annotations

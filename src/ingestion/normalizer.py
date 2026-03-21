@@ -2,6 +2,9 @@
 
 Handles field mapping, type coercion, deduplication, quarantine of invalid
 records, and batch ID assignment.
+
+Author: Mohith Kunta <mohith.kunta@gmail.com>
+GitHub: https://github.com/m-kunta
 """
 
 from __future__ import annotations

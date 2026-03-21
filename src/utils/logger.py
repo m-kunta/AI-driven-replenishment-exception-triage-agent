@@ -1,4 +1,8 @@
-"""Structured logging setup using loguru."""
+"""Structured logging setup using loguru.
+
+Author: Mohith Kunta <mohith.kunta@gmail.com>
+GitHub: https://github.com/m-kunta
+"""
 
 import sys
 from loguru import logger

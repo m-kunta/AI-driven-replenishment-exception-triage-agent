@@ -1,4 +1,8 @@
-"""Custom exception hierarchy for the Replenishment Triage Agent."""
+"""Custom exception hierarchy for the Replenishment Triage Agent.
+
+Author: Mohith Kunta <mohith.kunta@gmail.com>
+GitHub: https://github.com/m-kunta
+"""
 
 
 class TriageAgentError(Exception):
