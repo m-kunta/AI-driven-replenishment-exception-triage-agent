@@ -1,4 +1,8 @@
-"""Configuration loader with YAML parsing and environment variable resolution."""
+"""Configuration loader with YAML parsing and environment variable resolution.
+
+Author: Mohith Kunta <mohith.kunta@gmail.com>
+GitHub: https://github.com/m-kunta
+"""
 
 import os
 import re

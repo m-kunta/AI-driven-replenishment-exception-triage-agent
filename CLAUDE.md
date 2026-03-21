@@ -10,7 +10,7 @@ AI-powered agentic system that ingests replenishment exceptions from retail plan
 
 ```
 Layer 1: Ingestion & Normalization    ← BUILT (CSV adapter + normalizer)
-Layer 2: Context Enrichment           ← NOT STARTED
+Layer 2: Context Enrichment           ← IN PROGRESS (DataLoader implemented; engine in progress)
 Layer 3: Claude Reasoning Engine      ← NOT STARTED
 Layer 4: Routing, Alerting & Output   ← NOT STARTED
 ```
@@ -38,6 +38,7 @@ python -m pytest tests/ -v               # run tests
 
 ```bash
 pytest tests/test_ingestion.py -v        # 25 tests, all passing
+pytest tests/test_enrichment.py -v       # DataLoader enrichment tests passing
 python scripts/generate_sample_data.py   # reproducible (fixed seed=42)
 ```
 
@@ -83,10 +84,16 @@ The generated sample data includes intentional scenarios for testing triage qual
 - **Vendor pattern:** 14 exceptions from VND-400 (CleanHome Distributors, fill rate 72%)
 - **LOW priority:** 5 exceptions with high variance but zero business risk (Tier 4 stores, non-perishable)
 
+## Current Scope Notes
+
+- `src/enrichment/data_loader.py` is implemented and validated by tests.
+- `src/enrichment/engine.py` exists as a scaffold; full enrichment join/calculation behavior remains to be completed.
+- `scripts/run_triage.py` is not yet present; use module-level tests and sample generation for current verification.
+
 ## Implementation Patterns
 
 - **Adapters** return raw `List[Dict]` — normalizer handles all type coercion
 - **Normalizer** dedup key: `(item_id, store_id, exception_type, exception_date)`
 - **Quarantine** writes invalid records to `output/logs/quarantine_{date}_{batch_id}.json`
 - **Field mapping** in config allows source field names to differ from canonical names
-- All imports use `from __future__ import annotations` for Python 3.9 compatibility
+- All imports use `from __future__ import annotations` for Python 3.9+ compatibility

@@ -1,4 +1,8 @@
-"""Abstract base class for all ingestion adapters."""
+"""Abstract base class for all ingestion adapters.
+
+Author: Mohith Kunta <mohith.kunta@gmail.com>
+GitHub: https://github.com/m-kunta
+"""
 
 from abc import ABC, abstractmethod
 from typing import Dict, List

@@ -5,6 +5,9 @@ retail supply chain data. Uses a fixed random seed for reproducibility.
 
 Usage:
     python scripts/generate_sample_data.py
+
+Author: Mohith Kunta <mohith.kunta@gmail.com>
+GitHub: https://github.com/m-kunta
 """
 
 from __future__ import annotations

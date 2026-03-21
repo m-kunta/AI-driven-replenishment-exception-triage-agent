@@ -1,4 +1,8 @@
-"""Schema validation utilities for canonical and enriched exception schemas."""
+"""Schema validation utilities for canonical and enriched exception schemas.
+
+Author: Mohith Kunta <mohith.kunta@gmail.com>
+GitHub: https://github.com/m-kunta
+"""
 
 import json
 from pathlib import Path

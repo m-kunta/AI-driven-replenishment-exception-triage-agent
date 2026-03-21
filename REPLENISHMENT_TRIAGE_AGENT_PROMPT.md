@@ -17,6 +17,10 @@ Build a production-grade, AI-powered agentic system that ingests replenishment e
 
 **Build environment:** Claude Code or Antigravity agentic workflow engine.
 
+**Important:** This document is a forward-looking implementation specification across all phases.
+Some commands and files in later phases (for example `scripts/run_triage.py`) are targets and
+may not exist in the current repository state until those phases are implemented.
+
 ---
 
 ## ARCHITECTURE — FOUR LAYERS
@@ -954,8 +958,10 @@ def run_triage_pipeline(config_path: str = "config/config.yaml", run_date: str =
 
 **Create `scripts/run_triage.py` CLI:**
 
+Future-state CLI usage after Task 7.1 is implemented:
+
 ```bash
-python scripts/run_triage.py [OPTIONS]
+# python scripts/run_triage.py [OPTIONS]  # available after Task 7.1
 
 Options:
   --config PATH          Path to config YAML (default: config/config.yaml)
@@ -1063,7 +1069,7 @@ Comprehensive README with:
 Apply these standards throughout the project:
 
 **Python:**
-- Python 3.11+
+- Python 3.9+ (3.11+ recommended)
 - Type hints on all function signatures
 - Dataclasses for all schema objects (`CanonicalException`, `EnrichedExceptionSchema`, `TriageResult`, `TriageRunResult`, `MacroPatternReport`)
 - `loguru` for structured logging (log level, timestamp, module, message)
@@ -1152,8 +1158,8 @@ cp .env.example .env
 # 2. Generate sample data
 python scripts/generate_sample_data.py
 
-# 3. Run full triage on sample data (no alerts)
-python scripts/run_triage.py --sample --no-alerts --verbose
+# 3. Run full triage on sample data (no alerts) — after Task 7.1 implementation
+# python scripts/run_triage.py --sample --no-alerts --verbose
 
 # 4. View morning briefing
 cat output/briefings/briefing_$(date +%Y-%m-%d).md

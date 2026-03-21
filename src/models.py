@@ -1,4 +1,8 @@
-"""Pydantic models for all data schemas used across the triage pipeline."""
+"""Pydantic models for all data schemas used across the triage pipeline.
+
+Author: Mohith Kunta <mohith.kunta@gmail.com>
+GitHub: https://github.com/m-kunta
+"""
 
 from __future__ import annotations
 
