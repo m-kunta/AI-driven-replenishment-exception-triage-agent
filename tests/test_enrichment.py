@@ -79,6 +79,56 @@ SAMPLE_DIR = Path(__file__).parent.parent / "data" / "sample"
 REGIONAL_SIGNALS = Path(__file__).parent.parent / "data" / "regional_signals.json"
 
 
+class TestDataLoaderHelpers:
+    """Unit tests for the private type-coercion helpers."""
+
+    def test_to_float_valid(self):
+        from src.enrichment.data_loader import _to_float
+        assert _to_float("3.14") == pytest.approx(3.14)
+        assert _to_float("0") == pytest.approx(0.0)
+        assert _to_float("1e3") == pytest.approx(1000.0)
+
+    def test_to_float_empty_or_none(self):
+        from src.enrichment.data_loader import _to_float
+        assert _to_float("") is None
+        assert _to_float(None) is None
+        assert _to_float("  ") is None
+
+    def test_to_float_invalid(self):
+        from src.enrichment.data_loader import _to_float
+        assert _to_float("abc") is None
+        assert _to_float("N/A") is None
+
+    def test_to_int_rounds_float_string(self):
+        from src.enrichment.data_loader import _to_int
+        assert _to_int("1.0") == 1
+        assert _to_int("5.9") == 5
+
+    def test_to_int_empty_or_none(self):
+        from src.enrichment.data_loader import _to_int
+        assert _to_int("") is None
+        assert _to_int(None) is None
+
+    def test_to_bool_truthy_values(self):
+        from src.enrichment.data_loader import _to_bool
+        assert _to_bool("True") is True
+        assert _to_bool("true") is True
+        assert _to_bool("1") is True
+        assert _to_bool("yes") is True
+
+    def test_to_bool_falsy_values(self):
+        from src.enrichment.data_loader import _to_bool
+        assert _to_bool("False") is False
+        assert _to_bool("false") is False
+        assert _to_bool("0") is False
+        assert _to_bool("no") is False
+
+    def test_to_bool_empty_or_none(self):
+        from src.enrichment.data_loader import _to_bool
+        assert _to_bool("") is None
+        assert _to_bool(None) is None
+
+
 class TestDataLoader:
     def test_data_loader_loads_all_sources(self):
         """All 6 lookup dicts are non-empty after .load() against sample data."""
@@ -197,6 +247,37 @@ class TestDataLoader:
         # STR-002 has an empty competitor_event in the sample data
         store = data.store_master.get("STR-002", {})
         assert store.get("competitor_event") is None
+
+    def test_empty_csv_produces_empty_dict(self, tmp_path):
+        """A CSV file with only a header row (no data) loads as an empty dict."""
+        header_only = tmp_path / "stores.csv"
+        header_only.write_text("store_id,store_name,tier,weekly_sales_k,region,competitor_proximity_miles,competitor_event\n")
+        loader = DataLoader(
+            store_master_path=str(header_only),
+            item_master_path=str(SAMPLE_DIR / "item_master_sample.csv"),
+            promo_calendar_path=str(SAMPLE_DIR / "promo_calendar_sample.csv"),
+            vendor_performance_path=str(SAMPLE_DIR / "vendor_performance_sample.csv"),
+            dc_inventory_path=str(SAMPLE_DIR / "dc_inventory_sample.csv"),
+            regional_signals_path=str(REGIONAL_SIGNALS),
+        )
+        data = loader.load()
+        assert data.store_master == {}
+
+    def test_multiple_promos_for_same_item_store_loaded_as_list(self):
+        """When the same (item_id, store_id) has multiple promo rows, all are stored."""
+        loader = DataLoader(
+            store_master_path=str(SAMPLE_DIR / "store_master_sample.csv"),
+            item_master_path=str(SAMPLE_DIR / "item_master_sample.csv"),
+            promo_calendar_path=str(SAMPLE_DIR / "promo_calendar_sample.csv"),
+            vendor_performance_path=str(SAMPLE_DIR / "vendor_performance_sample.csv"),
+            dc_inventory_path=str(SAMPLE_DIR / "dc_inventory_sample.csv"),
+            regional_signals_path=str(REGIONAL_SIGNALS),
+        )
+        data = loader.load()
+        # All promo calendar values must be lists (even single-entry combos)
+        for promos in data.promo_calendar.values():
+            assert isinstance(promos, list)
+            assert len(promos) >= 1
 
 
 
@@ -400,6 +481,173 @@ class TestEnrichmentEngine:
 
         assert result.enrichment_confidence == EnrichmentConfidence.LOW
         assert len(result.missing_data_fields) >= 3
+
+    def test_enrich_empty_list(self, engine):
+        """enrich([]) returns an empty list without raising."""
+        result = engine.enrich([])
+        assert result == []
+
+    def test_lead_time_days_negative_when_receipt_date_in_past(self, engine):
+        """ITM-1001 next_receipt_date=2026-03-17 < ref_date=2026-03-18 → lead_time_days=-1."""
+        exc = _make_exception(item_id="ITM-1001")
+        result = engine.enrich([exc])[0]
+        # 2026-03-17 − 2026-03-18 = -1 day
+        assert result.lead_time_days == -1
+
+    def test_next_delivery_date_populated(self, engine):
+        """ITM-1007 next_receipt_date=2026-03-20 → next_delivery_date=date(2026,3,20)."""
+        from datetime import date as dt
+        exc = _make_exception(item_id="ITM-1007")
+        result = engine.enrich([exc])[0]
+        assert result.next_delivery_date == dt(2026, 3, 20)
+
+    def test_subcategory_and_additional_item_fields_populated(self, engine):
+        """ITM-1001 → subcategory='Milk', margin_pct=0.28, velocity_rank=1."""
+        exc = _make_exception(item_id="ITM-1001")
+        result = engine.enrich([exc])[0]
+        assert result.subcategory == "Milk"
+        assert result.margin_pct == pytest.approx(0.28)
+        assert result.velocity_rank == 1
+
+    def test_promo_end_date_and_tpr_depth_on_result(self, engine):
+        """Active promo for ITM-1001/STR-001 → promo_end_date and tpr_depth_pct populated."""
+        from datetime import date as dt
+        exc = _make_exception(item_id="ITM-1001", store_id="STR-001")
+        result = engine.enrich([exc])[0]
+        assert result.promo_end_date is not None
+        assert isinstance(result.promo_end_date, dt)
+        assert result.tpr_depth_pct == pytest.approx(0.25)
+
+    def test_regional_no_disruption_returns_false(self, engine):
+        """SOUTHEAST has no signal entry → regional_disruption_flag=False."""
+        exc = _make_exception(store_id="STR-010")  # SOUTHEAST store
+        result = engine.enrich([exc])[0]
+        assert result.regional_disruption_flag is False
+        assert result.regional_disruption_description is None
+
+    def test_financial_dos_exceeds_7_returns_zero(self, engine):
+        """days_of_supply >= 7.0 → days_of_exposure is clamped to 0 → est_lost_sales=0.0."""
+        exc = _make_exception(item_id="ITM-1001", store_id="STR-001", days_of_supply=7.0)
+        result = engine.enrich([exc])[0]
+        assert result.est_lost_sales_value == pytest.approx(0.0)
+
+    def test_financial_dos_above_7_returns_zero(self, engine):
+        """days_of_supply > 7.0 → est_lost_sales_value=0.0 (fully covered)."""
+        exc = _make_exception(item_id="ITM-1001", store_id="STR-001", days_of_supply=14.0)
+        result = engine.enrich([exc])[0]
+        assert result.est_lost_sales_value == pytest.approx(0.0)
+
+    def test_financial_no_retail_price_returns_zero(self, engine):
+        """Unknown item → retail_price=None → est_lost_sales_value and promo_margin_at_risk both 0.0."""
+        exc = _make_exception(item_id="ITM-XXXX", store_id="STR-001")
+        result = engine.enrich([exc])[0]
+        assert result.est_lost_sales_value == pytest.approx(0.0)
+        assert result.promo_margin_at_risk == pytest.approx(0.0)
+
+    def test_open_po_inbound_false_when_no_open_pos(self):
+        """open_po_inbound=False when vendor has open_pos_count=0."""
+        from src.enrichment.data_loader import LoadedData
+        from src.enrichment.engine import EnrichmentEngine
+
+        data = LoadedData()
+        data.store_master["STR-T01"] = {
+            "store_name": "Test Store",
+            "tier": 2,
+            "weekly_sales_k": 500.0,
+            "region": "SOUTHWEST",
+            "competitor_proximity_miles": 2.0,
+            "competitor_event": None,
+        }
+        data.item_master["ITM-T01"] = {
+            "item_name": "Test Widget",
+            "category": "Test",
+            "subcategory": "Unit",
+            "velocity_rank": 5,
+            "perishable": False,
+            "retail_price": 10.0,
+            "margin_pct": 0.30,
+            "vendor_id": "VND-T01",
+        }
+        data.vendor_performance["VND-T01"] = {
+            "vendor_name": "Zero PO Vendor",
+            "fill_rate_90d": 0.95,
+            "late_shipments_30d": 0,
+            "open_pos_count": 0,
+            "last_incident_date": None,
+        }
+        engine = EnrichmentEngine(data, reference_date=REF_DATE)
+        exc = _make_exception(item_id="ITM-T01", store_id="STR-T01")
+        result = engine.enrich([exc])[0]
+
+        assert result.open_po_inbound is False
+        assert result.vendor_fill_rate_90d == pytest.approx(0.95)
+
+    def test_margin_pct_none_with_promo_gives_zero_margin_at_risk(self):
+        """promo_active=True but margin_pct=None → promo_margin_at_risk=0.0."""
+        from src.enrichment.data_loader import LoadedData
+        from src.enrichment.engine import EnrichmentEngine
+
+        data = LoadedData()
+        data.store_master["STR-T02"] = {
+            "store_name": "T Store",
+            "tier": 1,
+            "weekly_sales_k": 800.0,
+            "region": "WEST",
+            "competitor_proximity_miles": 1.0,
+            "competitor_event": None,
+        }
+        data.item_master["ITM-T02"] = {
+            "item_name": "No Margin Item",
+            "category": "Test",
+            "subcategory": "Widget",
+            "velocity_rank": 3,
+            "perishable": False,
+            "retail_price": 8.0,
+            "margin_pct": None,  # ← no margin data
+            "vendor_id": None,
+        }
+        data.promo_calendar[("ITM-T02", "STR-T02")] = [{
+            "promo_type": "TPR",
+            "promo_start_date": "2026-03-15",
+            "promo_end_date": "2026-03-25",
+            "tpr_depth_pct": 0.20,
+            "circular_feature": False,
+        }]
+        engine = EnrichmentEngine(data, reference_date=REF_DATE)
+        exc = _make_exception(item_id="ITM-T02", store_id="STR-T02", days_of_supply=0.0)
+        result = engine.enrich([exc])[0]
+
+        assert result.promo_active is True
+        assert result.est_lost_sales_value > 0.0
+        assert result.promo_margin_at_risk == pytest.approx(0.0)
+
+    def test_confidence_medium(self, loaded_data):
+        """1–4 missing tracked fields (with custom low threshold=5) → MEDIUM confidence."""
+        from src.enrichment.engine import EnrichmentEngine
+
+        # Unknown store → store_tier, weekly_store_sales_k, region, regional_disruption_flag = 4 nulls
+        # null_threshold_low=5 means 4 nulls → MEDIUM (not LOW), null_threshold_medium=1 → not HIGH
+        engine = EnrichmentEngine(
+            loaded_data,
+            reference_date=REF_DATE,
+            null_threshold_low=5,
+            null_threshold_medium=1,
+        )
+        exc = _make_exception(item_id="ITM-1001", store_id="STR-UNKNOWN")
+        result = engine.enrich([exc])[0]
+
+        assert result.enrichment_confidence == EnrichmentConfidence.MEDIUM
+
+    def test_missing_data_fields_contains_expected_names(self, engine):
+        """Unknown store/item → missing_data_fields lists the correct tracked field names."""
+        exc = _make_exception(store_id="STR-UNKNOWN", item_id="ITM-UNKNOWN")
+        result = engine.enrich([exc])[0]
+
+        expected_missing = {"store_tier", "weekly_store_sales_k", "region", "category",
+                            "retail_price", "vendor_id", "vendor_fill_rate_90d",
+                            "open_po_inbound", "dc_inventory_days"}
+        for field in expected_missing:
+            assert field in result.missing_data_fields, f"Expected '{field}' in missing_data_fields"
 
     def test_enrich_full_sample(self, loaded_data):
         """All 120 sample exceptions enrich without error → all EnrichedExceptionSchema."""

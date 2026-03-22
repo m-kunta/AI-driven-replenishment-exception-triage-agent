@@ -133,6 +133,25 @@ class TestCsvAdapter:
         finally:
             os.unlink(tmp_path)
 
+    def test_header_only_csv_returns_empty_list(self):
+        """A CSV with only a header row produces an empty record list."""
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".csv", delete=False, encoding="utf-8"
+        ) as f:
+            f.write("item_id,store_id,exception_type\n")
+            tmp_path = f.name
+        try:
+            adapter = CsvIngestionAdapter(tmp_path)
+            records = adapter.fetch()
+            assert records == []
+        finally:
+            os.unlink(tmp_path)
+
+    def test_validate_connection_false_for_directory(self, tmp_path):
+        """validate_connection returns False when path points to a directory."""
+        adapter = CsvIngestionAdapter(str(tmp_path))
+        assert adapter.validate_connection() is False
+
 
 # --- Normalizer Tests ---
 
@@ -273,6 +292,72 @@ class TestNormalizer:
         records = [self._make_raw_record(exception_date="03/16/2026")]
         valid, _ = normalizer.normalize(records)
         assert valid[0].exception_date == date(2026, 3, 16)
+
+    def test_date_format_dd_mm_yyyy(self, tmp_path):
+        """dd-mm-yyyy format (third format in _parse_date) is parsed correctly."""
+        normalizer = Normalizer(quarantine_dir=str(tmp_path))
+        records = [self._make_raw_record(exception_date="16-03-2026")]
+        valid, _ = normalizer.normalize(records)
+        assert valid[0].exception_date == date(2026, 3, 16)
+
+    def test_normalize_empty_list(self, tmp_path):
+        """normalize([]) returns ([], 0) without errors."""
+        normalizer = Normalizer(quarantine_dir=str(tmp_path))
+        valid, quarantined = normalizer.normalize([])
+        assert valid == []
+        assert quarantined == 0
+
+    def test_whitespace_stripped_from_ids(self, tmp_path):
+        """Leading/trailing whitespace in item_id and store_id is stripped."""
+        normalizer = Normalizer(quarantine_dir=str(tmp_path))
+        records = [self._make_raw_record(item_id="  ITM-1001  ", store_id=" STR-001 ")]
+        valid, _ = normalizer.normalize(records)
+        assert valid[0].item_id == "ITM-1001"
+        assert valid[0].store_id == "STR-001"
+
+    def test_source_system_defaults_to_unknown(self, tmp_path):
+        """Missing source_system field resolves to 'unknown'."""
+        normalizer = Normalizer(quarantine_dir=str(tmp_path))
+        record = self._make_raw_record()
+        del record["source_system"]
+        valid, _ = normalizer.normalize([record])
+        assert valid[0].source_system == "unknown"
+
+    def test_unparseable_date_quarantined(self, tmp_path):
+        """A record with an unparseable exception_date is quarantined, not passed through."""
+        normalizer = Normalizer(quarantine_dir=str(tmp_path))
+        records = [self._make_raw_record(exception_date="not-a-date")]
+        valid, quarantined = normalizer.normalize(records)
+        assert len(valid) == 0
+        assert quarantined == 1
+
+    def test_missing_exception_date_quarantined(self, tmp_path):
+        """exception_date is a required field — blank value causes quarantine."""
+        normalizer = Normalizer(quarantine_dir=str(tmp_path))
+        records = [self._make_raw_record(exception_date="")]
+        valid, quarantined = normalizer.normalize(records)
+        assert len(valid) == 0
+        assert quarantined == 1
+
+    def test_quarantine_reason_contains_coercion_error(self, tmp_path):
+        """Quarantine file records a coercion_error reason for a bad numeric field."""
+        normalizer = Normalizer(quarantine_dir=str(tmp_path))
+        records = [self._make_raw_record(units_on_hand="not_a_number")]
+        valid, quarantined = normalizer.normalize(records)
+        assert len(valid) == 0
+        assert quarantined == 1
+        quarantine_files = list(tmp_path.glob("quarantine_*.json"))
+        assert len(quarantine_files) == 1
+        with open(quarantine_files[0]) as f:
+            data = json.load(f)
+        assert "coercion_error" in data[0]["reason"]
+
+    def test_multiple_batches_have_different_batch_ids(self, tmp_path):
+        """Two separate normalize() calls produce different batch_ids."""
+        normalizer = Normalizer(quarantine_dir=str(tmp_path))
+        valid1, _ = normalizer.normalize([self._make_raw_record()])
+        valid2, _ = normalizer.normalize([self._make_raw_record()])
+        assert valid1[0].batch_id != valid2[0].batch_id
 
 
 # --- End-to-End Integration Test ---
