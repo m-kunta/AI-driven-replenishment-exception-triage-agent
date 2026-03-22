@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__plugin_discord_discord__reply",
+      "Bash(source .venv/bin/activate)",
+      "Bash(python -m pytest tests/test_enrichment.py -v)",
+      "mcp__claude_ai_Crypto_com__get_ticker",
+      "WebSearch"
+    ]
+  }
+}
