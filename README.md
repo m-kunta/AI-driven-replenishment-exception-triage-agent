@@ -5,6 +5,7 @@
 [![Python](https://img.shields.io/badge/Python-3.9+-blue.svg)](https://www.python.org/)
 [![Pydantic](https://img.shields.io/badge/Pydantic-v2-e92063.svg)](https://docs.pydantic.dev/)
 [![Claude AI](https://img.shields.io/badge/Claude-AI-blueviolet.svg)](https://www.anthropic.com/)
+[![Gemini AI](https://img.shields.io/badge/Gemini-AI-4285F4.svg)](https://deepmind.google/technologies/gemini/)
 [![Status](https://img.shields.io/badge/Status-Work%20In%20Progress-orange.svg)](#project-status)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
@@ -12,7 +13,7 @@
 **GitHub:** [github.com/m-kunta](https://github.com/m-kunta)  
 **Domain:** Supply Chain Planning / Retail Replenishment
 
-> ⚠️ **This project is actively under development.** Layer 1 (Ingestion) is complete and tested. Layers 2–4 are in progress. See [Project Status](#project-status) for details.
+> ⚠️ **This project is actively under development.** Layers 1 (Ingestion) & 2 (Enrichment) are complete and tested. Layers 3–4 are in progress. See [Project Status](#project-status) for details.
 
 ---
 
@@ -48,7 +49,7 @@ The agent ingests raw replenishment exceptions, enriches them with 15+ contextua
 │           CSV → field mapping → type coercion → dedup            │
 │           → quarantine → CanonicalException schema               │
 ├──────────────────────────────────────────────────────────────────┤
-│  Layer 2: Context Enrichment          ← 🔧 PLANNED (stubs ready) │
+│  Layer 2: Context Enrichment          ← ✅ BUILT & TESTED       │
 │           Store master · Item master · Promo calendar            │
 │           Vendor fill rates · DC inventory · Regional signals    │
 ├──────────────────────────────────────────────────────────────────┤
@@ -98,9 +99,9 @@ AI-driven-replenishment-exception-triage-agent/
 │   │   ├── base_adapter.py        # Abstract base: fetch(), validate_connection()
 │   │   ├── csv_adapter.py         # CSV reader (BOM, delimiter, empty rows)
 │   │   └── normalizer.py          # Field mapping, coercion, dedup, quarantine
-│   ├── enrichment/                # ← Layer 2 (PLANNED — stubs in place)
-│   │   ├── data_loader.py         # TODO: load & index 6 reference datasets
-│   │   └── engine.py              # TODO: EnrichmentEngine (join + derive + score)
+│   ├── enrichment/                # ← Layer 2 (✅ BUILT & TESTED)
+│   │   ├── data_loader.py         # Loads & indexes 6 reference datasets
+│   │   └── engine.py              # EnrichmentEngine (joins + financials + scores)
 │   ├── agent/                     # ← Layer 3 (NOT STARTED)
 │   ├── output/                    # ← Layer 4 (NOT STARTED)
 │   └── utils/
@@ -121,7 +122,7 @@ AI-driven-replenishment-exception-triage-agent/
 │   └── regional_signals.json      # 2 active disruptions
 ├── tests/
 │   ├── test_ingestion.py          # Ingestion layer tests
-│   └── test_enrichment.py         # TODO: ~15 tests (stubs documented)
+│   └── test_enrichment.py         # 16 Layer 2 tests (100% logic coverage)
 ├── scripts/
 │   └── generate_sample_data.py    # Synthetic data generator
 ├── output/
@@ -203,20 +204,20 @@ pytest tests/test_enrichment.py -v
 
 | Layer | Status | Details |
 |---|---|---|
-| **Layer 1 — Ingestion** | ✅ Complete | CSV adapter, normalizer, 25 tests passing |
-| **Layer 2 — Enrichment** | 🛠️ In Progress | `DataLoader` implemented and tested; `EnrichmentEngine` scaffold + remaining enrichment logic in progress |
+| **Layer 1 — Ingestion** | ✅ Complete | CSV adapter, normalizer, 31 tests passing |
+| **Layer 2 — Enrichment** | ✅ Complete | `DataLoader` + `EnrichmentEngine` built and tested; 16 tests passing |
 | **Layer 3 — Claude Engine** | 🔲 Not Started | Batched inference, triage output, patterns |
 | **Layer 4 — Output & Alerts** | 🔲 Not Started | Morning briefing, Slack/email routing |
 
-### Layer 2 — What's Next
+### Layer 2 — Implementation
 
-Stub files are in place at `src/enrichment/`. The implementation plan:
+Layer 2 is fully implemented at `src/enrichment/`:
 
-| File | TODO |
+| File | Description |
 |---|---|
-| `src/enrichment/data_loader.py` | `DataLoader` — reads 6 CSVs/JSON at startup into O(1) lookup dicts |
+| `src/enrichment/data_loader.py` | `DataLoader` — reads 6 reference datasets at startup into O(1) lookup dicts |
 | `src/enrichment/engine.py` | `EnrichmentEngine` — joins each `CanonicalException` across all 6 sources, derives financial fields, assigns confidence |
-| `tests/test_enrichment.py` | ~15 tests covering each join, promo date logic, financial math, and confidence scoring |
+| `tests/test_enrichment.py` | 16 tests covering each join, promo date logic, financial math, and confidence scoring |
 
 **Join keys:**
 - `store_id` → store tier, region, competitor signal
