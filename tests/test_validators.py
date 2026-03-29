@@ -18,6 +18,7 @@ from src.utils.validators import (
     load_json_schema,
     validate_canonical_batch,
     validate_canonical_exception,
+    validate_enriched_batch,
     validate_enriched_exception,
 )
 from src.utils.exceptions import IngestionError, EnrichmentError
@@ -144,6 +145,14 @@ class TestValidateEnrichedException:
         assert result.store_tier is None
         assert result.region is None
 
+    def test_validate_enriched_exception_rejects_extra_fields(self):
+        with pytest.raises(EnrichmentError, match="validation failed"):
+            validate_enriched_exception(_enriched_dict(unexpected_field="boom"))
+
+    def test_validate_enriched_exception_accepts_enum_promo_type(self):
+        result = validate_enriched_exception(_enriched_dict(promo_type="TPR"))
+        assert result.promo_type.value == "TPR"
+
 
 # ---------------------------------------------------------------------------
 # Tests: validate_canonical_batch
@@ -212,3 +221,51 @@ class TestLoadJsonSchema:
     def test_missing_schema_file_raises_file_not_found(self):
         with pytest.raises(FileNotFoundError):
             load_json_schema("nonexistent_schema.json")
+
+    def test_loads_enriched_exception_schema(self):
+        schema = load_json_schema("enriched_exception_schema.json")
+        assert isinstance(schema, dict)
+        assert schema.get("title") == "EnrichedExceptionSchema"
+        assert "properties" in schema
+
+    def test_enriched_schema_requires_day_of_week_demand_index_property(self):
+        schema = load_json_schema("enriched_exception_schema.json")
+        assert "day_of_week_demand_index" in schema["properties"]
+
+
+# ---------------------------------------------------------------------------
+# Tests: validate_enriched_batch
+# ---------------------------------------------------------------------------
+
+
+class TestValidateEnrichedBatch:
+    def test_mixed_valid_and_invalid_records(self):
+        valid, invalid = validate_enriched_batch(
+            [
+                _enriched_dict(),
+                _enriched_dict(unexpected_field="boom"),
+            ]
+        )
+
+        assert len(valid) == 1
+        assert len(invalid) == 1
+        assert invalid[0]["row_index"] == 1
+
+    def test_empty_batch_returns_empty_lists(self):
+        valid, invalid = validate_enriched_batch([])
+        assert valid == []
+        assert invalid == []
+
+    def test_all_invalid_records_returns_empty_valid_list(self):
+        valid, invalid = validate_enriched_batch([
+            _enriched_dict(unexpected_field="x"),
+            _enriched_dict(unexpected_field="y"),
+        ])
+        assert len(valid) == 0
+        assert len(invalid) == 2
+
+    def test_invalid_record_includes_row_index_and_errors(self):
+        _, invalid = validate_enriched_batch([_enriched_dict(unexpected_field="boom")])
+        assert "row_index" in invalid[0]
+        assert "errors" in invalid[0]
+        assert invalid[0]["row_index"] == 0
