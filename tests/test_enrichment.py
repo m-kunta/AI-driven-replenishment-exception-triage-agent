@@ -482,6 +482,126 @@ class TestEnrichmentEngine:
         assert result.enrichment_confidence == EnrichmentConfidence.LOW
         assert len(result.missing_data_fields) >= 3
 
+    def test_validation_error_falls_back_low_confidence_with_failure_sentinel(self):
+        """Invalid enrichment data should fall back to LOW confidence with a failure flag."""
+        from src.enrichment.engine import EnrichmentEngine
+
+        data = LoadedData()
+        data.store_master["STR-FALLBACK"] = {
+            "store_name": "Fallback Store",
+            "tier": 2,
+            "weekly_sales_k": 500.0,
+            "region": "NORTHEAST",
+            "competitor_proximity_miles": 1.2,
+            "competitor_event": None,
+        }
+        data.item_master["ITM-FALLBACK"] = {
+            "item_name": "Fallback Item",
+            "category": "Test",
+            "subcategory": "Unit",
+            "velocity_rank": 9,
+            "perishable": False,
+            "retail_price": 4.25,
+            "margin_pct": 0.15,
+            "vendor_id": "VND-FALLBACK",
+        }
+        data.vendor_performance["VND-FALLBACK"] = {
+            "vendor_name": "Fallback Vendor",
+            "fill_rate_90d": 0.91,
+            "late_shipments_30d": 0,
+            "open_pos_count": 0,
+            "last_incident_date": None,
+        }
+        data.dc_inventory["ITM-FALLBACK"] = {
+            "dc_id": "DC-1",
+            "units_on_hand": 12,
+            "days_of_supply": 21.0,
+            "next_receipt_date": "2026-03-20",
+        }
+        data.promo_calendar[("ITM-FALLBACK", "STR-FALLBACK")] = [{
+            "promo_type": "INVALID_PROMO_TYPE",
+            "promo_start_date": "2026-03-15",
+            "promo_end_date": "2026-03-25",
+            "tpr_depth_pct": 0.20,
+            "circular_feature": False,
+        }]
+
+        engine = EnrichmentEngine(data, reference_date=REF_DATE)
+        exc = _make_exception(
+            item_id="ITM-FALLBACK",
+            item_name="Fallback Item",
+            store_id="STR-FALLBACK",
+            store_name="Fallback Store",
+            days_of_supply=0.0,
+        )
+
+        result = engine.enrich([exc])[0]
+
+        assert result.exception_id == exc.exception_id
+        assert result.item_id == "ITM-FALLBACK"
+        assert result.store_id == "STR-FALLBACK"
+        assert result.enrichment_confidence == EnrichmentConfidence.LOW
+        assert "enrichment_failed" in result.missing_data_fields
+
+    def test_valid_promo_type_uses_normal_enrichment_path(self):
+        """Valid enrichment data should not trigger the failure sentinel or low confidence."""
+        from src.enrichment.engine import EnrichmentEngine
+
+        data = LoadedData()
+        data.store_master["STR-FALLBACK"] = {
+            "store_name": "Fallback Store",
+            "tier": 2,
+            "weekly_sales_k": 500.0,
+            "region": "NORTHEAST",
+            "competitor_proximity_miles": 1.2,
+            "competitor_event": None,
+        }
+        data.item_master["ITM-FALLBACK"] = {
+            "item_name": "Fallback Item",
+            "category": "Test",
+            "subcategory": "Unit",
+            "velocity_rank": 9,
+            "perishable": False,
+            "retail_price": 4.25,
+            "margin_pct": 0.15,
+            "vendor_id": "VND-FALLBACK",
+        }
+        data.vendor_performance["VND-FALLBACK"] = {
+            "vendor_name": "Fallback Vendor",
+            "fill_rate_90d": 0.91,
+            "late_shipments_30d": 0,
+            "open_pos_count": 0,
+            "last_incident_date": None,
+        }
+        data.dc_inventory["ITM-FALLBACK"] = {
+            "dc_id": "DC-1",
+            "units_on_hand": 12,
+            "days_of_supply": 21.0,
+            "next_receipt_date": "2026-03-20",
+        }
+        data.promo_calendar[("ITM-FALLBACK", "STR-FALLBACK")] = [{
+            "promo_type": "TPR",
+            "promo_start_date": "2026-03-15",
+            "promo_end_date": "2026-03-25",
+            "tpr_depth_pct": 0.20,
+            "circular_feature": False,
+        }]
+
+        engine = EnrichmentEngine(data, reference_date=REF_DATE)
+        exc = _make_exception(
+            item_id="ITM-FALLBACK",
+            item_name="Fallback Item",
+            store_id="STR-FALLBACK",
+            store_name="Fallback Store",
+            days_of_supply=0.0,
+        )
+
+        result = engine.enrich([exc])[0]
+
+        assert result.enrichment_confidence == EnrichmentConfidence.HIGH
+        assert "enrichment_failed" not in result.missing_data_fields
+        assert result.promo_active is True
+
     def test_enrich_empty_list(self, engine):
         """enrich([]) returns an empty list without raising."""
         result = engine.enrich([])
@@ -700,4 +820,3 @@ class TestEnrichmentEngine:
         assert len(enriched) == 120
         for item in enriched:
             assert isinstance(item, EnrichedExceptionSchema)
-

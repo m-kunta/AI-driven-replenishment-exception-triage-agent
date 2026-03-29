@@ -122,7 +122,10 @@ class EnrichedExceptionSchema(BaseModel):
     promo_margin_at_risk: Optional[float] = Field(default=None, description="Promo margin at risk in USD")
     regional_disruption_flag: Optional[bool] = Field(default=None, description="Whether regional disruption is active")
     regional_disruption_description: Optional[str] = Field(default=None, description="Description of regional disruption")
-    missing_data_fields: List[str] = Field(default_factory=list, description="Field names that are null")
+    missing_data_fields: List[str] = Field(
+        default_factory=list,
+        description="Missing enrichment field names or sentinel flags such as 'enrichment_failed'",
+    )
     enrichment_confidence: EnrichmentConfidence = Field(default=EnrichmentConfidence.HIGH, description="Confidence based on missing data count")
 
 

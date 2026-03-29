@@ -129,9 +129,9 @@ class EnrichmentEngine:
             except Exception as e:  # pylint: disable=broad-except
                 logger.error(
                     f"Unexpected error enriching {exc.exception_id}: {e}. "
-                    "Returning base fields with null enrichment."
+                    "Returning a low-confidence fallback record."
                 )
-                enriched = EnrichedExceptionSchema(**exc.model_dump())
+                enriched = self._build_failed_enrichment_record(exc)
             results.append(enriched)
         logger.info(f"Enriched {len(results)} exceptions (ref_date={self._ref_date})")
         return results
@@ -364,3 +364,13 @@ class EnrichmentEngine:
     def _compute_day_of_week_demand_index(self, exception_date: date) -> float:
         """Return a deterministic day-of-week demand index from the exception date."""
         return _DAY_OF_WEEK_DEMAND_INDEX[exception_date.weekday()]
+
+    def _build_failed_enrichment_record(
+        self, exc: CanonicalException
+    ) -> EnrichedExceptionSchema:
+        """Return an explicit low-confidence record when enrichment fails."""
+        return EnrichedExceptionSchema(
+            **exc.model_dump(),
+            missing_data_fields=["enrichment_failed"],
+            enrichment_confidence=EnrichmentConfidence.LOW,
+        )
