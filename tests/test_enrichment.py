@@ -649,6 +649,37 @@ class TestEnrichmentEngine:
         for field in expected_missing:
             assert field in result.missing_data_fields, f"Expected '{field}' in missing_data_fields"
 
+    def test_day_of_week_demand_index_populated_from_exception_date(self, engine):
+        """Wednesday 2026-03-18 should produce a deterministic demand index."""
+        exc = _make_exception(exception_date=date(2026, 3, 18))
+        result = engine.enrich([exc])[0]
+
+        assert result.day_of_week_demand_index == pytest.approx(1.05)
+
+    def test_day_of_week_demand_index_included_in_full_sample_enrichment(self):
+        """Full-sample enrichment should populate day_of_week_demand_index for every row."""
+        from src.ingestion.csv_adapter import CsvIngestionAdapter
+        from src.ingestion.normalizer import Normalizer
+        from src.enrichment.data_loader import DataLoader
+        from src.enrichment.engine import EnrichmentEngine
+
+        records = CsvIngestionAdapter(str(SAMPLE_DIR / "exceptions_sample.csv")).fetch()
+        canonical, quarantined = Normalizer().normalize(records)
+        assert quarantined == 0
+
+        loaded = DataLoader(
+            store_master_path=str(SAMPLE_DIR / "store_master_sample.csv"),
+            item_master_path=str(SAMPLE_DIR / "item_master_sample.csv"),
+            promo_calendar_path=str(SAMPLE_DIR / "promo_calendar_sample.csv"),
+            vendor_performance_path=str(SAMPLE_DIR / "vendor_performance_sample.csv"),
+            dc_inventory_path=str(SAMPLE_DIR / "dc_inventory_sample.csv"),
+            regional_signals_path=str(REGIONAL_SIGNALS),
+        ).load()
+        enriched = EnrichmentEngine(loaded, reference_date=REF_DATE).enrich(canonical)
+
+        assert len(enriched) == 120
+        assert all(item.day_of_week_demand_index is not None for item in enriched)
+
     def test_enrich_full_sample(self, loaded_data):
         """All 120 sample exceptions enrich without error → all EnrichedExceptionSchema."""
         from src.enrichment.engine import EnrichmentEngine
