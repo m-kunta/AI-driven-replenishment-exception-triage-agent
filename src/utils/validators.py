@@ -69,6 +69,33 @@ def validate_enriched_exception(data: Dict[str, Any]) -> EnrichedExceptionSchema
         raise EnrichmentError(f"Enriched exception validation failed: {e}") from e
 
 
+def validate_enriched_batch(
+    records: List[Dict[str, Any]]
+) -> tuple[List[EnrichedExceptionSchema], List[Dict[str, Any]]]:
+    """Validate a batch of records against the EnrichedExceptionSchema.
+
+    Args:
+        records: List of dictionaries to validate.
+
+    Returns:
+        Tuple of (valid EnrichedExceptionSchema list, list of invalid records with error details).
+    """
+    valid = []
+    invalid = []
+    for i, record in enumerate(records):
+        try:
+            valid.append(EnrichedExceptionSchema.model_validate(record))
+        except ValidationError as e:
+            invalid.append(
+                {
+                    "row_index": i,
+                    "record": record,
+                    "errors": e.errors(),
+                }
+            )
+    return valid, invalid
+
+
 def validate_canonical_batch(records: List[Dict[str, Any]]) -> tuple[List[CanonicalException], List[Dict[str, Any]]]:
     """Validate a batch of records against the CanonicalException schema.
 
