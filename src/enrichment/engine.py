@@ -44,18 +44,36 @@ from loguru import logger
 from src.enrichment.data_loader import LoadedData
 from src.models import CanonicalException, EnrichedExceptionSchema, EnrichmentConfidence
 
+# Day-of-week demand multipliers relative to the weekly average (1.0 = average day).
+# Values reflect typical retail demand patterns: weekend lift, mid-week shoulder.
+# These are business constants — calibrate against historical sales data before
+# using in financial impact calculations for Layer 3.
 _DAY_OF_WEEK_DEMAND_INDEX = {
-    0: 0.93,  # Monday
-    1: 0.98,  # Tuesday
-    2: 1.05,  # Wednesday
-    3: 1.08,  # Thursday
-    4: 1.15,  # Friday
-    5: 1.22,  # Saturday
-    6: 1.10,  # Sunday
+    0: 0.93,  # Monday   — post-weekend dip
+    1: 0.98,  # Tuesday  — recovery begins
+    2: 1.05,  # Wednesday — mid-week normalisation
+    3: 1.08,  # Thursday  — pre-weekend stock-up starts
+    4: 1.15,  # Friday    — peak pre-weekend demand
+    5: 1.22,  # Saturday  — highest traffic day
+    6: 1.10,  # Sunday    — strong but below Saturday
 }
 
 # ---------------------------------------------------------------------------
 # Tracked enrichment fields for null-counting / confidence scoring
+#
+# Only fields that depend on external reference-data joins are tracked here.
+# If a join misses (e.g., store_id not in store_master), the field resolves to
+# None and is counted toward the enrichment_confidence downgrade.
+#
+# Excluded from tracking (intentionally):
+#   - competitor_proximity_miles / competitor_event: present only for select stores
+#   - subcategory: optional merchandising metadata
+#   - promo_type / promo_end_date / tpr_depth_pct: derived from promo_active; only
+#     meaningful when promo_active is True
+#   - next_delivery_date / vendor_id: used for context, not core confidence signal
+#   - day_of_week_demand_index: always computed from exception_date; never None
+#   - est_lost_sales_value / promo_margin_at_risk: computed fields, not lookups
+#   - regional_disruption_description: present only when flag is True
 # ---------------------------------------------------------------------------
 _TRACKED_ENRICHMENT_FIELDS: List[str] = [
     "store_tier",
@@ -362,13 +380,24 @@ class EnrichmentEngine:
         return EnrichmentConfidence.HIGH
 
     def _compute_day_of_week_demand_index(self, exception_date: date) -> float:
-        """Return a deterministic day-of-week demand index from the exception date."""
+        """Return the demand index for the day of the week of exception_date.
+
+        Uses date.weekday() (0=Monday … 6=Sunday), which is always a key in
+        _DAY_OF_WEEK_DEMAND_INDEX, so the lookup never raises KeyError.
+        """
         return _DAY_OF_WEEK_DEMAND_INDEX[exception_date.weekday()]
 
     def _build_failed_enrichment_record(
         self, exc: CanonicalException
     ) -> EnrichedExceptionSchema:
-        """Return an explicit low-confidence record when enrichment fails."""
+        """Build a safe fallback record when _enrich_one raises an unexpected error.
+
+        All optional enrichment fields default to None. The sentinel value
+        "enrichment_failed" in missing_data_fields signals to Layer 3 that
+        the enrichment pipeline itself failed (not just a missing lookup), so
+        the AI reasoning layer can handle it with appropriate caution rather
+        than treating it as a normally low-confidence record.
+        """
         return EnrichedExceptionSchema(
             **exc.model_dump(),
             missing_data_fields=["enrichment_failed"],
