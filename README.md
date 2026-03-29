@@ -13,7 +13,7 @@
 **GitHub:** [github.com/m-kunta](https://github.com/m-kunta)  
 **Domain:** Supply Chain Planning / Retail Replenishment
 
-> ⚠️ **This project is actively under development.** Layers 1 (Ingestion) & 2 (Enrichment) are complete and tested. Layers 3–4 are in progress. See [Project Status](#project-status) for details.
+> This project is actively under development. Layer 1 is complete, and Layer 2 now provides a stable enriched-data handoff contract for the future AI layer. Layers 3-4 are not implemented yet.
 
 ---
 
@@ -49,7 +49,7 @@ The agent ingests raw replenishment exceptions, enriches them with 15+ contextua
 │           CSV → field mapping → type coercion → dedup            │
 │           → quarantine → CanonicalException schema               │
 ├──────────────────────────────────────────────────────────────────┤
-│  Layer 2: Context Enrichment          ← ✅ BUILT & TESTED       │
+│  Layer 2: Context Enrichment          ← COMPLETE (stable handoff contract for Layer 3) │
 │           Store master · Item master · Promo calendar            │
 │           Vendor fill rates · DC inventory · Regional signals    │
 ├──────────────────────────────────────────────────────────────────┤
@@ -122,7 +122,7 @@ AI-driven-replenishment-exception-triage-agent/
 │   └── regional_signals.json      # 2 active disruptions
 ├── tests/
 │   ├── test_ingestion.py          # Ingestion layer tests
-│   └── test_enrichment.py         # 16 Layer 2 tests (100% logic coverage)
+│   └── test_enrichment.py         # Layer 2 enrichment tests
 ├── scripts/
 │   └── generate_sample_data.py    # Synthetic data generator
 ├── output/
@@ -178,13 +178,13 @@ python scripts/generate_sample_data.py
 ### Run Tests
 
 ```bash
-pytest tests/ -v
-# 31 tests — all should pass
+./.venv/bin/pytest tests/ -v
+# current suite should pass locally
 ```
 
 ### Verify Current Implemented Scope
 
-The repository currently includes production-ready ingestion and a working enrichment data loader foundation.  
+The repository currently includes production-ready ingestion and a complete Layer 2 enrichment engine with a stable handoff contract for Layer 3.
 These are the fastest checks to verify your environment end-to-end:
 
 ```bash
@@ -204,8 +204,8 @@ pytest tests/test_enrichment.py -v
 
 | Layer | Status | Details |
 |---|---|---|
-| **Layer 1 — Ingestion** | ✅ Complete | CSV adapter, normalizer, 31 tests passing |
-| **Layer 2 — Enrichment** | ✅ Complete | `DataLoader` + `EnrichmentEngine` built and tested; 16 tests passing |
+| **Layer 1 — Ingestion** | ✅ Complete | CSV adapter, normalizer, 25 tests passing |
+| **Layer 2 — Enrichment** | ✅ Stable handoff contract | `DataLoader` + `EnrichmentEngine` emit validated enriched exceptions for Layer 3 |
 | **Layer 3 — Claude Engine** | 🔲 Not Started | Batched inference, triage output, patterns |
 | **Layer 4 — Output & Alerts** | 🔲 Not Started | Morning briefing, Slack/email routing |
 
@@ -217,7 +217,7 @@ Layer 2 is fully implemented at `src/enrichment/`:
 |---|---|
 | `src/enrichment/data_loader.py` | `DataLoader` — reads 6 reference datasets at startup into O(1) lookup dicts |
 | `src/enrichment/engine.py` | `EnrichmentEngine` — joins each `CanonicalException` across all 6 sources, derives financial fields, assigns confidence |
-| `tests/test_enrichment.py` | 16 tests covering each join, promo date logic, financial math, and confidence scoring |
+| `tests/test_enrichment.py` | Tests covering each join, promo date logic, financial math, confidence scoring, and enriched schema validation |
 
 **Join keys:**
 - `store_id` → store tier, region, competitor signal
@@ -241,7 +241,7 @@ This project is intentionally staged. To avoid confusion, use this guide when ev
 | CSV ingestion adapter | ✅ Implemented | UTF-8/BOM, delimiter support, empty-row handling |
 | Canonical normalization | ✅ Implemented | Type coercion, dedup, quarantine |
 | Enrichment data loading | ✅ Implemented | Loads and indexes store/item/promo/vendor/DC/regional sources |
-| Full enrichment engine output | 🚧 Partial | Engine scaffold exists; complete join/calculation logic is in progress |
+| Full enrichment engine output | ✅ Stable Layer 2 contract | Current engine joins the implemented sources, computes financials, emits confidence/missing-field metadata, and includes `day_of_week_demand_index` for AI handoff |
 | Claude triage agent loop | ⏳ Planned | Layer 3 not implemented yet |
 | Routing/alerts/briefing outputs | ⏳ Planned | Layer 4 not implemented yet |
 | CLI pipeline run (`run_triage.py`) | ⏳ Planned | Not yet available in `scripts/` |

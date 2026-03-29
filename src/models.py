@@ -9,7 +9,7 @@ from __future__ import annotations
 import enum
 from datetime import date, datetime
 from typing import List, Optional
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 
 
 class ExceptionType(str, enum.Enum):
@@ -54,6 +54,8 @@ class PatternType(str, enum.Enum):
 
 class CanonicalException(BaseModel):
     """Schema for normalized exception records output by the ingestion layer."""
+    model_config = ConfigDict(extra="forbid")
+
     exception_id: str = Field(description="Unique identifier for this exception instance")
     item_id: str = Field(description="Internal SKU identifier")
     item_name: str = Field(description="Human-readable item description")
@@ -73,6 +75,8 @@ class CanonicalException(BaseModel):
 
 class EnrichedExceptionSchema(BaseModel):
     """Schema for enriched exception records, input to the AI triage layer."""
+    model_config = ConfigDict(extra="forbid")
+
     # Canonical fields
     exception_id: str
     item_id: str
@@ -98,7 +102,10 @@ class EnrichedExceptionSchema(BaseModel):
     weekly_store_sales_k: Optional[float] = Field(default=None, description="Store weekly revenue in thousands USD")
     region: Optional[str] = Field(default=None, description="Store region")
     promo_active: Optional[bool] = Field(default=None, description="Whether item is on active promo")
-    promo_type: Optional[str] = Field(default=None, description="Promo type: TPR, FEATURE, DISPLAY, BOTH, NONE")
+    promo_type: Optional[PromoType] = Field(
+        default=None,
+        description="Promo type: TPR, FEATURE, DISPLAY, BOTH, NONE",
+    )
     promo_end_date: Optional[date] = Field(default=None, description="Promo end date")
     tpr_depth_pct: Optional[float] = Field(default=None, description="TPR depth percentage")
     dc_inventory_days: Optional[float] = Field(default=None, description="Days of supply at DC for this item")

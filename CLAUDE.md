@@ -10,7 +10,7 @@ AI-powered agentic system that ingests replenishment exceptions from retail plan
 
 ```
 Layer 1: Ingestion & Normalization    ← BUILT (CSV adapter + normalizer)
-Layer 2: Context Enrichment           ← IN PROGRESS (DataLoader implemented; engine in progress)
+Layer 2: Context Enrichment           ← COMPLETE (DataLoader + EnrichmentEngine; stable handoff contract for Layer 3)
 Layer 3: Claude Reasoning Engine      ← NOT STARTED
 Layer 4: Routing, Alerting & Output   ← NOT STARTED
 ```
@@ -53,7 +53,7 @@ src/
 │   ├── normalizer.py          # Field mapping, type coercion, dedup, quarantine
 │   ├── api_adapter.py         # NOT YET BUILT
 │   └── sql_adapter.py         # NOT YET BUILT
-├── enrichment/                # NOT YET BUILT (Layer 2)
+├── enrichment/                # BUILT: data_loader.py + engine.py
 ├── agent/                     # NOT YET BUILT (Layer 3)
 ├── output/                    # NOT YET BUILT (Layer 4)
 └── utils/
@@ -87,7 +87,7 @@ The generated sample data includes intentional scenarios for testing triage qual
 ## Current Scope Notes
 
 - `src/enrichment/data_loader.py` is implemented and validated by tests.
-- `src/enrichment/engine.py` exists as a scaffold; full enrichment join/calculation behavior remains to be completed.
+- `src/enrichment/engine.py` is implemented: joins all 6 reference sources, computes financials, emits confidence/missing-field metadata. `day_of_week_demand_index` populated; `extra="forbid"` on models; enriched schema artifact at `data/schema/enriched_exception_schema.json`.
 - `scripts/run_triage.py` is not yet present; use module-level tests and sample generation for current verification.
 
 ## Implementation Patterns

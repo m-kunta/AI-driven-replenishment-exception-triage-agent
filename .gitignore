@@ -22,6 +22,9 @@ ENV/
 *.swp
 *.swo
 
+# Local git worktrees
+.worktrees/
+
 # Output
 output/briefings/*
 output/logs/*
