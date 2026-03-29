@@ -1,0 +1,78 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "EnrichedExceptionSchema",
+  "description": "Schema for enriched exception records between Layer 2 (Enrichment) and Layer 3 (AI triage).",
+  "type": "object",
+  "required": [
+    "exception_id",
+    "item_id",
+    "item_name",
+    "store_id",
+    "store_name",
+    "exception_type",
+    "exception_date",
+    "units_on_hand",
+    "days_of_supply",
+    "source_system",
+    "batch_id",
+    "ingested_at",
+    "missing_data_fields",
+    "enrichment_confidence"
+  ],
+  "properties": {
+    "exception_id": { "type": "string" },
+    "item_id": { "type": "string" },
+    "item_name": { "type": "string" },
+    "store_id": { "type": "string" },
+    "store_name": { "type": "string" },
+    "exception_type": {
+      "type": "string",
+      "enum": ["OOS", "LOW_STOCK", "FORECAST_VARIANCE", "ORDER_FAILURE", "VENDOR_LATE", "DATA_INTEGRITY"]
+    },
+    "exception_date": { "type": "string", "format": "date" },
+    "units_on_hand": { "type": "integer" },
+    "days_of_supply": { "type": "number" },
+    "variance_pct": { "type": ["number", "null"] },
+    "source_system": { "type": "string" },
+    "batch_id": { "type": "string" },
+    "ingested_at": { "type": "string", "format": "date-time" },
+    "velocity_rank": { "type": ["integer", "null"] },
+    "category": { "type": ["string", "null"] },
+    "subcategory": { "type": ["string", "null"] },
+    "retail_price": { "type": ["number", "null"] },
+    "margin_pct": { "type": ["number", "null"] },
+    "store_tier": { "type": ["integer", "null"] },
+    "weekly_store_sales_k": { "type": ["number", "null"] },
+    "region": { "type": ["string", "null"] },
+    "promo_active": { "type": ["boolean", "null"] },
+    "promo_type": {
+      "type": ["string", "null"],
+      "enum": ["TPR", "FEATURE", "DISPLAY", "BOTH", "NONE", null]
+    },
+    "promo_end_date": { "type": ["string", "null"], "format": "date" },
+    "tpr_depth_pct": { "type": ["number", "null"] },
+    "dc_inventory_days": { "type": ["number", "null"] },
+    "vendor_id": { "type": ["string", "null"] },
+    "vendor_fill_rate_90d": { "type": ["number", "null"] },
+    "open_po_inbound": { "type": ["boolean", "null"] },
+    "next_delivery_date": { "type": ["string", "null"], "format": "date" },
+    "lead_time_days": { "type": ["integer", "null"] },
+    "competitor_proximity_miles": { "type": ["number", "null"] },
+    "competitor_event": { "type": ["string", "null"] },
+    "perishable": { "type": ["boolean", "null"] },
+    "day_of_week_demand_index": { "type": ["number", "null"] },
+    "est_lost_sales_value": { "type": ["number", "null"] },
+    "promo_margin_at_risk": { "type": ["number", "null"] },
+    "regional_disruption_flag": { "type": ["boolean", "null"] },
+    "regional_disruption_description": { "type": ["string", "null"] },
+    "missing_data_fields": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "enrichment_confidence": {
+      "type": "string",
+      "enum": ["HIGH", "MEDIUM", "LOW"]
+    }
+  },
+  "additionalProperties": false
+}
