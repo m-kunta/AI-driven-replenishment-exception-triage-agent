@@ -216,7 +216,7 @@ Layer 2 is fully implemented at `src/enrichment/`:
 | File | Description |
 |---|---|
 | `src/enrichment/data_loader.py` | `DataLoader` — reads 6 reference datasets at startup into O(1) lookup dicts |
-| `src/enrichment/engine.py` | `EnrichmentEngine` — joins each `CanonicalException` across all 6 sources, derives financial fields, assigns confidence |
+| `src/enrichment/engine.py` | `EnrichmentEngine` — joins each `CanonicalException` across all 6 sources, derives financial fields, assigns confidence, and degrades failed enrichments to `LOW` confidence with `missing_data_fields=["enrichment_failed"]` |
 | `tests/test_enrichment.py` | Tests covering each join, promo date logic, financial math, confidence scoring, and enriched schema validation |
 
 **Join keys:**
@@ -241,7 +241,7 @@ This project is intentionally staged. To avoid confusion, use this guide when ev
 | CSV ingestion adapter | ✅ Implemented | UTF-8/BOM, delimiter support, empty-row handling |
 | Canonical normalization | ✅ Implemented | Type coercion, dedup, quarantine |
 | Enrichment data loading | ✅ Implemented | Loads and indexes store/item/promo/vendor/DC/regional sources |
-| Full enrichment engine output | ✅ Stable Layer 2 contract | Current engine joins the implemented sources, computes financials, emits confidence/missing-field metadata, and includes `day_of_week_demand_index` for AI handoff |
+| Full enrichment engine output | ✅ Stable Layer 2 contract | Current engine joins the implemented sources, computes financials, emits confidence/missing-field metadata, includes `day_of_week_demand_index`, and marks failed enrichments as low-confidence fallback records |
 | Claude triage agent loop | ⏳ Planned | Layer 3 not implemented yet |
 | Routing/alerts/briefing outputs | ⏳ Planned | Layer 4 not implemented yet |
 | CLI pipeline run (`run_triage.py`) | ⏳ Planned | Not yet available in `scripts/` |

@@ -87,7 +87,7 @@ The generated sample data includes intentional scenarios for testing triage qual
 ## Current Scope Notes
 
 - `src/enrichment/data_loader.py` is implemented and validated by tests.
-- `src/enrichment/engine.py` is implemented: joins all 6 reference sources, computes financials, emits confidence/missing-field metadata. `day_of_week_demand_index` populated; `extra="forbid"` on models; enriched schema artifact at `data/schema/enriched_exception_schema.json`.
+- `src/enrichment/engine.py` is implemented: joins all 6 reference sources, computes financials, emits confidence/missing-field metadata, and degrades failed enrichments to `LOW` confidence with `missing_data_fields=["enrichment_failed"]`. `day_of_week_demand_index` populated; `extra="forbid"` on models; enriched schema artifact at `data/schema/enriched_exception_schema.json`.
 - `scripts/run_triage.py` is not yet present; use module-level tests and sample generation for current verification.
 
 ## Implementation Patterns
