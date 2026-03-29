@@ -73,7 +73,6 @@ _TRACKED_ENRICHMENT_FIELDS: List[str] = [
     "promo_active",
     "regional_disruption_flag",
     "lead_time_days",
-    "day_of_week_demand_index",
 ]
 
 
