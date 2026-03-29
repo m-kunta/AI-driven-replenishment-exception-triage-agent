@@ -44,9 +44,18 @@ from loguru import logger
 from src.enrichment.data_loader import LoadedData
 from src.models import CanonicalException, EnrichedExceptionSchema, EnrichmentConfidence
 
+_DAY_OF_WEEK_DEMAND_INDEX = {
+    0: 0.93,  # Monday
+    1: 0.98,  # Tuesday
+    2: 1.05,  # Wednesday
+    3: 1.08,  # Thursday
+    4: 1.15,  # Friday
+    5: 1.22,  # Saturday
+    6: 1.10,  # Sunday
+}
+
 # ---------------------------------------------------------------------------
 # Tracked enrichment fields for null-counting / confidence scoring
-# (excludes day_of_week_demand_index which is not populated by this engine)
 # ---------------------------------------------------------------------------
 _TRACKED_ENRICHMENT_FIELDS: List[str] = [
     "store_tier",
@@ -64,6 +73,7 @@ _TRACKED_ENRICHMENT_FIELDS: List[str] = [
     "promo_active",
     "regional_disruption_flag",
     "lead_time_days",
+    "day_of_week_demand_index",
 ]
 
 
@@ -181,6 +191,7 @@ class EnrichmentEngine:
             "regional_disruption_description": regional.get("regional_disruption_description"),
             "est_lost_sales_value": est_lost_sales,
             "promo_margin_at_risk": promo_margin,
+            "day_of_week_demand_index": self._compute_day_of_week_demand_index(exc.exception_date),
         }
 
         missing = self._collect_missing(enriched_fields)
@@ -350,3 +361,7 @@ class EnrichmentEngine:
         if count >= self._null_threshold_medium:
             return EnrichmentConfidence.MEDIUM
         return EnrichmentConfidence.HIGH
+
+    def _compute_day_of_week_demand_index(self, exception_date: date) -> float:
+        """Return a deterministic day-of-week demand index from the exception date."""
+        return _DAY_OF_WEEK_DEMAND_INDEX[exception_date.weekday()]
