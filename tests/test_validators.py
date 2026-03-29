@@ -18,6 +18,7 @@ from src.utils.validators import (
     load_json_schema,
     validate_canonical_batch,
     validate_canonical_exception,
+    validate_enriched_batch,
     validate_enriched_exception,
 )
 from src.utils.exceptions import IngestionError, EnrichmentError
@@ -239,8 +240,6 @@ class TestLoadJsonSchema:
 
 class TestValidateEnrichedBatch:
     def test_mixed_valid_and_invalid_records(self):
-        from src.utils.validators import validate_enriched_batch
-
         valid, invalid = validate_enriched_batch(
             [
                 _enriched_dict(),
@@ -251,3 +250,22 @@ class TestValidateEnrichedBatch:
         assert len(valid) == 1
         assert len(invalid) == 1
         assert invalid[0]["row_index"] == 1
+
+    def test_empty_batch_returns_empty_lists(self):
+        valid, invalid = validate_enriched_batch([])
+        assert valid == []
+        assert invalid == []
+
+    def test_all_invalid_records_returns_empty_valid_list(self):
+        valid, invalid = validate_enriched_batch([
+            _enriched_dict(unexpected_field="x"),
+            _enriched_dict(unexpected_field="y"),
+        ])
+        assert len(valid) == 0
+        assert len(invalid) == 2
+
+    def test_invalid_record_includes_row_index_and_errors(self):
+        _, invalid = validate_enriched_batch([_enriched_dict(unexpected_field="boom")])
+        assert "row_index" in invalid[0]
+        assert "errors" in invalid[0]
+        assert invalid[0]["row_index"] == 0
