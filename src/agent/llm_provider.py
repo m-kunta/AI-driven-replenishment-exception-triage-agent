@@ -71,6 +71,12 @@ class ClaudeProvider(LLMProvider):
             system=system_prompt,
             messages=[{"role": "user", "content": user_prompt}],
         )
+        if not response.content:
+            raise ValueError(
+                f"ClaudeProvider received an empty content block "
+                f"(stop_reason={response.stop_reason!r}). "
+                "Check for content filtering or an invalid prompt."
+            )
         return LLMResponse(
             text=response.content[0].text,
             input_tokens=response.usage.input_tokens,
@@ -103,8 +109,15 @@ class OpenAIProvider(LLMProvider):
             ],
         )
         choice = response.choices[0]
+        content = choice.message.content
+        if content is None:
+            raise ValueError(
+                f"OpenAIProvider received null content "
+                f"(finish_reason={choice.finish_reason!r}). "
+                "Check for content filtering or an invalid prompt."
+            )
         return LLMResponse(
-            text=choice.message.content,
+            text=content,
             input_tokens=response.usage.prompt_tokens,
             output_tokens=response.usage.completion_tokens,
         )
