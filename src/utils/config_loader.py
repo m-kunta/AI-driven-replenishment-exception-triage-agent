@@ -64,7 +64,7 @@ class AgentConfig(BaseModel):
     retry_attempts: int = 3
     retry_backoff_seconds: int = 5
     reasoning_trace_enabled: bool = False
-    phantom_webhook_enabled: bool = True
+    phantom_webhook_enabled: bool = False
     phantom_webhook_url: str = ""
     pattern_threshold: int = 3
     anthropic_api_key: str = ""
@@ -130,6 +130,7 @@ class AppConfig(BaseModel):
 # --- Environment Variable Resolution ---
 
 ENV_VAR_PATTERN = re.compile(r"\$\{([^}]+)\}")
+_SUPPORTED_PROVIDERS = ("claude", "openai", "gemini", "ollama")
 
 
 def _resolve_env_vars(value: Any) -> Any:
@@ -187,28 +188,28 @@ def load_config(config_path: str = "config/config.yaml") -> AppConfig:
     return config
 
 
-def validate_required_env_vars(config: AppConfig, adapter: str = "csv", alerts_enabled: bool = False) -> None:
+def validate_required_env_vars(config: AppConfig, adapter: str = "csv") -> None:
     """Validate that required environment variables are set based on runtime mode.
 
     Args:
         config: The loaded AppConfig.
         adapter: The active ingestion adapter type.
-        alerts_enabled: Whether alerting is enabled.
 
     Raises:
         ConfigurationError: If a required env var is missing.
     """
     provider = config.agent.provider.lower()
+    if provider not in _SUPPORTED_PROVIDERS:
+        raise ConfigurationError(
+            f"Invalid agent.provider: {config.agent.provider!r}. "
+            f"Must be one of: {', '.join(_SUPPORTED_PROVIDERS)}"
+        )
     if provider == "claude" and not config.agent.anthropic_api_key:
         raise ConfigurationError("Missing required environment variable: ANTHROPIC_API_KEY (provider=claude)")
     elif provider == "openai" and not config.agent.openai_api_key:
         raise ConfigurationError("Missing required environment variable: OPENAI_API_KEY (provider=openai)")
     elif provider == "gemini" and not config.agent.gemini_api_key:
         raise ConfigurationError("Missing required environment variable: GEMINI_API_KEY (provider=gemini)")
-    elif provider not in ("claude", "openai", "gemini", "ollama"):
-        raise ConfigurationError(
-            f"Invalid agent.provider: {config.agent.provider!r}. Must be one of: claude, openai, gemini, ollama"
-        )
 
     if adapter == "api":
         if not config.ingestion.api.endpoint:
