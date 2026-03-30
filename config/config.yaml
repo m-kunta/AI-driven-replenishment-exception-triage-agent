@@ -38,8 +38,8 @@ enrichment:
   promo_lift_factor: 1.4              # multiplier for promo velocity lift
 
 agent:
-  anthropic_api_key: ${ANTHROPIC_API_KEY}
-  model: claude-sonnet-4-20250514
+  provider: claude                     # claude | openai | gemini | ollama
+  model: claude-sonnet-4-20250514      # model name for the selected provider
   max_tokens: 4000
   batch_size: 30
   retry_attempts: 3
@@ -48,6 +48,11 @@ agent:
   phantom_webhook_enabled: true
   phantom_webhook_url: ${PHANTOM_WEBHOOK_URL}  # optional; leave blank to disable
   pattern_threshold: 3                 # minimum exceptions to flag a pattern
+  # Provider API keys — set only the one matching your selected provider
+  anthropic_api_key: ${ANTHROPIC_API_KEY}
+  openai_api_key: ${OPENAI_API_KEY}
+  gemini_api_key: ${GEMINI_API_KEY}
+  ollama_base_url: http://localhost:11434  # base URL for local Ollama instance
 
 store_tiers:
   tier_1_min_weekly_sales_k: 1500

@@ -57,7 +57,7 @@ class EnrichmentConfig(BaseModel):
 
 
 class AgentConfig(BaseModel):
-    anthropic_api_key: str = ""
+    provider: str = "claude"
     model: str = "claude-sonnet-4-20250514"
     max_tokens: int = 4000
     batch_size: int = 30
@@ -67,6 +67,10 @@ class AgentConfig(BaseModel):
     phantom_webhook_enabled: bool = True
     phantom_webhook_url: str = ""
     pattern_threshold: int = 3
+    anthropic_api_key: str = ""
+    openai_api_key: str = ""
+    gemini_api_key: str = ""
+    ollama_base_url: str = "http://localhost:11434"
 
 
 class StoreTiersConfig(BaseModel):
@@ -194,8 +198,17 @@ def validate_required_env_vars(config: AppConfig, adapter: str = "csv", alerts_e
     Raises:
         ConfigurationError: If a required env var is missing.
     """
-    if not config.agent.anthropic_api_key:
-        raise ConfigurationError("Missing required environment variable: ANTHROPIC_API_KEY")
+    provider = config.agent.provider.lower()
+    if provider == "claude" and not config.agent.anthropic_api_key:
+        raise ConfigurationError("Missing required environment variable: ANTHROPIC_API_KEY (provider=claude)")
+    elif provider == "openai" and not config.agent.openai_api_key:
+        raise ConfigurationError("Missing required environment variable: OPENAI_API_KEY (provider=openai)")
+    elif provider == "gemini" and not config.agent.gemini_api_key:
+        raise ConfigurationError("Missing required environment variable: GEMINI_API_KEY (provider=gemini)")
+    elif provider not in ("claude", "openai", "gemini", "ollama"):
+        raise ConfigurationError(
+            f"Invalid agent.provider: {config.agent.provider!r}. Must be one of: claude, openai, gemini, ollama"
+        )
 
     if adapter == "api":
         if not config.ingestion.api.endpoint:
