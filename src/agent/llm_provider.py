@@ -153,6 +153,15 @@ class GeminiProvider(LLMProvider):
             user_prompt,
             generation_config=self._GenerationConfig(max_output_tokens=self._max_tokens),
         )
+        if not getattr(result, "parts", None):
+            finish_reason = "unknown"
+            if getattr(result, "candidates", None):
+                finish_reason = str(result.candidates[0].finish_reason)
+            raise ValueError(
+                f"GeminiProvider received an empty response "
+                f"(finish_reason={finish_reason!r}). "
+                "Check for content filtering or an invalid prompt."
+            )
         input_tokens = getattr(result.usage_metadata, "prompt_token_count", 0)
         output_tokens = getattr(result.usage_metadata, "candidates_token_count", 0)
         return LLMResponse(
@@ -184,8 +193,14 @@ class OllamaProvider(LLMProvider):
         response = self._client.post("/api/chat", json=payload)
         response.raise_for_status()
         data = response.json()
+        content = data.get("message", {}).get("content")
+        if not content:
+            raise ValueError(
+                "OllamaProvider received an empty or missing message.content. "
+                f"Raw response keys: {list(data.keys())}"
+            )
         return LLMResponse(
-            text=data["message"]["content"],
+            text=content,
             input_tokens=data.get("prompt_eval_count", 0),
             output_tokens=data.get("eval_count", 0),
         )
