@@ -50,7 +50,15 @@ class PromptComposer:
                     f"Required prompt file missing: {path}. "
                     "Run Task 4.1 to create all prompt files."
                 )
-            self._cache[filename] = path.read_text(encoding="utf-8")
+            content = path.read_text(encoding="utf-8")
+            if filename.endswith(".json"):
+                try:
+                    json.loads(content)
+                except json.JSONDecodeError as e:
+                    raise ValueError(
+                        f"Prompt file {filename!r} contains invalid JSON: {e}"
+                    ) from e
+            self._cache[filename] = content
 
     def _format_few_shots(self) -> str:
         """Format few-shot examples as a readable block for the system prompt."""
@@ -117,7 +125,7 @@ class PromptComposer:
             f"exception_id: {exc.exception_id}\n"
             f"item: {exc.item_name} ({exc.item_id}) — velocity rank {self._v(exc.velocity_rank)} in {self._v(exc.category)}\n"
             f"store: {exc.store_id} ({exc.store_name}) — Tier {self._v(exc.store_tier)}, ${self._v(exc.weekly_store_sales_k)}K/week\n"
-            f"exception_type: {exc.exception_type.value}\n"
+            f"exception_type: {exc.exception_type.value if exc.exception_type is not None else 'UNKNOWN'}\n"
             f"units_on_hand: {exc.units_on_hand} | days_of_supply: {exc.days_of_supply:.1f}\n"
             f"promo_active: {self._v(exc.promo_active)} | promo_type: {promo_type_str} | promo_end: {self._v(exc.promo_end_date)}\n"
             f"dc_inventory_days: {self._v(exc.dc_inventory_days)}\n"
@@ -149,6 +157,10 @@ class PromptComposer:
         Returns:
             Formatted user prompt string ready to send to any LLM provider.
         """
+        if not batch:
+            raise ValueError(
+                "compose_user_prompt requires at least one exception; received empty batch."
+            )
         total = len(batch)
         exception_blocks = "\n\n".join(
             self._format_exception(exc, i + 1, total)
