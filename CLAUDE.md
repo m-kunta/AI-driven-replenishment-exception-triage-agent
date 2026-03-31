@@ -11,7 +11,7 @@ AI-powered agentic system that ingests replenishment exceptions from retail plan
 ```
 Layer 1: Ingestion & Normalization    ← BUILT (CSV adapter + normalizer)
 Layer 2: Context Enrichment           ← COMPLETE (DataLoader + EnrichmentEngine; stable handoff contract for Layer 3)
-Layer 3: Claude Reasoning Engine      ← NOT STARTED
+Layer 3: Reasoning Engine             ← IN PROGRESS (Prompt System / LLM Providers built)
 Layer 4: Routing, Alerting & Output   ← NOT STARTED
 ```
 
@@ -54,7 +54,7 @@ src/
 │   ├── api_adapter.py         # NOT YET BUILT
 │   └── sql_adapter.py         # NOT YET BUILT
 ├── enrichment/                # BUILT: data_loader.py + engine.py
-├── agent/                     # NOT YET BUILT (Layer 3)
+├── agent/                     # IN PROGRESS (Layer 3: prompt_composer.py, llm_provider.py)
 ├── output/                    # NOT YET BUILT (Layer 4)
 └── utils/
     ├── config_loader.py       # YAML + env var resolution → AppConfig

@@ -53,9 +53,9 @@ The agent ingests raw replenishment exceptions, enriches them with 15+ contextua
 │           Store master · Item master · Promo calendar            │
 │           Vendor fill rates · DC inventory · Regional signals    │
 ├──────────────────────────────────────────────────────────────────┤
-│  Layer 3: Claude Reasoning Engine    ← 🔲 NOT STARTED           │
-│           Batched inference · TriageResult schema                 │
-│           Chain-of-thought · Pattern escalation                  │
+│  Layer 3: Reasoning Engine          ← 🚧 IN PROGRESS                  │
+│           Multi-provider LLMs · Prompt Composer                   │
+│           (Batched inference & Pattern escalation pending)        │
 ├──────────────────────────────────────────────────────────────────┤
 │  Layer 4: Routing, Alerting & Output ← 🔲 NOT STARTED           │
 │           Morning briefing · Email/Slack/Teams · JSON export     │
@@ -206,7 +206,7 @@ pytest tests/test_enrichment.py -v
 |---|---|---|
 | **Layer 1 — Ingestion** | ✅ Complete | CSV adapter, normalizer, 25 tests passing |
 | **Layer 2 — Enrichment** | ✅ Stable handoff contract | `DataLoader` + `EnrichmentEngine` emit validated enriched exceptions for Layer 3 |
-| **Layer 3 — Claude Engine** | 🔲 Not Started | Batched inference, triage output, patterns |
+| **Layer 3 — Reasoning Engine** | 🚧 In Progress | Prompt System and Multi-Provider LLMs (Claude/OpenAI/Gemini/Ollama) built. Batched inference pending |
 | **Layer 4 — Output & Alerts** | 🔲 Not Started | Morning briefing, Slack/email routing |
 
 ### Layer 2 — Implementation
@@ -242,7 +242,7 @@ This project is intentionally staged. To avoid confusion, use this guide when ev
 | Canonical normalization | ✅ Implemented | Type coercion, dedup, quarantine |
 | Enrichment data loading | ✅ Implemented | Loads and indexes store/item/promo/vendor/DC/regional sources |
 | Full enrichment engine output | ✅ Stable Layer 2 contract | Current engine joins the implemented sources, computes financials, emits confidence/missing-field metadata, includes `day_of_week_demand_index`, and marks failed enrichments as low-confidence fallback records |
-| Claude triage agent loop | ⏳ Planned | Layer 3 not implemented yet |
+| Reasoning Engine (LLMs) | 🚧 In Progress | Prompt composer and provider abstractions built, inference loop pending |
 | Routing/alerts/briefing outputs | ⏳ Planned | Layer 4 not implemented yet |
 | CLI pipeline run (`run_triage.py`) | ⏳ Planned | Not yet available in `scripts/` |
 
