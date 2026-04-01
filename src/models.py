@@ -186,7 +186,13 @@ class TriageResult(BaseModel):
 
     Fields marked as "carried forward" are copied from the enriched record so
     the output layer does not need to rejoin back to Layer 2 data.
+
+    Mutable by design: the phantom webhook and pattern analyzer both mutate
+    fields (exception_type, priority, phantom_flag, pattern_id, escalated_from)
+    after initial AI assignment.
     """
+    model_config = ConfigDict(extra="ignore")
+
     exception_id: str
     priority: Priority
     confidence: EnrichmentConfidence
@@ -212,6 +218,8 @@ class TriageResult(BaseModel):
     promo_active: Optional[bool] = None
     est_lost_sales_value: Optional[float] = Field(default=0.0)
     promo_margin_at_risk: Optional[float] = Field(default=0.0)
+    dc_inventory_days: Optional[float] = None
+    vendor_fill_rate_90d: Optional[float] = None
 
 
 class PatternDetail(BaseModel):
