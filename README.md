@@ -54,8 +54,8 @@ The agent ingests raw replenishment exceptions, enriches them with 15+ contextua
 │           Vendor fill rates · DC inventory · Regional signals    │
 ├──────────────────────────────────────────────────────────────────┤
 │  Layer 3: Reasoning Engine          ← 🚧 IN PROGRESS                  │
-│           Multi-provider LLMs · Prompt Composer                   │
-│           (Batched inference & Pattern escalation pending)        │
+│           Provider-agnostic LLMs (Claude/OpenAI/Gemini/Ollama)    │
+│           Prompt system built · Batched inference pending          │
 ├──────────────────────────────────────────────────────────────────┤
 │  Layer 4: Routing, Alerting & Output ← 🔲 NOT STARTED           │
 │           Morning briefing · Email/Slack/Teams · JSON export     │
@@ -71,7 +71,8 @@ The agent ingests raw replenishment exceptions, enriches them with 15+ contextua
 | **Triage by consequence, not deviation** | A 10% OOS on a Tier 1 promo SKU outranks a 500% variance on a Tier 4 ambient staple |
 | **Enrichment before AI** | Structured signals fed to Claude reduce hallucination and token waste vs. raw data |
 | **Quarantine bad records** | Invalid rows are written to `output/logs/quarantine_*.json`, never silently dropped |
-| **Batched Claude calls** | 30 exceptions per batch — tunable — to balance cost, latency, and context window |
+| **Provider-agnostic AI engine** | Swap Claude/OpenAI/Gemini/Ollama with one config key; only selected provider's SDK is needed |
+| **Batched LLM calls** | 30 exceptions per batch — tunable — to balance cost, latency, and context window |
 | **Pattern detection post-triage** | After individual triage, group by vendor/dc/category and escalate if ≥ 3 share a failure mode |
 
 ---
@@ -102,7 +103,10 @@ AI-driven-replenishment-exception-triage-agent/
 │   ├── enrichment/                # ← Layer 2 (✅ BUILT & TESTED)
 │   │   ├── data_loader.py         # Loads & indexes 6 reference datasets
 │   │   └── engine.py              # EnrichmentEngine (joins + financials + scores)
-│   ├── agent/                     # ← Layer 3 (NOT STARTED)
+│   ├── agent/                     # ← Layer 3 (🚧 IN PROGRESS)
+│   │   ├── llm_provider.py        # Provider ABC + Claude/OpenAI/Gemini/Ollama + factory
+│   │   ├── prompt_composer.py     # Builds system + user prompts from modular files
+│   │   └── phantom_webhook.py     # HTTP POST for phantom inventory confirmation
 │   ├── output/                    # ← Layer 4 (NOT STARTED)
 │   └── utils/
 │       ├── config_loader.py       # YAML + ${ENV_VAR} resolution → AppConfig
@@ -120,9 +124,21 @@ AI-driven-replenishment-exception-triage-agent/
 │   │   ├── vendor_performance_sample.csv
 │   │   └── dc_inventory_sample.csv
 │   └── regional_signals.json      # 2 active disruptions
+├── prompts/                       # Modular prompt files for Layer 3
+│   ├── system_prompt.md           # Senior planner persona
+│   ├── triage_framework.md        # CRITICAL/HIGH/MEDIUM/LOW criteria
+│   ├── output_contract.md         # JSON output schema + rules
+│   ├── pattern_detection.md       # Vendor/DC/category/region pattern flags
+│   ├── epistemic_honesty.md       # LOW confidence handling rules
+│   ├── phantom_inventory.md       # Phantom detection signals
+│   └── few_shot_library.json      # 5 annotated triage examples
 ├── tests/
-│   ├── test_ingestion.py          # Ingestion layer tests
-│   └── test_enrichment.py         # Layer 2 enrichment tests
+│   ├── test_ingestion.py          # Layer 1 ingestion tests (25)
+│   ├── test_enrichment.py         # Layer 2 enrichment tests
+│   ├── test_prompt_files.py       # Prompt structure validation (24)
+│   ├── test_prompt_composer.py    # PromptComposer unit tests (14)
+│   ├── test_llm_provider.py       # Provider factory + providers (13)
+│   └── test_phantom_webhook.py    # Phantom webhook tests (6)
 ├── scripts/
 │   └── generate_sample_data.py    # Synthetic data generator
 ├── output/
@@ -153,7 +169,7 @@ The generated data (`scripts/generate_sample_data.py`) includes intentional scen
 ### Prerequisites
 
 - Python 3.9+
-- An Anthropic API key (for Layer 3 — not yet needed for current Layer 1)
+- An API key for your chosen AI provider (Claude, OpenAI, or Gemini) — or a running Ollama instance
 
 ### Installation
 
@@ -164,9 +180,10 @@ cd AI-driven-replenishment-exception-triage-agent
 python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 
-# Optional: configure AI provider
+# Configure AI provider
 cp .env.example .env
-# Edit .env and add ANTHROPIC_API_KEY=...
+# Edit .env — add the key for your chosen provider (ANTHROPIC_API_KEY, OPENAI_API_KEY, or GEMINI_API_KEY)
+# Set provider: in config/config.yaml to match (claude / openai / gemini / ollama)
 ```
 
 ### Generate Sample Data
@@ -179,23 +196,22 @@ python scripts/generate_sample_data.py
 
 ```bash
 ./.venv/bin/pytest tests/ -v
-# current suite should pass locally
+# 167 tests — all passing
 ```
 
 ### Verify Current Implemented Scope
-
-The repository currently includes production-ready ingestion and a complete Layer 2 enrichment engine with a stable handoff contract for Layer 3.
-These are the fastest checks to verify your environment end-to-end:
 
 ```bash
 # 1) Regenerate deterministic sample data
 python scripts/generate_sample_data.py
 
-# 2) Validate ingestion layer
-pytest tests/test_ingestion.py -v
+# 2) Full test suite (ingestion + enrichment + prompt system + phantom webhook)
+pytest tests/ -v
 
-# 3) Validate enrichment data loading contracts
-pytest tests/test_enrichment.py -v
+# Run a single module
+pytest tests/test_llm_provider.py -v
+pytest tests/test_prompt_composer.py -v
+pytest tests/test_phantom_webhook.py -v
 ```
 
 ---
@@ -205,8 +221,8 @@ pytest tests/test_enrichment.py -v
 | Layer | Status | Details |
 |---|---|---|
 | **Layer 1 — Ingestion** | ✅ Complete | CSV adapter, normalizer, 25 tests passing |
-| **Layer 2 — Enrichment** | ✅ Stable handoff contract | `DataLoader` + `EnrichmentEngine` emit validated enriched exceptions for Layer 3 |
-| **Layer 3 — Reasoning Engine** | 🚧 In Progress | Prompt System and Multi-Provider LLMs (Claude/OpenAI/Gemini/Ollama) built. Batched inference pending |
+| **Layer 2 — Enrichment** | ✅ Complete | `DataLoader` + `EnrichmentEngine` emit validated enriched exceptions for Layer 3 |
+| **Layer 3 — Reasoning Engine** | 🚧 In Progress | Prompt system (6 files + few-shot library), provider-agnostic LLM abstraction (Claude/OpenAI/Gemini/Ollama), and phantom webhook built. Batched inference + pattern analyzer pending |
 | **Layer 4 — Output & Alerts** | 🔲 Not Started | Morning briefing, Slack/email routing |
 
 ### Layer 2 — Implementation
@@ -242,7 +258,10 @@ This project is intentionally staged. To avoid confusion, use this guide when ev
 | Canonical normalization | ✅ Implemented | Type coercion, dedup, quarantine |
 | Enrichment data loading | ✅ Implemented | Loads and indexes store/item/promo/vendor/DC/regional sources |
 | Full enrichment engine output | ✅ Stable Layer 2 contract | Current engine joins the implemented sources, computes financials, emits confidence/missing-field metadata, includes `day_of_week_demand_index`, and marks failed enrichments as low-confidence fallback records |
-| Reasoning Engine (LLMs) | 🚧 In Progress | Prompt composer and provider abstractions built, inference loop pending |
+| Prompt system | ✅ Implemented | 6 modular prompt files + 5-example few-shot library |
+| Multi-provider LLM abstraction | ✅ Implemented | Claude / OpenAI / Gemini / Ollama via single `get_provider()` factory |
+| Phantom inventory webhook | ✅ Implemented | HTTP POST confirmation; mutates `TriageResult` on confirmed phantom |
+| Batched inference loop | 🚧 In Progress | `batch_processor.py` — next to build |
 | Routing/alerts/briefing outputs | ⏳ Planned | Layer 4 not implemented yet |
 | CLI pipeline run (`run_triage.py`) | ⏳ Planned | Not yet available in `scripts/` |
 
@@ -256,7 +275,7 @@ If you are onboarding today, start with ingestion and data-loader tests before e
 |---|---|
 | Language | Python 3.9+ |
 | Schemas | Pydantic v2 |
-| AI | Anthropic Claude (`claude-sonnet-4`) |
+| AI | Provider-agnostic — Claude / OpenAI / Gemini / Ollama |
 | Config | YAML + `python-dotenv` |
 | Logging | loguru |
 | HTTP | httpx |
