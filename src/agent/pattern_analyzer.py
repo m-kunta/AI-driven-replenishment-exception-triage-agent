@@ -38,8 +38,8 @@ _PATTERN_SYSTEM_PROMPT = (
     "Given an aggregated summary of replenishment exceptions, identify systemic patterns "
     "that suggest a single root cause affecting multiple items, stores, or locations. "
     "Return a JSON array of pattern objects. Each object must have exactly these fields: "
-    '{"pattern_type": "VENDOR|DC_LANE|CATEGORY|REGION|MACRO", '
-    '"group_key": "the vendor/category/region/dc identifier", '
+    '{"pattern_type": "VENDOR|CATEGORY|REGION|MACRO", '
+    '"group_key": "the vendor/category/region identifier", '
     '"count": <integer>, '
     '"description": "one sentence root cause"}. '
     "Return an empty array [] if no patterns meet the threshold. "
