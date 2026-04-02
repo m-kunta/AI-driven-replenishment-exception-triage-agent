@@ -54,8 +54,8 @@ The agent ingests raw replenishment exceptions, enriches them with 15+ contextua
 │           Vendor fill rates · DC inventory · Regional signals    │
 ├──────────────────────────────────────────────────────────────────┤
 │  Layer 3: Reasoning Engine          ← 🚧 IN PROGRESS                  │
-│           Provider-agnostic LLMs (Claude/OpenAI/Gemini/Ollama)    │
-│           Prompt system built · Batched inference pending          │
+│           LLM Abstractions · Prompt System · Batch Processor       │
+│           Pattern Analyzer built · (Triage Agent loop pending)     │
 ├──────────────────────────────────────────────────────────────────┤
 │  Layer 4: Routing, Alerting & Output ← 🔲 NOT STARTED           │
 │           Morning briefing · Email/Slack/Teams · JSON export     │
@@ -104,8 +104,10 @@ AI-driven-replenishment-exception-triage-agent/
 │   │   ├── data_loader.py         # Loads & indexes 6 reference datasets
 │   │   └── engine.py              # EnrichmentEngine (joins + financials + scores)
 │   ├── agent/                     # ← Layer 3 (🚧 IN PROGRESS)
-│   │   ├── llm_provider.py        # Provider ABC + Claude/OpenAI/Gemini/Ollama + factory
-│   │   ├── prompt_composer.py     # Builds system + user prompts from modular files
+│   │   ├── llm_provider.py        # Provider ABC + LLM abstractions
+│   │   ├── prompt_composer.py     # Builds system + user prompts
+│   │   ├── batch_processor.py     # Inference loop + JSON parser
+│   │   ├── pattern_analyzer.py    # Aggregates + escalates patterns
 │   │   └── phantom_webhook.py     # HTTP POST for phantom inventory confirmation
 │   ├── output/                    # ← Layer 4 (NOT STARTED)
 │   └── utils/
@@ -138,7 +140,9 @@ AI-driven-replenishment-exception-triage-agent/
 │   ├── test_prompt_files.py       # Prompt structure validation (24)
 │   ├── test_prompt_composer.py    # PromptComposer unit tests (14)
 │   ├── test_llm_provider.py       # Provider factory + providers (13)
-│   └── test_phantom_webhook.py    # Phantom webhook tests (6)
+│   ├── test_phantom_webhook.py    # Phantom webhook tests (6)
+│   ├── test_batch_processor.py    # Inference loop tests (5)
+│   └── test_pattern_analyzer.py   # Pattern aggregation tests (5)
 ├── scripts/
 │   └── generate_sample_data.py    # Synthetic data generator
 ├── output/
@@ -196,7 +200,7 @@ python scripts/generate_sample_data.py
 
 ```bash
 ./.venv/bin/pytest tests/ -v
-# 167 tests — all passing
+# 232 tests — all passing
 ```
 
 ### Verify Current Implemented Scope
@@ -209,9 +213,8 @@ python scripts/generate_sample_data.py
 pytest tests/ -v
 
 # Run a single module
-pytest tests/test_llm_provider.py -v
-pytest tests/test_prompt_composer.py -v
-pytest tests/test_phantom_webhook.py -v
+pytest tests/test_batch_processor.py -v
+pytest tests/test_pattern_analyzer.py -v
 ```
 
 ---
@@ -222,7 +225,7 @@ pytest tests/test_phantom_webhook.py -v
 |---|---|---|
 | **Layer 1 — Ingestion** | ✅ Complete | CSV adapter, normalizer, 25 tests passing |
 | **Layer 2 — Enrichment** | ✅ Complete | `DataLoader` + `EnrichmentEngine` emit validated enriched exceptions for Layer 3 |
-| **Layer 3 — Reasoning Engine** | 🚧 In Progress | Prompt system (6 files + few-shot library), provider-agnostic LLM abstraction (Claude/OpenAI/Gemini/Ollama), and phantom webhook built. Batched inference + pattern analyzer pending |
+| **Layer 3 — Reasoning Engine** | 🚧 In Progress | Prompt system, LLM abstractions, Phantom Webhook, Batch Processor, and Pattern Analyzer built. Triage Agent orchestrator pending |
 | **Layer 4 — Output & Alerts** | 🔲 Not Started | Morning briefing, Slack/email routing |
 
 ### Layer 2 — Implementation
@@ -261,7 +264,9 @@ This project is intentionally staged. To avoid confusion, use this guide when ev
 | Prompt system | ✅ Implemented | 6 modular prompt files + 5-example few-shot library |
 | Multi-provider LLM abstraction | ✅ Implemented | Claude / OpenAI / Gemini / Ollama via single `get_provider()` factory |
 | Phantom inventory webhook | ✅ Implemented | HTTP POST confirmation; mutates `TriageResult` on confirmed phantom |
-| Batched inference loop | 🚧 In Progress | `batch_processor.py` — next to build |
+| Batched inference loop | ✅ Implemented | `batch_processor.py` processes exceptions through LLM and validates JSON |
+| Pattern analyzer | ✅ Implemented | `pattern_analyzer.py` aggregates and escalates systemic exceptions |
+| Triage Agent orchestrator | 🚧 In Progress | `triage_agent.py` — next to build |
 | Routing/alerts/briefing outputs | ⏳ Planned | Layer 4 not implemented yet |
 | CLI pipeline run (`run_triage.py`) | ⏳ Planned | Not yet available in `scripts/` |
 
