@@ -119,6 +119,16 @@ class BatchProcessor:
             try:
                 response = self._provider.complete(self._system_prompt, user_prompt)
                 triage_results, pattern_analysis = self._parse_response(response.text)
+                # Validate alignment: LLM must return exactly the input exception IDs
+                expected_ids = {ex.exception_id for ex in batch}
+                returned_ids = {tr.exception_id for tr in triage_results}
+                if expected_ids != returned_ids:
+                    missing = sorted(expected_ids - returned_ids)
+                    extra = sorted(returned_ids - expected_ids)
+                    raise ValueError(
+                        f"LLM returned misaligned results for batch of {len(batch)}: "
+                        f"missing={missing}, extra={extra}"
+                    )
                 logger.debug(
                     f"Batch of {len(batch)} parsed successfully "
                     f"(attempt {attempt}, {response.input_tokens} in / {response.output_tokens} out tokens)."
