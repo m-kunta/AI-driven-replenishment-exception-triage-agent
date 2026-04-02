@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import json
 from datetime import date, datetime
+from typing import List
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -51,7 +52,7 @@ def _make_config(
     return config
 
 
-def _make_llm_response_text(exception_ids: list, include_pattern: bool = True) -> str:
+def _make_llm_response_text(exception_ids: List[str], include_pattern: bool = True) -> str:
     """Build a minimal valid LLM JSON response string for the given exception IDs."""
     items = [
         {
@@ -83,7 +84,7 @@ def _make_llm_response_text(exception_ids: list, include_pattern: bool = True) -
     return json.dumps(items)
 
 
-def _mock_provider_response(exception_ids: list, input_tokens: int = 100, output_tokens: int = 50) -> MagicMock:
+def _mock_provider_response(exception_ids: List[str], input_tokens: int = 100, output_tokens: int = 50) -> MagicMock:
     resp = MagicMock()
     resp.text = _make_llm_response_text(exception_ids)
     resp.input_tokens = input_tokens
@@ -142,3 +143,100 @@ class TestBatchProcessorInit:
         assert result.batches_failed == 0
         assert result.total_input_tokens == 0
         assert result.total_output_tokens == 0
+
+
+class TestParseResponse:
+    def test_returns_triage_results_and_pattern_analysis(self):
+        from src.agent.batch_processor import BatchProcessor
+        text = _make_llm_response_text(["exc-001", "exc-002"])
+        results, pattern = BatchProcessor._parse_response(text)
+
+        assert len(results) == 2
+        assert results[0].exception_id == "exc-001"
+        assert results[1].exception_id == "exc-002"
+        assert pattern is not None
+        assert pattern["_type"] == "pattern_analysis"
+
+    def test_pattern_analysis_not_in_triage_results(self):
+        from src.agent.batch_processor import BatchProcessor
+        text = _make_llm_response_text(["exc-001"])
+        results, _ = BatchProcessor._parse_response(text)
+
+        for r in results:
+            assert isinstance(r, TriageResult)
+
+    def test_returns_none_pattern_when_absent(self):
+        from src.agent.batch_processor import BatchProcessor
+        text = _make_llm_response_text(["exc-001"], include_pattern=False)
+        results, pattern = BatchProcessor._parse_response(text)
+
+        assert len(results) == 1
+        assert results[0].exception_id == "exc-001"
+        assert pattern is None
+
+    def test_maps_priority_field(self):
+        from src.agent.batch_processor import BatchProcessor
+        text = _make_llm_response_text(["exc-001"])
+        results, _ = BatchProcessor._parse_response(text)
+
+        assert results[0].priority == Priority.HIGH
+
+    def test_maps_confidence_field(self):
+        from src.agent.batch_processor import BatchProcessor
+        text = _make_llm_response_text(["exc-001"])
+        results, _ = BatchProcessor._parse_response(text)
+
+        assert results[0].confidence == EnrichmentConfidence.HIGH
+
+    def test_extra_fields_are_ignored(self):
+        from src.agent.batch_processor import BatchProcessor
+        items = json.loads(_make_llm_response_text(["exc-001"]))
+        items[0]["unexpected_llm_field"] = "should be dropped"
+        results, _ = BatchProcessor._parse_response(json.dumps(items))
+
+        assert results[0].exception_id == "exc-001"
+
+    def test_strips_markdown_json_fence(self):
+        from src.agent.batch_processor import BatchProcessor
+        raw = _make_llm_response_text(["exc-001"])
+        text = f"```json\n{raw}\n```"
+        results, _ = BatchProcessor._parse_response(text)
+
+        assert len(results) == 1
+        assert results[0].exception_id == "exc-001"
+
+    def test_strips_plain_markdown_fence(self):
+        from src.agent.batch_processor import BatchProcessor
+        raw = _make_llm_response_text(["exc-001"])
+        text = f"```\n{raw}\n```"
+        results, _ = BatchProcessor._parse_response(text)
+
+        assert len(results) == 1
+
+    def test_raises_json_decode_error_on_invalid_json(self):
+        from src.agent.batch_processor import BatchProcessor
+        with pytest.raises(json.JSONDecodeError):
+            BatchProcessor._parse_response("not valid json at all")
+
+    def test_raises_value_error_when_response_is_object_not_array(self):
+        from src.agent.batch_processor import BatchProcessor
+        with pytest.raises(ValueError, match="must be a JSON array"):
+            BatchProcessor._parse_response('{"key": "value"}')
+
+    def test_raises_value_error_when_no_triage_results_in_response(self):
+        from src.agent.batch_processor import BatchProcessor
+        only_pattern = json.dumps([{
+            "_type": "pattern_analysis",
+            "vendor_summary": {},
+            "dc_summary": {},
+            "category_summary": {},
+            "region_summary": {},
+            "preliminary_patterns": [],
+        }])
+        with pytest.raises(ValueError, match="no triage result objects"):
+            BatchProcessor._parse_response(only_pattern)
+
+    def test_raises_value_error_when_array_element_is_not_dict(self):
+        from src.agent.batch_processor import BatchProcessor
+        with pytest.raises(ValueError, match="Expected dict elements"):
+            BatchProcessor._parse_response(json.dumps(["not", "dicts"]))
