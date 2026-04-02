@@ -240,3 +240,235 @@ class TestParseResponse:
         from src.agent.batch_processor import BatchProcessor
         with pytest.raises(ValueError, match="Expected dict elements"):
             BatchProcessor._parse_response(json.dumps(["not", "dicts"]))
+
+
+class TestBatchProcessorProcess:
+    @patch("src.agent.batch_processor.PromptComposer")
+    @patch("src.agent.batch_processor.get_provider")
+    def test_splits_7_exceptions_into_3_batches_with_size_3(self, mock_get_provider, mock_composer_cls):
+        mock_provider = MagicMock()
+        mock_get_provider.return_value = mock_provider
+        mock_composer = MagicMock()
+        mock_composer_cls.return_value = mock_composer
+        mock_composer.compose_system_prompt.return_value = "sys"
+        mock_composer.compose_user_prompt.return_value = "user"
+        mock_provider.complete.return_value = _mock_provider_response(["exc-001"])
+
+        from src.agent.batch_processor import BatchProcessor
+        config = _make_config(batch_size=3)
+        processor = BatchProcessor(config)
+        result = processor.process([_make_enriched_exception(f"exc-{i:03d}") for i in range(7)])
+
+        assert mock_provider.complete.call_count == 3
+        assert result.batches_completed == 3
+        assert result.batches_failed == 0
+
+    @patch("src.agent.batch_processor.PromptComposer")
+    @patch("src.agent.batch_processor.get_provider")
+    def test_splits_exactly_30_exceptions_into_1_batch(self, mock_get_provider, mock_composer_cls):
+        mock_provider = MagicMock()
+        mock_get_provider.return_value = mock_provider
+        mock_composer = MagicMock()
+        mock_composer_cls.return_value = mock_composer
+        mock_composer.compose_system_prompt.return_value = "sys"
+        mock_composer.compose_user_prompt.return_value = "user"
+        mock_provider.complete.return_value = _mock_provider_response(["exc-001"])
+
+        from src.agent.batch_processor import BatchProcessor
+        config = _make_config(batch_size=30)
+        processor = BatchProcessor(config)
+        result = processor.process([_make_enriched_exception(f"exc-{i:03d}") for i in range(30)])
+
+        assert mock_provider.complete.call_count == 1
+        assert result.batches_completed == 1
+
+    @patch("src.agent.batch_processor.PromptComposer")
+    @patch("src.agent.batch_processor.get_provider")
+    def test_accumulates_token_counts_across_batches(self, mock_get_provider, mock_composer_cls):
+        mock_provider = MagicMock()
+        mock_get_provider.return_value = mock_provider
+        mock_composer = MagicMock()
+        mock_composer_cls.return_value = mock_composer
+        mock_composer.compose_system_prompt.return_value = "sys"
+        mock_composer.compose_user_prompt.return_value = "user"
+        mock_provider.complete.return_value = _mock_provider_response(
+            ["exc-001"], input_tokens=200, output_tokens=80
+        )
+
+        from src.agent.batch_processor import BatchProcessor
+        config = _make_config(batch_size=1)
+        processor = BatchProcessor(config)
+        result = processor.process([
+            _make_enriched_exception("exc-001"),
+            _make_enriched_exception("exc-002"),
+        ])
+
+        assert result.total_input_tokens == 400
+        assert result.total_output_tokens == 160
+
+    @patch("src.agent.batch_processor.PromptComposer")
+    @patch("src.agent.batch_processor.get_provider")
+    def test_collects_triage_results_from_all_batches(self, mock_get_provider, mock_composer_cls):
+        mock_provider = MagicMock()
+        mock_get_provider.return_value = mock_provider
+        mock_composer = MagicMock()
+        mock_composer_cls.return_value = mock_composer
+        mock_composer.compose_system_prompt.return_value = "sys"
+        mock_composer.compose_user_prompt.return_value = "user"
+        mock_provider.complete.return_value = _mock_provider_response(["exc-001"])
+
+        from src.agent.batch_processor import BatchProcessor
+        config = _make_config(batch_size=1)
+        processor = BatchProcessor(config)
+        result = processor.process([
+            _make_enriched_exception("exc-001"),
+            _make_enriched_exception("exc-002"),
+        ])
+
+        assert len(result.triage_results) == 2
+
+    @patch("src.agent.batch_processor.PromptComposer")
+    @patch("src.agent.batch_processor.get_provider")
+    def test_stores_raw_pattern_analyses(self, mock_get_provider, mock_composer_cls):
+        mock_provider = MagicMock()
+        mock_get_provider.return_value = mock_provider
+        mock_composer = MagicMock()
+        mock_composer_cls.return_value = mock_composer
+        mock_composer.compose_system_prompt.return_value = "sys"
+        mock_composer.compose_user_prompt.return_value = "user"
+        mock_provider.complete.return_value = _mock_provider_response(["exc-001"], input_tokens=100, output_tokens=50)
+
+        from src.agent.batch_processor import BatchProcessor
+        config = _make_config(batch_size=1)
+        processor = BatchProcessor(config)
+        result = processor.process([_make_enriched_exception("exc-001")])
+
+        assert len(result.raw_pattern_analyses) == 1
+        assert result.raw_pattern_analyses[0]["_type"] == "pattern_analysis"
+
+    def test_raises_value_error_on_empty_input(self):
+        with patch("src.agent.batch_processor.get_provider"), \
+             patch("src.agent.batch_processor.PromptComposer") as mock_cls:
+            mock_instance = MagicMock()
+            mock_cls.return_value = mock_instance
+            mock_instance.compose_system_prompt.return_value = "sys"
+
+            from src.agent.batch_processor import BatchProcessor
+            processor = BatchProcessor(AppConfig())
+
+            with pytest.raises(ValueError, match="at least one exception"):
+                processor.process([])
+
+
+class TestBatchProcessorRetry:
+    @patch("time.sleep")
+    @patch("src.agent.batch_processor.PromptComposer")
+    @patch("src.agent.batch_processor.get_provider")
+    def test_retries_on_json_parse_failure_and_succeeds_on_third_attempt(
+        self, mock_get_provider, mock_composer_cls, mock_sleep
+    ):
+        mock_provider = MagicMock()
+        mock_get_provider.return_value = mock_provider
+        mock_composer = MagicMock()
+        mock_composer_cls.return_value = mock_composer
+        mock_composer.compose_system_prompt.return_value = "sys"
+        mock_composer.compose_user_prompt.return_value = "user"
+
+        bad_resp = MagicMock()
+        bad_resp.text = "not valid json ###"
+        valid_resp = _mock_provider_response(["exc-001"])
+
+        mock_provider.complete.side_effect = [bad_resp, bad_resp, valid_resp]
+
+        from src.agent.batch_processor import BatchProcessor
+        config = _make_config(retry_attempts=3, retry_backoff_seconds=2)
+        processor = BatchProcessor(config)
+        result = processor.process([_make_enriched_exception("exc-001")])
+
+        assert result.batches_completed == 1
+        assert result.batches_failed == 0
+        assert len(result.triage_results) == 1
+        assert mock_sleep.call_count == 2
+        mock_sleep.assert_called_with(2)
+
+    @patch("time.sleep")
+    @patch("src.agent.batch_processor.PromptComposer")
+    @patch("src.agent.batch_processor.get_provider")
+    def test_marks_batch_failed_after_all_retries_exhausted(
+        self, mock_get_provider, mock_composer_cls, mock_sleep
+    ):
+        mock_provider = MagicMock()
+        mock_get_provider.return_value = mock_provider
+        mock_composer = MagicMock()
+        mock_composer_cls.return_value = mock_composer
+        mock_composer.compose_system_prompt.return_value = "sys"
+        mock_composer.compose_user_prompt.return_value = "user"
+
+        bad_resp = MagicMock()
+        bad_resp.text = "always invalid json ###"
+        mock_provider.complete.return_value = bad_resp
+
+        from src.agent.batch_processor import BatchProcessor
+        config = _make_config(retry_attempts=3)
+        processor = BatchProcessor(config)
+        result = processor.process([_make_enriched_exception("exc-001")])
+
+        assert result.batches_failed == 1
+        assert result.batches_completed == 0
+        assert result.triage_results == []
+        assert mock_provider.complete.call_count == 3
+
+    @patch("time.sleep")
+    @patch("src.agent.batch_processor.PromptComposer")
+    @patch("src.agent.batch_processor.get_provider")
+    def test_does_not_sleep_after_final_failed_attempt(
+        self, mock_get_provider, mock_composer_cls, mock_sleep
+    ):
+        mock_provider = MagicMock()
+        mock_get_provider.return_value = mock_provider
+        mock_composer = MagicMock()
+        mock_composer_cls.return_value = mock_composer
+        mock_composer.compose_system_prompt.return_value = "sys"
+        mock_composer.compose_user_prompt.return_value = "user"
+
+        bad_resp = MagicMock()
+        bad_resp.text = "bad json"
+        mock_provider.complete.return_value = bad_resp
+
+        from src.agent.batch_processor import BatchProcessor
+        config = _make_config(retry_attempts=3, retry_backoff_seconds=5)
+        processor = BatchProcessor(config)
+        processor.process([_make_enriched_exception("exc-001")])
+
+        assert mock_sleep.call_count == 2
+
+    @patch("time.sleep")
+    @patch("src.agent.batch_processor.PromptComposer")
+    @patch("src.agent.batch_processor.get_provider")
+    def test_failed_batch_does_not_block_subsequent_batches(
+        self, mock_get_provider, mock_composer_cls, mock_sleep
+    ):
+        mock_provider = MagicMock()
+        mock_get_provider.return_value = mock_provider
+        mock_composer = MagicMock()
+        mock_composer_cls.return_value = mock_composer
+        mock_composer.compose_system_prompt.return_value = "sys"
+        mock_composer.compose_user_prompt.return_value = "user"
+
+        bad_resp = MagicMock()
+        bad_resp.text = "invalid"
+        valid_resp = _mock_provider_response(["exc-001"])
+
+        mock_provider.complete.side_effect = [bad_resp, valid_resp]
+
+        from src.agent.batch_processor import BatchProcessor
+        config = _make_config(batch_size=1, retry_attempts=1)
+        processor = BatchProcessor(config)
+        result = processor.process([
+            _make_enriched_exception("exc-001"),
+            _make_enriched_exception("exc-002"),
+        ])
+
+        assert result.batches_failed == 1
+        assert result.batches_completed == 1
+        assert len(result.triage_results) == 1
