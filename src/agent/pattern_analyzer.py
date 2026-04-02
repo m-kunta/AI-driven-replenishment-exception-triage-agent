@@ -4,6 +4,12 @@ Pass 2 of the triage pipeline — runs after all batch results are collected.
 Aggregates by vendor/region/category, calls LLM once with macro summary,
 confirms patterns, and escalates MEDIUM→HIGH for pattern members.
 
+NOTE: DC_LANE pattern detection is not yet supported. The enrichment layer
+does not provide a dedicated DC identifier field, so DC_LANE cannot be
+correctly matched. It remains a valid PatternType enum value (for future use)
+but is excluded from aggregation, the summary prompt, and match logic.
+LLM-hallucinated DC_LANE patterns are silently dropped (0 affected exceptions).
+
 Author: Mohith Kunta <mohith.kunta@gmail.com>
 """
 
@@ -116,10 +122,13 @@ class PatternAnalyzer:
         triage_results: List[TriageResult],
         enriched_exceptions: List[EnrichedExceptionSchema],
     ) -> Dict[str, Dict[str, dict]]:
-        """Aggregate exception counts by vendor, region, category, and dc.
+        """Aggregate exception counts by vendor, region, and category.
+
+        DC_LANE is intentionally excluded: the enrichment layer does not provide
+        a dedicated DC identifier field, so DC_LANE cannot be correctly computed.
 
         Returns:
-            Dict with keys "vendor", "region", "category", "dc".
+            Dict with keys "vendor", "region", "category".
             Each value maps group_key → {count, critical_count, high_count, exception_ids}.
         """
         vendor: Dict[str, dict] = defaultdict(
@@ -129,9 +138,6 @@ class PatternAnalyzer:
             lambda: {"count": 0, "critical_count": 0, "high_count": 0, "exception_ids": []}
         )
         category: Dict[str, dict] = defaultdict(
-            lambda: {"count": 0, "critical_count": 0, "high_count": 0, "exception_ids": []}
-        )
-        dc: Dict[str, dict] = defaultdict(
             lambda: {"count": 0, "critical_count": 0, "high_count": 0, "exception_ids": []}
         )
 
@@ -158,7 +164,6 @@ class PatternAnalyzer:
             "vendor": dict(vendor),
             "region": dict(region),
             "category": dict(category),
-            "dc": dict(dc),
         }
 
     @staticmethod
@@ -190,7 +195,7 @@ class PatternAnalyzer:
         _section("VENDOR", aggregates["vendor"])
         _section("REGION", aggregates["region"])
         _section("CATEGORY", aggregates["category"])
-        _section("DC LANE", aggregates["dc"])
+        # DC LANE intentionally omitted: no DC identifier field in enrichment layer
 
         lines.append(
             "Return a JSON array of pattern objects with fields: "
@@ -322,6 +327,12 @@ def _raw_to_pattern_detail(
             elif tr.priority == Priority.HIGH:
                 high_count += 1
 
+    if not affected_ids:
+        logger.debug(
+            f"Pattern {pattern_type.value} / {group_key!r} matched 0 exceptions — skipping."
+        )
+        return None
+
     pattern_id = f"PAT-{str(uuid.uuid4())[:8].upper()}"
 
     return PatternDetail(
@@ -349,8 +360,9 @@ def _matches_pattern(
         return ex.region == group_key
     if pattern_type == PatternType.CATEGORY:
         return ex.category == group_key
-    if pattern_type == PatternType.DC_LANE:
-        return ex.region == group_key
+    # DC_LANE intentionally not handled: no DC identifier field in EnrichedExceptionSchema.
+    # LLM-hallucinated DC_LANE patterns will match 0 exceptions and be dropped by the
+    # zero-affected guard in _raw_to_pattern_detail.
     if pattern_type == PatternType.MACRO:
         return True
     return False
