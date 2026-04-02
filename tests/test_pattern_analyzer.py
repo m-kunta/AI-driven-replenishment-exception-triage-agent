@@ -551,3 +551,91 @@ class TestAnalyze:
         analyzer.analyze(triage, enriched)
 
         assert mock_provider.complete.call_count == 1
+
+
+class TestDcLaneRemoval:
+    @patch("src.agent.pattern_analyzer.get_provider")
+    def test_build_aggregates_has_no_dc_key(self, mock_get_provider):
+        """After fix: _build_aggregates should not include a 'dc' key."""
+        mock_get_provider.return_value = MagicMock()
+        from src.agent.pattern_analyzer import PatternAnalyzer
+        analyzer = PatternAnalyzer(_make_config())
+
+        triage = [_make_triage_result("exc-001")]
+        enriched = [_make_enriched_exception("exc-001")]
+        aggs = analyzer._build_aggregates(triage, enriched)
+
+        assert "dc" not in aggs
+        assert set(aggs.keys()) == {"vendor", "region", "category"}
+
+    @patch("src.agent.pattern_analyzer.get_provider")
+    def test_build_summary_prompt_has_no_dc_lane_section(self, mock_get_provider):
+        """Summary prompt should not reference DC LANE."""
+        mock_get_provider.return_value = MagicMock()
+        from src.agent.pattern_analyzer import PatternAnalyzer
+
+        aggregates = {
+            "vendor": {"VND-001": {"count": 3, "critical_count": 0, "high_count": 0, "exception_ids": []}},
+            "region": {},
+            "category": {},
+        }
+        prompt = PatternAnalyzer._build_summary_prompt(aggregates, threshold=3)
+
+        assert "DC LANE" not in prompt
+        assert "dc" not in prompt.lower()
+
+    @patch("src.agent.pattern_analyzer.get_provider")
+    def test_dc_lane_pattern_from_llm_produces_zero_affected(self, mock_get_provider):
+        """If the LLM hallucinates a DC_LANE pattern, it should be skipped (0 matches)."""
+        mock_provider = MagicMock()
+        mock_get_provider.return_value = mock_provider
+        # LLM returns a DC_LANE pattern — no exceptions should match
+        dc_pattern = {
+            "pattern_type": "DC_LANE",
+            "group_key": "DC-001",
+            "count": 3,
+            "description": "DC outage",
+        }
+        mock_provider.complete.return_value = _make_llm_pattern_response([dc_pattern])
+        from src.agent.pattern_analyzer import PatternAnalyzer
+        analyzer = PatternAnalyzer(_make_config(pattern_threshold=3))
+
+        triage = [_make_triage_result(f"exc-{i:03d}") for i in range(3)]
+        enriched = [_make_enriched_exception(f"exc-{i:03d}", region="Northeast") for i in range(3)]
+
+        report = analyzer.analyze(triage, enriched)
+
+        # DC_LANE pattern matched 0 exceptions → skipped
+        assert report.total_patterns == 0
+        assert report.patterns == []
+
+    @patch("src.agent.pattern_analyzer.get_provider")
+    def test_matches_pattern_does_not_match_dc_lane(self, mock_get_provider):
+        """_matches_pattern should return False for DC_LANE after fix."""
+        mock_get_provider.return_value = MagicMock()
+        from src.agent.pattern_analyzer import PatternAnalyzer, _matches_pattern, PatternType
+        enriched = _make_enriched_exception("exc-001", region="Northeast")
+
+        result = _matches_pattern(enriched, PatternType.DC_LANE, "Northeast")
+
+        assert result is False
+
+    @patch("src.agent.pattern_analyzer.get_provider")
+    def test_vendor_and_region_patterns_still_work_after_dc_removal(self, mock_get_provider):
+        """Removing dc should not break vendor/region/category patterns."""
+        mock_provider = MagicMock()
+        mock_get_provider.return_value = mock_provider
+        mock_provider.complete.return_value = _make_llm_pattern_response(
+            [_vendor_pattern_dict("VND-001", count=3)]
+        )
+        from src.agent.pattern_analyzer import PatternAnalyzer
+        analyzer = PatternAnalyzer(_make_config(pattern_threshold=3))
+
+        triage = [_make_triage_result(f"exc-{i:03d}", Priority.MEDIUM) for i in range(3)]
+        enriched = [_make_enriched_exception(f"exc-{i:03d}", vendor_id="VND-001") for i in range(3)]
+
+        report = analyzer.analyze(triage, enriched)
+
+        assert report.total_patterns == 1
+        assert report.patterns[0].pattern_type == PatternType.VENDOR
+        assert report.total_escalations == 3
