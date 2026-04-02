@@ -129,6 +129,9 @@ class BatchProcessor:
                         f"LLM returned misaligned results for batch of {len(batch)}: "
                         f"missing={missing}, extra={extra}"
                     )
+                # Preserve positional alignment with the input batch for downstream passes.
+                triage_by_id = {tr.exception_id: tr for tr in triage_results}
+                triage_results = [triage_by_id[ex.exception_id] for ex in batch]
                 logger.debug(
                     f"Batch of {len(batch)} parsed successfully "
                     f"(attempt {attempt}, {response.input_tokens} in / {response.output_tokens} out tokens)."

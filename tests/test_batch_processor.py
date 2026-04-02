@@ -598,11 +598,10 @@ class TestBatchAlignmentValidation:
     @patch("time.sleep")
     @patch("src.agent.batch_processor.PromptComposer")
     @patch("src.agent.batch_processor.get_provider")
-    def test_accepts_reordered_results_with_same_ids(
+    def test_reorders_results_to_match_input_batch_order(
         self, mock_get_provider, mock_composer_cls, mock_sleep
     ):
-        """LLM returns correct IDs but in a different order — should be ACCEPTED.
-        The alignment check only validates ID set equality, not order."""
+        """LLM returns correct IDs in a different order — processor must restore input order."""
         mock_provider = MagicMock()
         mock_get_provider.return_value = mock_provider
         mock_composer = MagicMock()
@@ -610,8 +609,7 @@ class TestBatchAlignmentValidation:
         mock_composer.compose_system_prompt.return_value = "sys"
         mock_composer.compose_user_prompt.return_value = "user"
 
-        # Batch is [exc-001, exc-002] but LLM returns them in reverse order
-        # Both IDs are present — set equality holds — should succeed on first attempt
+        # Batch is [exc-001, exc-002] but LLM returns them in reverse order.
         reordered_resp = _mock_provider_response(["exc-002", "exc-001"])
         mock_provider.complete.return_value = reordered_resp
 
@@ -626,6 +624,7 @@ class TestBatchAlignmentValidation:
         assert result.batches_completed == 1
         assert result.batches_failed == 0
         assert mock_provider.complete.call_count == 1
+        assert [r.exception_id for r in result.triage_results] == ["exc-001", "exc-002"]
 
     @patch("time.sleep")
     @patch("src.agent.batch_processor.PromptComposer")

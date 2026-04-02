@@ -290,6 +290,20 @@ class TestCallLlm:
         assert result[0]["group_key"] == "VND-001"
 
     @patch("src.agent.pattern_analyzer.get_provider")
+    def test_system_prompt_excludes_dc_lane_from_allowed_output_types(self, mock_get_provider):
+        mock_provider = MagicMock()
+        mock_get_provider.return_value = mock_provider
+        mock_provider.complete.return_value = _make_llm_pattern_response([])
+        from src.agent.pattern_analyzer import PatternAnalyzer
+
+        analyzer = PatternAnalyzer(_make_config())
+        analyzer._call_llm("test prompt")
+
+        system_prompt = mock_provider.complete.call_args.args[0]
+        assert "DC_LANE" not in system_prompt
+        assert "VENDOR|CATEGORY|REGION|MACRO" in system_prompt
+
+    @patch("src.agent.pattern_analyzer.get_provider")
     def test_returns_empty_list_on_llm_returning_empty_array(self, mock_get_provider):
         mock_provider = MagicMock()
         mock_get_provider.return_value = mock_provider
