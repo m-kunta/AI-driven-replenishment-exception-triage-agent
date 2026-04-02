@@ -11,7 +11,7 @@ AI-powered agentic system that ingests replenishment exceptions from retail plan
 ```
 Layer 1: Ingestion & Normalization    ← BUILT (CSV adapter + normalizer)
 Layer 2: Context Enrichment           ← COMPLETE (DataLoader + EnrichmentEngine; stable handoff contract for Layer 3)
-Layer 3: Reasoning Engine             ← IN PROGRESS (prompt system, LLM abstraction, phantom webhook built; batch processor + pattern analyzer pending)
+Layer 3: Reasoning Engine             ← IN PROGRESS (prompt system, LLM abstraction, batch processor, pattern analyzer, phantom webhook built; triage agent pending)
 Layer 4: Routing, Alerting & Output   ← NOT STARTED
 ```
 
@@ -37,12 +37,14 @@ python -m pytest tests/ -v               # run tests
 ## Key Commands
 
 ```bash
-pytest tests/ -v                         # 167 tests, all passing
+pytest tests/ -v                         # 232 tests, all passing
 pytest tests/test_ingestion.py -v        # 25 ingestion tests
 pytest tests/test_enrichment.py -v       # enrichment tests
 pytest tests/test_llm_provider.py -v     # LLM provider abstraction tests
 pytest tests/test_prompt_composer.py -v  # prompt composer tests
 pytest tests/test_phantom_webhook.py -v  # phantom webhook tests
+pytest tests/test_batch_processor.py -v  # inference loop tests
+pytest tests/test_pattern_analyzer.py -v # pattern aggregation tests
 python scripts/generate_sample_data.py   # reproducible (fixed seed=42)
 ```
 
@@ -62,8 +64,8 @@ src/
 │   ├── llm_provider.py        # BUILT: LLMProvider ABC + Claude/OpenAI/Gemini/Ollama + get_provider()
 │   ├── prompt_composer.py     # BUILT: loads prompts/, assembles system+user prompts
 │   ├── phantom_webhook.py     # BUILT: fires HTTP POST on POTENTIAL_PHANTOM_INVENTORY flag
-│   ├── batch_processor.py     # NOT YET BUILT (Task 5.1)
-│   ├── pattern_analyzer.py    # NOT YET BUILT (Task 5.2)
+│   ├── batch_processor.py     # BUILT: inference loop, API retry, JSON parse
+│   ├── pattern_analyzer.py    # BUILT: aggregates anomalies & calls LLM to escalate
 │   └── triage_agent.py        # NOT YET BUILT (Task 5.4)
 ├── output/                    # NOT YET BUILT (Layer 4)
 └── utils/
@@ -109,6 +111,8 @@ The generated sample data includes intentional scenarios for testing triage qual
 - `src/agent/llm_provider.py`: provider-agnostic LLM abstraction. Call `get_provider(config.agent)` to get an `LLMProvider` instance; call `.complete(system, user) -> LLMResponse` to invoke any supported model.
 - `src/agent/prompt_composer.py`: `PromptComposer` loads all 7 files in `prompts/` at init. Call `compose_system_prompt()` + `compose_user_prompt(batch, reasoning_trace_enabled)` to build prompts ready for any provider.
 - `src/agent/phantom_webhook.py`: `process_phantom_inventory(triage_result, config)` fires on `POTENTIAL_PHANTOM_INVENTORY` flag; 5s timeout; on `phantom_confirmed: true` sets `exception_type = DATA_INTEGRITY` and `priority = MEDIUM` (or webhook-provided level).
+- `src/agent/batch_processor.py`: `BatchProcessor` loops over exceptions in chunks (default 30) using `prompt_composer` and `llm_provider`. Features built-in parse retries (1 attempt) and API backoff (3 attempts).
+- `src/agent/pattern_analyzer.py`: `PatternAnalyzer` groups exceptions by `PatternType` (VENDOR, DC_LANE, CATEGORY, REGION), passes summaries to the LLM, and triggers priority escalation (e.g. MEDIUM -> HIGH) for matching events.
 - `scripts/run_triage.py` is not yet present; use module-level tests and sample generation for current verification.
 
 ## Multi-Provider LLM Configuration
