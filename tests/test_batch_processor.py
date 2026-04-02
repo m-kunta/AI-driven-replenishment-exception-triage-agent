@@ -472,3 +472,43 @@ class TestBatchProcessorRetry:
         assert result.batches_failed == 1
         assert result.batches_completed == 1
         assert len(result.triage_results) == 1
+
+
+class TestReasoningTrace:
+    @patch("src.agent.batch_processor.PromptComposer")
+    @patch("src.agent.batch_processor.get_provider")
+    def test_threads_reasoning_trace_enabled_true(self, mock_get_provider, mock_composer_cls):
+        mock_provider = MagicMock()
+        mock_get_provider.return_value = mock_provider
+        mock_composer = MagicMock()
+        mock_composer_cls.return_value = mock_composer
+        mock_composer.compose_system_prompt.return_value = "sys"
+        mock_composer.compose_user_prompt.return_value = "user"
+        mock_provider.complete.return_value = _mock_provider_response(["exc-001"])
+
+        from src.agent.batch_processor import BatchProcessor
+        config = _make_config(reasoning_trace_enabled=True)
+        processor = BatchProcessor(config)
+        processor.process([_make_enriched_exception("exc-001")])
+
+        call_args = mock_composer.compose_user_prompt.call_args
+        assert call_args.kwargs.get("reasoning_trace_enabled") is True
+
+    @patch("src.agent.batch_processor.PromptComposer")
+    @patch("src.agent.batch_processor.get_provider")
+    def test_reasoning_trace_disabled_by_default(self, mock_get_provider, mock_composer_cls):
+        mock_provider = MagicMock()
+        mock_get_provider.return_value = mock_provider
+        mock_composer = MagicMock()
+        mock_composer_cls.return_value = mock_composer
+        mock_composer.compose_system_prompt.return_value = "sys"
+        mock_composer.compose_user_prompt.return_value = "user"
+        mock_provider.complete.return_value = _mock_provider_response(["exc-001"])
+
+        from src.agent.batch_processor import BatchProcessor
+        config = _make_config(reasoning_trace_enabled=False)
+        processor = BatchProcessor(config)
+        processor.process([_make_enriched_exception("exc-001")])
+
+        call_args = mock_composer.compose_user_prompt.call_args
+        assert call_args.kwargs.get("reasoning_trace_enabled") is False
