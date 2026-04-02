@@ -252,7 +252,12 @@ class TestBatchProcessorProcess:
         mock_composer_cls.return_value = mock_composer
         mock_composer.compose_system_prompt.return_value = "sys"
         mock_composer.compose_user_prompt.return_value = "user"
-        mock_provider.complete.return_value = _mock_provider_response(["exc-001"])
+        # Return aligned IDs per batch: [000,001,002], [003,004,005], [006]
+        mock_provider.complete.side_effect = [
+            _mock_provider_response([f"exc-{i:03d}" for i in range(0, 3)]),
+            _mock_provider_response([f"exc-{i:03d}" for i in range(3, 6)]),
+            _mock_provider_response([f"exc-{i:03d}" for i in range(6, 7)]),
+        ]
 
         from src.agent.batch_processor import BatchProcessor
         config = _make_config(batch_size=3)
@@ -272,7 +277,10 @@ class TestBatchProcessorProcess:
         mock_composer_cls.return_value = mock_composer
         mock_composer.compose_system_prompt.return_value = "sys"
         mock_composer.compose_user_prompt.return_value = "user"
-        mock_provider.complete.return_value = _mock_provider_response(["exc-001"])
+        # Return all 30 aligned IDs in the single batch response
+        mock_provider.complete.return_value = _mock_provider_response(
+            [f"exc-{i:03d}" for i in range(30)]
+        )
 
         from src.agent.batch_processor import BatchProcessor
         config = _make_config(batch_size=30)
@@ -291,9 +299,11 @@ class TestBatchProcessorProcess:
         mock_composer_cls.return_value = mock_composer
         mock_composer.compose_system_prompt.return_value = "sys"
         mock_composer.compose_user_prompt.return_value = "user"
-        mock_provider.complete.return_value = _mock_provider_response(
-            ["exc-001"], input_tokens=200, output_tokens=80
-        )
+        # batch_size=1: first call processes exc-001, second processes exc-002
+        mock_provider.complete.side_effect = [
+            _mock_provider_response(["exc-001"], input_tokens=200, output_tokens=80),
+            _mock_provider_response(["exc-002"], input_tokens=200, output_tokens=80),
+        ]
 
         from src.agent.batch_processor import BatchProcessor
         config = _make_config(batch_size=1)
@@ -315,7 +325,11 @@ class TestBatchProcessorProcess:
         mock_composer_cls.return_value = mock_composer
         mock_composer.compose_system_prompt.return_value = "sys"
         mock_composer.compose_user_prompt.return_value = "user"
-        mock_provider.complete.return_value = _mock_provider_response(["exc-001"])
+        # batch_size=1: each batch contains exactly one exception, return matching ID
+        mock_provider.complete.side_effect = [
+            _mock_provider_response(["exc-001"]),
+            _mock_provider_response(["exc-002"]),
+        ]
 
         from src.agent.batch_processor import BatchProcessor
         config = _make_config(batch_size=1)
@@ -457,7 +471,8 @@ class TestBatchProcessorRetry:
 
         bad_resp = MagicMock()
         bad_resp.text = "invalid"
-        valid_resp = _mock_provider_response(["exc-001"])
+        # batch 1 = exc-001 (fails with bad JSON), batch 2 = exc-002 (succeeds)
+        valid_resp = _mock_provider_response(["exc-002"])
 
         mock_provider.complete.side_effect = [bad_resp, valid_resp]
 
@@ -512,3 +527,130 @@ class TestReasoningTrace:
 
         call_args = mock_composer.compose_user_prompt.call_args
         assert call_args.kwargs.get("reasoning_trace_enabled") is False
+
+
+class TestBatchAlignmentValidation:
+    @patch("time.sleep")
+    @patch("src.agent.batch_processor.PromptComposer")
+    @patch("src.agent.batch_processor.get_provider")
+    def test_retries_when_llm_omits_an_exception(
+        self, mock_get_provider, mock_composer_cls, mock_sleep
+    ):
+        """LLM returns fewer exception IDs than the batch — treated as parse failure."""
+        mock_provider = MagicMock()
+        mock_get_provider.return_value = mock_provider
+        mock_composer = MagicMock()
+        mock_composer_cls.return_value = mock_composer
+        mock_composer.compose_system_prompt.return_value = "sys"
+        mock_composer.compose_user_prompt.return_value = "user"
+
+        # Batch has exc-001 and exc-002, but LLM only returns exc-001
+        incomplete_resp = MagicMock()
+        incomplete_resp.text = _make_llm_response_text(["exc-001"])
+        valid_resp = _mock_provider_response(["exc-001", "exc-002"])
+
+        # First attempt: incomplete; second attempt: valid
+        mock_provider.complete.side_effect = [incomplete_resp, valid_resp]
+
+        from src.agent.batch_processor import BatchProcessor
+        config = _make_config(retry_attempts=3, retry_backoff_seconds=0)
+        processor = BatchProcessor(config)
+        result = processor.process([
+            _make_enriched_exception("exc-001"),
+            _make_enriched_exception("exc-002"),
+        ])
+
+        assert result.batches_completed == 1
+        assert result.batches_failed == 0
+        assert len(result.triage_results) == 2
+        assert mock_provider.complete.call_count == 2
+
+    @patch("time.sleep")
+    @patch("src.agent.batch_processor.PromptComposer")
+    @patch("src.agent.batch_processor.get_provider")
+    def test_retries_when_llm_adds_extra_exception(
+        self, mock_get_provider, mock_composer_cls, mock_sleep
+    ):
+        """LLM returns an exception_id not in the batch — treated as parse failure."""
+        mock_provider = MagicMock()
+        mock_get_provider.return_value = mock_provider
+        mock_composer = MagicMock()
+        mock_composer_cls.return_value = mock_composer
+        mock_composer.compose_system_prompt.return_value = "sys"
+        mock_composer.compose_user_prompt.return_value = "user"
+
+        # Batch has exc-001, but LLM returns exc-001 + a hallucinated exc-999
+        hallucinated_resp = MagicMock()
+        hallucinated_resp.text = _make_llm_response_text(["exc-001", "exc-999"])
+        valid_resp = _mock_provider_response(["exc-001"])
+
+        mock_provider.complete.side_effect = [hallucinated_resp, valid_resp]
+
+        from src.agent.batch_processor import BatchProcessor
+        config = _make_config(retry_attempts=3, retry_backoff_seconds=0)
+        processor = BatchProcessor(config)
+        result = processor.process([_make_enriched_exception("exc-001")])
+
+        assert result.batches_completed == 1
+        assert result.batches_failed == 0
+        assert mock_provider.complete.call_count == 2
+
+    @patch("time.sleep")
+    @patch("src.agent.batch_processor.PromptComposer")
+    @patch("src.agent.batch_processor.get_provider")
+    def test_accepts_reordered_results_with_same_ids(
+        self, mock_get_provider, mock_composer_cls, mock_sleep
+    ):
+        """LLM returns correct IDs but in a different order — should be ACCEPTED.
+        The alignment check only validates ID set equality, not order."""
+        mock_provider = MagicMock()
+        mock_get_provider.return_value = mock_provider
+        mock_composer = MagicMock()
+        mock_composer_cls.return_value = mock_composer
+        mock_composer.compose_system_prompt.return_value = "sys"
+        mock_composer.compose_user_prompt.return_value = "user"
+
+        # Batch is [exc-001, exc-002] but LLM returns them in reverse order
+        # Both IDs are present — set equality holds — should succeed on first attempt
+        reordered_resp = _mock_provider_response(["exc-002", "exc-001"])
+        mock_provider.complete.return_value = reordered_resp
+
+        from src.agent.batch_processor import BatchProcessor
+        config = _make_config(retry_attempts=3, retry_backoff_seconds=0)
+        processor = BatchProcessor(config)
+        result = processor.process([
+            _make_enriched_exception("exc-001"),
+            _make_enriched_exception("exc-002"),
+        ])
+
+        assert result.batches_completed == 1
+        assert result.batches_failed == 0
+        assert mock_provider.complete.call_count == 1
+
+    @patch("time.sleep")
+    @patch("src.agent.batch_processor.PromptComposer")
+    @patch("src.agent.batch_processor.get_provider")
+    def test_batch_marked_failed_if_all_retries_return_misaligned(
+        self, mock_get_provider, mock_composer_cls, mock_sleep
+    ):
+        """If alignment never converges across all retries, batch is marked failed."""
+        mock_provider = MagicMock()
+        mock_get_provider.return_value = mock_provider
+        mock_composer = MagicMock()
+        mock_composer_cls.return_value = mock_composer
+        mock_composer.compose_system_prompt.return_value = "sys"
+        mock_composer.compose_user_prompt.return_value = "user"
+
+        # Always returns wrong IDs — exc-001 in batch, exc-999 returned
+        always_wrong = MagicMock()
+        always_wrong.text = _make_llm_response_text(["exc-999"])
+        mock_provider.complete.return_value = always_wrong
+
+        from src.agent.batch_processor import BatchProcessor
+        config = _make_config(retry_attempts=2, retry_backoff_seconds=0)
+        processor = BatchProcessor(config)
+        result = processor.process([_make_enriched_exception("exc-001")])
+
+        assert result.batches_failed == 1
+        assert result.batches_completed == 0
+        assert mock_provider.complete.call_count == 2
