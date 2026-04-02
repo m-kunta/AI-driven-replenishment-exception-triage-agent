@@ -189,3 +189,365 @@ class TestBuildAggregates:
 
         assert aggs["vendor"]["VND-100"]["count"] == 1
         assert aggs["vendor"]["VND-200"]["count"] == 1
+
+
+class TestBuildSummaryPrompt:
+    @patch("src.agent.pattern_analyzer.get_provider")
+    def test_includes_qualifying_vendor_section(self, mock_get_provider):
+        mock_get_provider.return_value = MagicMock()
+        from src.agent.pattern_analyzer import PatternAnalyzer
+
+        aggregates = {
+            "vendor": {"VND-001": {"count": 5, "critical_count": 2, "high_count": 1, "exception_ids": []}},
+            "region": {},
+            "category": {},
+            "dc": {},
+        }
+        prompt = PatternAnalyzer._build_summary_prompt(aggregates, threshold=3)
+
+        assert "BY VENDOR:" in prompt
+        assert "VND-001" in prompt
+        assert "5 exceptions" in prompt
+        assert "2 CRITICAL" in prompt
+
+    @patch("src.agent.pattern_analyzer.get_provider")
+    def test_omits_sections_below_threshold(self, mock_get_provider):
+        mock_get_provider.return_value = MagicMock()
+        from src.agent.pattern_analyzer import PatternAnalyzer
+
+        aggregates = {
+            "vendor": {"VND-001": {"count": 2, "critical_count": 0, "high_count": 0, "exception_ids": []}},
+            "region": {},
+            "category": {},
+            "dc": {},
+        }
+        prompt = PatternAnalyzer._build_summary_prompt(aggregates, threshold=3)
+
+        assert "BY VENDOR:" not in prompt
+        assert "VND-001" not in prompt
+
+    @patch("src.agent.pattern_analyzer.get_provider")
+    def test_includes_category_section(self, mock_get_provider):
+        mock_get_provider.return_value = MagicMock()
+        from src.agent.pattern_analyzer import PatternAnalyzer
+
+        aggregates = {
+            "vendor": {},
+            "region": {},
+            "category": {"Frozen Foods": {"count": 4, "critical_count": 0, "high_count": 2, "exception_ids": []}},
+            "dc": {},
+        }
+        prompt = PatternAnalyzer._build_summary_prompt(aggregates, threshold=3)
+
+        assert "BY CATEGORY:" in prompt
+        assert "Frozen Foods" in prompt
+
+    @patch("src.agent.pattern_analyzer.get_provider")
+    def test_includes_region_section(self, mock_get_provider):
+        mock_get_provider.return_value = MagicMock()
+        from src.agent.pattern_analyzer import PatternAnalyzer
+
+        aggregates = {
+            "vendor": {},
+            "region": {"Southeast": {"count": 6, "critical_count": 1, "high_count": 3, "exception_ids": []}},
+            "category": {},
+            "dc": {},
+        }
+        prompt = PatternAnalyzer._build_summary_prompt(aggregates, threshold=3)
+
+        assert "BY REGION:" in prompt
+        assert "Southeast" in prompt
+
+    @patch("src.agent.pattern_analyzer.get_provider")
+    def test_includes_return_instruction(self, mock_get_provider):
+        mock_get_provider.return_value = MagicMock()
+        from src.agent.pattern_analyzer import PatternAnalyzer
+
+        aggregates = {
+            "vendor": {"V": {"count": 3, "critical_count": 0, "high_count": 0, "exception_ids": []}},
+            "region": {}, "category": {}, "dc": {},
+        }
+        prompt = PatternAnalyzer._build_summary_prompt(aggregates, threshold=3)
+
+        assert "JSON array" in prompt
+
+
+class TestCallLlm:
+    @patch("src.agent.pattern_analyzer.get_provider")
+    def test_returns_parsed_pattern_list(self, mock_get_provider):
+        mock_provider = MagicMock()
+        mock_get_provider.return_value = mock_provider
+        mock_provider.complete.return_value = _make_llm_pattern_response(
+            [_vendor_pattern_dict()]
+        )
+        from src.agent.pattern_analyzer import PatternAnalyzer
+        analyzer = PatternAnalyzer(_make_config())
+
+        result = analyzer._call_llm("test prompt")
+
+        assert len(result) == 1
+        assert result[0]["pattern_type"] == "VENDOR"
+        assert result[0]["group_key"] == "VND-001"
+
+    @patch("src.agent.pattern_analyzer.get_provider")
+    def test_returns_empty_list_on_llm_returning_empty_array(self, mock_get_provider):
+        mock_provider = MagicMock()
+        mock_get_provider.return_value = mock_provider
+        mock_provider.complete.return_value = _make_llm_pattern_response([])
+        from src.agent.pattern_analyzer import PatternAnalyzer
+        analyzer = PatternAnalyzer(_make_config())
+
+        result = analyzer._call_llm("test prompt")
+
+        assert result == []
+
+    @patch("src.agent.pattern_analyzer.get_provider")
+    def test_returns_empty_list_on_invalid_json(self, mock_get_provider):
+        mock_provider = MagicMock()
+        mock_get_provider.return_value = mock_provider
+        bad_resp = MagicMock()
+        bad_resp.text = "not json at all"
+        mock_provider.complete.return_value = bad_resp
+        from src.agent.pattern_analyzer import PatternAnalyzer
+        analyzer = PatternAnalyzer(_make_config())
+
+        result = analyzer._call_llm("test prompt")
+
+        assert result == []
+
+    @patch("src.agent.pattern_analyzer.get_provider")
+    def test_strips_markdown_fences(self, mock_get_provider):
+        mock_provider = MagicMock()
+        mock_get_provider.return_value = mock_provider
+        raw = json.dumps([_vendor_pattern_dict()])
+        fenced = MagicMock()
+        fenced.text = f"```json\n{raw}\n```"
+        mock_provider.complete.return_value = fenced
+        from src.agent.pattern_analyzer import PatternAnalyzer
+        analyzer = PatternAnalyzer(_make_config())
+
+        result = analyzer._call_llm("test prompt")
+
+        assert len(result) == 1
+
+    @patch("src.agent.pattern_analyzer.get_provider")
+    def test_returns_empty_list_when_llm_returns_non_list(self, mock_get_provider):
+        mock_provider = MagicMock()
+        mock_get_provider.return_value = mock_provider
+        bad_resp = MagicMock()
+        bad_resp.text = '{"key": "value"}'
+        mock_provider.complete.return_value = bad_resp
+        from src.agent.pattern_analyzer import PatternAnalyzer
+        analyzer = PatternAnalyzer(_make_config())
+
+        result = analyzer._call_llm("test prompt")
+
+        assert result == []
+
+    @patch("src.agent.pattern_analyzer.get_provider")
+    def test_returns_empty_list_on_provider_exception(self, mock_get_provider):
+        mock_provider = MagicMock()
+        mock_get_provider.return_value = mock_provider
+        mock_provider.complete.side_effect = RuntimeError("Network error")
+        from src.agent.pattern_analyzer import PatternAnalyzer
+        analyzer = PatternAnalyzer(_make_config())
+
+        result = analyzer._call_llm("test prompt")
+
+        assert result == []
+
+
+class TestApplyEscalations:
+    @patch("src.agent.pattern_analyzer.get_provider")
+    def test_escalates_medium_to_high_for_vendor_pattern(self, mock_get_provider):
+        mock_get_provider.return_value = MagicMock()
+        from src.agent.pattern_analyzer import PatternAnalyzer
+        analyzer = PatternAnalyzer(_make_config())
+
+        triage = [
+            _make_triage_result("exc-001", Priority.MEDIUM),
+            _make_triage_result("exc-002", Priority.MEDIUM),
+            _make_triage_result("exc-003", Priority.HIGH),
+        ]
+        enriched = [
+            _make_enriched_exception("exc-001", vendor_id="VND-001"),
+            _make_enriched_exception("exc-002", vendor_id="VND-001"),
+            _make_enriched_exception("exc-003", vendor_id="VND-001"),
+        ]
+        pattern = PatternDetail(
+            pattern_id="PAT-AAAAAAAA",
+            pattern_type=PatternType.VENDOR,
+            group_key="VND-001",
+            affected_count=3,
+            description="Vendor issue",
+        )
+        report = MacroPatternReport(patterns=[pattern])
+
+        count = analyzer._apply_escalations(report, triage, enriched)
+
+        assert count == 2
+        assert triage[0].priority == Priority.HIGH
+        assert triage[0].escalated_from == "MEDIUM"
+        assert triage[0].pattern_id == "PAT-AAAAAAAA"
+        assert triage[1].priority == Priority.HIGH
+        assert triage[2].priority == Priority.HIGH
+        assert triage[2].escalated_from is None
+
+    @patch("src.agent.pattern_analyzer.get_provider")
+    def test_does_not_downgrade_critical(self, mock_get_provider):
+        mock_get_provider.return_value = MagicMock()
+        from src.agent.pattern_analyzer import PatternAnalyzer
+        analyzer = PatternAnalyzer(_make_config())
+
+        triage = [_make_triage_result("exc-001", Priority.CRITICAL)]
+        enriched = [_make_enriched_exception("exc-001", vendor_id="VND-001")]
+        pattern = PatternDetail(
+            pattern_id="PAT-AAAAAAAA",
+            pattern_type=PatternType.VENDOR,
+            group_key="VND-001",
+            affected_count=1,
+            description="test",
+        )
+        report = MacroPatternReport(patterns=[pattern])
+
+        count = analyzer._apply_escalations(report, triage, enriched)
+
+        assert count == 0
+        assert triage[0].priority == Priority.CRITICAL
+
+    @patch("src.agent.pattern_analyzer.get_provider")
+    def test_does_not_escalate_low_priority(self, mock_get_provider):
+        mock_get_provider.return_value = MagicMock()
+        from src.agent.pattern_analyzer import PatternAnalyzer
+        analyzer = PatternAnalyzer(_make_config())
+
+        triage = [_make_triage_result("exc-001", Priority.LOW)]
+        enriched = [_make_enriched_exception("exc-001", vendor_id="VND-001")]
+        pattern = PatternDetail(
+            pattern_id="PAT-AAAAAAAA",
+            pattern_type=PatternType.VENDOR,
+            group_key="VND-001",
+            affected_count=1,
+            description="test",
+        )
+        report = MacroPatternReport(patterns=[pattern])
+
+        count = analyzer._apply_escalations(report, triage, enriched)
+
+        assert count == 0
+        assert triage[0].priority == Priority.LOW
+
+    @patch("src.agent.pattern_analyzer.get_provider")
+    def test_sets_pattern_id_on_all_members_even_non_escalated(self, mock_get_provider):
+        mock_get_provider.return_value = MagicMock()
+        from src.agent.pattern_analyzer import PatternAnalyzer
+        analyzer = PatternAnalyzer(_make_config())
+
+        triage = [
+            _make_triage_result("exc-001", Priority.HIGH),
+            _make_triage_result("exc-002", Priority.MEDIUM),
+        ]
+        enriched = [
+            _make_enriched_exception("exc-001", vendor_id="VND-001"),
+            _make_enriched_exception("exc-002", vendor_id="VND-001"),
+        ]
+        pattern = PatternDetail(
+            pattern_id="PAT-BBBBBBBB",
+            pattern_type=PatternType.VENDOR,
+            group_key="VND-001",
+            affected_count=2,
+            description="test",
+        )
+        report = MacroPatternReport(patterns=[pattern])
+        analyzer._apply_escalations(report, triage, enriched)
+
+        assert triage[0].pattern_id == "PAT-BBBBBBBB"
+        assert triage[1].pattern_id == "PAT-BBBBBBBB"
+
+
+class TestAnalyze:
+    @patch("src.agent.pattern_analyzer.get_provider")
+    def test_returns_empty_report_for_empty_triage_results(self, mock_get_provider):
+        mock_get_provider.return_value = MagicMock()
+        from src.agent.pattern_analyzer import PatternAnalyzer
+        analyzer = PatternAnalyzer(_make_config())
+
+        report = analyzer.analyze([], [])
+
+        assert isinstance(report, MacroPatternReport)
+        assert report.patterns == []
+        assert report.total_patterns == 0
+
+    @patch("src.agent.pattern_analyzer.get_provider")
+    def test_returns_empty_report_when_no_group_meets_threshold(self, mock_get_provider):
+        mock_provider = MagicMock()
+        mock_get_provider.return_value = mock_provider
+        from src.agent.pattern_analyzer import PatternAnalyzer
+        analyzer = PatternAnalyzer(_make_config(pattern_threshold=3))
+
+        triage = [_make_triage_result(f"exc-{i:03d}") for i in range(2)]
+        enriched = [_make_enriched_exception(f"exc-{i:03d}", vendor_id="VND-001") for i in range(2)]
+
+        report = analyzer.analyze(triage, enriched)
+
+        mock_provider.complete.assert_not_called()
+        assert report.total_patterns == 0
+
+    @patch("src.agent.pattern_analyzer.get_provider")
+    def test_full_flow_identifies_vendor_pattern_and_escalates(self, mock_get_provider):
+        mock_provider = MagicMock()
+        mock_get_provider.return_value = mock_provider
+        mock_provider.complete.return_value = _make_llm_pattern_response(
+            [_vendor_pattern_dict("VND-400", count=3, description="Vendor capacity issue")]
+        )
+        from src.agent.pattern_analyzer import PatternAnalyzer
+        analyzer = PatternAnalyzer(_make_config(pattern_threshold=3))
+
+        triage = [
+            _make_triage_result("exc-001", Priority.MEDIUM),
+            _make_triage_result("exc-002", Priority.MEDIUM),
+            _make_triage_result("exc-003", Priority.HIGH),
+        ]
+        enriched = [
+            _make_enriched_exception("exc-001", vendor_id="VND-400"),
+            _make_enriched_exception("exc-002", vendor_id="VND-400"),
+            _make_enriched_exception("exc-003", vendor_id="VND-400"),
+        ]
+        report = analyzer.analyze(triage, enriched)
+
+        assert report.total_patterns == 1
+        assert report.patterns[0].pattern_type == PatternType.VENDOR
+        assert report.patterns[0].group_key == "VND-400"
+        assert report.total_escalations == 2
+        assert triage[0].priority == Priority.HIGH
+        assert triage[0].escalated_from == "MEDIUM"
+        assert triage[1].priority == Priority.HIGH
+        assert triage[2].priority == Priority.HIGH
+
+    @patch("src.agent.pattern_analyzer.get_provider")
+    def test_llm_not_called_when_results_empty(self, mock_get_provider):
+        mock_provider = MagicMock()
+        mock_get_provider.return_value = mock_provider
+        from src.agent.pattern_analyzer import PatternAnalyzer
+        analyzer = PatternAnalyzer(_make_config())
+
+        analyzer.analyze([], [])
+
+        mock_provider.complete.assert_not_called()
+
+    @patch("src.agent.pattern_analyzer.get_provider")
+    def test_llm_called_once_regardless_of_pattern_count(self, mock_get_provider):
+        mock_provider = MagicMock()
+        mock_get_provider.return_value = mock_provider
+        mock_provider.complete.return_value = _make_llm_pattern_response([])
+        from src.agent.pattern_analyzer import PatternAnalyzer
+        analyzer = PatternAnalyzer(_make_config(pattern_threshold=2))
+
+        triage = [_make_triage_result(f"exc-{i:03d}") for i in range(6)]
+        enriched = [
+            _make_enriched_exception(f"exc-{i:03d}", vendor_id="VND-001", region="Southeast", category="Dairy")
+            for i in range(6)
+        ]
+        analyzer.analyze(triage, enriched)
+
+        assert mock_provider.complete.call_count == 1
