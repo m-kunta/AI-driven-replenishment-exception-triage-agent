@@ -36,3 +36,5 @@ output/backtest/*
 # OS
 .DS_Store
 Thumbs.db
+
+.agents/*
