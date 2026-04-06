@@ -80,7 +80,7 @@ google-generativeai>=0.8.0
 - [ ] **Step 1.2: Install new dependencies**
 
 ```bash
-cd /Users/MKunta/CODE/AI-driven-replenishment-exception-triage-agent
+cd /Users/MKunta/AGENTS/CODE/AI-driven-replenishment-exception-triage-agent
 source .venv/bin/activate
 pip install openai>=1.0.0 "google-generativeai>=0.8.0"
 ```
@@ -206,7 +206,7 @@ def validate_required_env_vars(config: AppConfig, adapter: str = "csv", alerts_e
 - [ ] **Step 1.6: Run existing tests to confirm no regressions**
 
 ```bash
-cd /Users/MKunta/CODE/AI-driven-replenishment-exception-triage-agent
+cd /Users/MKunta/AGENTS/CODE/AI-driven-replenishment-exception-triage-agent
 source .venv/bin/activate
 pytest tests/test_ingestion.py tests/test_enrichment.py -v
 ```

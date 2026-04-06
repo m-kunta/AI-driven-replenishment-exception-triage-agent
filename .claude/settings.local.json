@@ -42,9 +42,15 @@
       "Bash(pytest tests/test_pattern_analyzer.py -v --tb=short)",
       "Bash(python -m pytest tests/test_batch_processor.py --tb=short)",
       "Bash(.venv/bin/python -m pytest tests/test_batch_processor.py --tb=short)",
-      "Bash(/Users/MKunta/CODE/AI-driven-replenishment-exception-triage-agent/.venv/bin/python -m pytest tests/test_batch_processor.py --tb=short)",
-      "Bash(/Users/MKunta/CODE/AI-driven-replenishment-exception-triage-agent/.venv/bin/python -m pytest tests/ --tb=short)",
-      "Bash(pytest tests/test_batch_processor.py tests/test_pattern_analyzer.py -q)"
+      "Bash(/Users/MKunta/AGENTS/CODE/AI-driven-replenishment-exception-triage-agent/.venv/bin/python -m pytest tests/test_batch_processor.py --tb=short)",
+      "Bash(/Users/MKunta/AGENTS/CODE/AI-driven-replenishment-exception-triage-agent/.venv/bin/python -m pytest tests/ --tb=short)",
+      "Bash(pytest tests/test_batch_processor.py tests/test_pattern_analyzer.py -q)",
+      "Bash(git check-ignore:*)",
+      "Bash(git worktree:*)",
+      "Bash(/Users/MKunta/AGENTS/CODE/AI-driven-replenishment-exception-triage-agent/.venv/bin/pytest tests/ -q)",
+      "Bash(/Users/MKunta/AGENTS/CODE/AI-driven-replenishment-exception-triage-agent/.venv/bin/pytest /Users/MKunta/AGENTS/CODE/AI-driven-replenishment-exception-triage-agent/.worktrees/layer3-layer4/tests/test_triage_agent.py -v)",
+      "Bash(/Users/MKunta/AGENTS/CODE/AI-driven-replenishment-exception-triage-agent/.venv/bin/pytest /Users/MKunta/AGENTS/CODE/AI-driven-replenishment-exception-triage-agent/.worktrees/layer3-layer4/tests/ -v --tb=short)",
+      "Bash(/Users/MKunta/AGENTS/CODE/AI-driven-replenishment-exception-triage-agent/.venv/bin/pytest /Users/MKunta/AGENTS/CODE/AI-driven-replenishment-exception-triage-agent/.worktrees/layer3-layer4/tests/test_exception_logger.py -v)"
     ]
   }
 }
