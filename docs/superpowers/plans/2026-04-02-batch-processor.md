@@ -194,7 +194,7 @@ class TestBatchProcessorInit:
 - [ ] **Step 2: Run test to confirm it fails**
 
 ```bash
-cd /Users/MKunta/CODE/AI-driven-replenishment-exception-triage-agent
+cd /Users/MKunta/AGENTS/CODE/AI-driven-replenishment-exception-triage-agent
 source .venv/bin/activate
 pytest tests/test_batch_processor.py::TestBatchProcessorInit -v
 ```

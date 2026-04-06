@@ -243,7 +243,7 @@ class TestBuildAggregates:
 - [ ] **Step 2: Run tests to confirm they fail**
 
 ```bash
-cd /Users/MKunta/CODE/AI-driven-replenishment-exception-triage-agent
+cd /Users/MKunta/AGENTS/CODE/AI-driven-replenishment-exception-triage-agent
 source .venv/bin/activate
 pytest tests/test_pattern_analyzer.py::TestPatternAnalyzerInit tests/test_pattern_analyzer.py::TestBuildAggregates -v 2>&1 | head -20
 ```
@@ -605,7 +605,7 @@ def _matches_pattern(
 - [ ] **Step 4: Run Task 1 tests**
 
 ```bash
-cd /Users/MKunta/CODE/AI-driven-replenishment-exception-triage-agent
+cd /Users/MKunta/AGENTS/CODE/AI-driven-replenishment-exception-triage-agent
 source .venv/bin/activate
 pytest tests/test_pattern_analyzer.py::TestPatternAnalyzerInit tests/test_pattern_analyzer.py::TestBuildAggregates -v
 ```
