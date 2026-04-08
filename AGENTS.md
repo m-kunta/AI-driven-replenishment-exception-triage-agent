@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-AI-powered agentic system that ingests replenishment exceptions from retail planning systems, enriches with contextual business signals, and uses Codex to triage by **business consequence** (not magnitude). Outputs prioritized exception lists with action briefs, financial impact, pattern flags, and morning briefing documents.
+AI-powered agentic system that ingests replenishment exceptions from retail planning systems, enriches with contextual business signals, and uses **Claude** and **Codex** to triage by **business consequence** (not magnitude). Outputs prioritized exception lists with action briefs, financial impact, pattern flags, and morning briefing documents.
 
 **Spec document:** `REPLENISHMENT_TRIAGE_AGENT_PROMPT.md` — contains the full task list, schemas, architecture, and acceptance criteria for all phases.
 
@@ -10,8 +10,8 @@ AI-powered agentic system that ingests replenishment exceptions from retail plan
 
 ```
 Layer 1: Ingestion & Normalization    ← BUILT (CSV adapter + normalizer)
-Layer 2: Context Enrichment           ← IN PROGRESS (DataLoader implemented; engine in progress)
-Layer 3: Codex Reasoning Engine      ← NOT STARTED
+Layer 2: Context Enrichment           ← COMPLETE (DataLoader + EnrichmentEngine; stable handoff contract for Layer 3)
+Layer 3: Reasoning Engine             ← IN PROGRESS (LLM abstraction, prompt system, batch processor, pattern analyzer, phantom webhook built; triage_agent.py orchestrator pending)
 Layer 4: Routing, Alerting & Output   ← NOT STARTED
 ```
 
@@ -23,7 +23,7 @@ Layer 4: Routing, Alerting & Output   ← NOT STARTED
 - **Logging:** loguru
 - **HTTP:** httpx
 - **DB:** SQLAlchemy (for SQL adapter, not yet built)
-- **AI:** Anthropic SDK (for Layer 3)
+- **AI:** Provider-agnostic — Claude / Codex (OpenAI) / Gemini / Ollama
 - **Tests:** pytest
 
 ## Setup
@@ -31,14 +31,21 @@ Layer 4: Routing, Alerting & Output   ← NOT STARTED
 ```bash
 source .venv/bin/activate
 python scripts/generate_sample_data.py   # generates data/sample/*.csv
-python -m pytest tests/ -v               # run tests
+python -m pytest tests/ -v               # run tests (232 passing)
 ```
 
 ## Key Commands
 
 ```bash
-pytest tests/test_ingestion.py -v        # 25 tests, all passing
-pytest tests/test_enrichment.py -v       # DataLoader enrichment tests passing
+pytest tests/ -v                         # 232 tests, all passing
+pytest tests/test_ingestion.py -v        # ingestion tests
+pytest tests/test_enrichment.py -v       # enrichment tests
+pytest tests/test_llm_provider.py -v     # LLM provider abstraction tests
+pytest tests/test_prompt_composer.py -v  # prompt composer tests
+pytest tests/test_batch_processor.py -v  # batch processor tests
+pytest tests/test_pattern_analyzer.py -v # pattern analyzer tests
+pytest tests/test_phantom_webhook.py -v  # phantom webhook tests
+pytest tests/test_validators.py -v       # schema validator tests
 python scripts/generate_sample_data.py   # reproducible (fixed seed=42)
 ```
 
@@ -53,8 +60,16 @@ src/
 │   ├── normalizer.py          # Field mapping, type coercion, dedup, quarantine
 │   ├── api_adapter.py         # NOT YET BUILT
 │   └── sql_adapter.py         # NOT YET BUILT
-├── enrichment/                # NOT YET BUILT (Layer 2)
-├── agent/                     # NOT YET BUILT (Layer 3)
+├── enrichment/                # COMPLETE (Layer 2)
+│   ├── data_loader.py         # Loads & indexes 6 reference datasets
+│   └── engine.py              # EnrichmentEngine (joins + financials + confidence scores)
+├── agent/                     # IN PROGRESS (Layer 3)
+│   ├── llm_provider.py        # Provider ABC + Claude/OpenAI/Gemini/Ollama implementations
+│   ├── prompt_composer.py     # Loads prompts/, assembles system + user prompts
+│   ├── batch_processor.py     # Inference loop, API retry, JSON parse
+│   ├── pattern_analyzer.py    # Aggregates anomalies, calls LLM to escalate
+│   ├── phantom_webhook.py     # HTTP POST on POTENTIAL_PHANTOM_INVENTORY flag
+│   └── triage_agent.py        # NOT YET BUILT — full pipeline orchestrator (Task 5.4)
 ├── output/                    # NOT YET BUILT (Layer 4)
 └── utils/
     ├── config_loader.py       # YAML + env var resolution → AppConfig
@@ -87,7 +102,13 @@ The generated sample data includes intentional scenarios for testing triage qual
 ## Current Scope Notes
 
 - `src/enrichment/data_loader.py` is implemented and validated by tests.
-- `src/enrichment/engine.py` exists as a scaffold; full enrichment join/calculation behavior remains to be completed.
+- `src/enrichment/engine.py` is implemented: joins all 6 reference sources, computes financials, emits confidence/missing-field metadata.
+- `src/agent/llm_provider.py`: provider-agnostic LLM abstraction. Call `get_provider(config.agent)` → `.complete(system, user) -> LLMResponse`.
+- `src/agent/prompt_composer.py`: loads all 7 files in `prompts/` at init; call `compose_system_prompt()` + `compose_user_prompt(batch, reasoning_trace_enabled)`.
+- `src/agent/batch_processor.py`: processes exceptions in configurable chunks (default 30), with parse retries and API backoff.
+- `src/agent/pattern_analyzer.py`: groups exceptions by `PatternType` (VENDOR, CATEGORY, REGION), passes summaries to LLM, triggers priority escalation.
+- `src/agent/phantom_webhook.py`: fires on `POTENTIAL_PHANTOM_INVENTORY` flag; on `phantom_confirmed: true` sets `exception_type = DATA_INTEGRITY`.
+- `src/agent/triage_agent.py`: **NOT YET BUILT** — will orchestrate the full pipeline (ingestion → enrichment → batch_processor → pattern_analyzer → phantom_webhook → output).
 - `scripts/run_triage.py` is not yet present; use module-level tests and sample generation for current verification.
 
 ## Implementation Patterns
@@ -97,3 +118,4 @@ The generated sample data includes intentional scenarios for testing triage qual
 - **Quarantine** writes invalid records to `output/logs/quarantine_{date}_{batch_id}.json`
 - **Field mapping** in config allows source field names to differ from canonical names
 - All imports use `from __future__ import annotations` for Python 3.9+ compatibility
+- **`TriageResult` is mutable by design** — phantom webhook and pattern analyzer mutate fields after initial AI assignment

@@ -13,7 +13,7 @@
 **GitHub:** [github.com/m-kunta](https://github.com/m-kunta)  
 **Domain:** Supply Chain Planning / Retail Replenishment
 
-> This project is actively under development. Layer 1 is complete, and Layer 2 now provides a stable enriched-data handoff contract for the future AI layer. Layers 3-4 are not implemented yet.
+> This project is actively under development. Layers 1–2 are complete. Layer 3 reasoning engine is mostly built (LLM abstraction, prompt system, batch processor, pattern analyzer, phantom webhook); the triage agent orchestrator (`triage_agent.py`) is the final Layer 3 piece. Layer 4 is not started.
 
 ---
 
@@ -108,7 +108,8 @@ AI-driven-replenishment-exception-triage-agent/
 │   │   ├── prompt_composer.py     # Builds system + user prompts
 │   │   ├── batch_processor.py     # Inference loop + JSON parser
 │   │   ├── pattern_analyzer.py    # Aggregates + escalates patterns
-│   │   └── phantom_webhook.py     # HTTP POST for phantom inventory confirmation
+│   │   ├── phantom_webhook.py     # HTTP POST for phantom inventory confirmation
+│   │   └── triage_agent.py        # NOT YET BUILT — full pipeline orchestrator (Task 5.4)
 │   ├── output/                    # ← Layer 4 (NOT STARTED)
 │   └── utils/
 │       ├── config_loader.py       # YAML + ${ENV_VAR} resolution → AppConfig
@@ -135,14 +136,15 @@ AI-driven-replenishment-exception-triage-agent/
 │   ├── phantom_inventory.md       # Phantom detection signals
 │   └── few_shot_library.json      # 5 annotated triage examples
 ├── tests/
-│   ├── test_ingestion.py          # Layer 1 ingestion tests (25)
-│   ├── test_enrichment.py         # Layer 2 enrichment tests
+│   ├── test_ingestion.py          # Layer 1 ingestion tests (35)
+│   ├── test_enrichment.py         # Layer 2 enrichment tests (49)
 │   ├── test_prompt_files.py       # Prompt structure validation (24)
 │   ├── test_prompt_composer.py    # PromptComposer unit tests (14)
 │   ├── test_llm_provider.py       # Provider factory + providers (13)
 │   ├── test_phantom_webhook.py    # Phantom webhook tests (6)
-│   ├── test_batch_processor.py    # Inference loop tests (5)
-│   └── test_pattern_analyzer.py   # Pattern aggregation tests (5)
+│   ├── test_batch_processor.py    # Inference loop tests (32)
+│   ├── test_pattern_analyzer.py   # Pattern aggregation tests (33)
+│   └── test_validators.py         # Schema validator tests (26)
 ├── scripts/
 │   └── generate_sample_data.py    # Synthetic data generator
 ├── output/
