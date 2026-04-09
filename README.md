@@ -13,7 +13,7 @@
 **GitHub:** [github.com/m-kunta](https://github.com/m-kunta)  
 **Domain:** Supply Chain Planning / Retail Replenishment
 
-> This project is actively under development. Layers 1–3 are complete. Layer 3 reasoning engine is fully built (LLM abstraction, prompt system, batch processor, pattern analyzer, phantom webhook, triage agent orchestrator). Layer 4 is not started.
+> This project is actively under development. Layers 1–3 are complete. Layer 4 is now **in progress**: the Priority Router and Alert Dispatcher are built and tested. Morning Briefing, Exception Logger, and the CLI run script remain.
 
 ---
 
@@ -49,16 +49,18 @@ The agent ingests raw replenishment exceptions, enriches them with 15+ contextua
 │           CSV → field mapping → type coercion → dedup            │
 │           → quarantine → CanonicalException schema               │
 ├──────────────────────────────────────────────────────────────────┤
-│  Layer 2: Context Enrichment          ← COMPLETE (stable handoff contract for Layer 3) │
+│  Layer 2: Context Enrichment          ← ✅ COMPLETE              │
 │           Store master · Item master · Promo calendar            │
 │           Vendor fill rates · DC inventory · Regional signals    │
 ├──────────────────────────────────────────────────────────────────┤
-│  Layer 3: Reasoning Engine          ← ✅ BUILT & TESTED               │
-│           LLM Abstractions · Prompt System · Batch Processor       │
-│           Pattern Analyzer · Triage Agent Orchestrator built       │
+│  Layer 3: Reasoning Engine            ← ✅ BUILT & TESTED       │
+│           LLM Abstractions · Prompt System · Batch Processor     │
+│           Pattern Analyzer · Triage Agent Orchestrator built     │
 ├──────────────────────────────────────────────────────────────────┤
-│  Layer 4: Routing, Alerting & Output ← 🔲 NOT STARTED           │
-│           Morning briefing · Email/Slack/Teams · JSON export     │
+│  Layer 4: Routing, Alerting & Output  ← 🔶 IN PROGRESS          │
+│  ✅ Priority Router · ✅ Alert Dispatcher (Email/Webhook/SLA)    │
+│  🔲 Morning Briefing Generator · 🔲 Exception Logger            │
+│  🔲 CLI run script (scripts/run_triage.py)                       │
 └──────────────────────────────────────────────────────────────────┘
 ```
 
@@ -110,7 +112,11 @@ AI-driven-replenishment-exception-triage-agent/
 │   │   ├── pattern_analyzer.py    # Aggregates + escalates patterns
 │   │   ├── phantom_webhook.py     # HTTP POST for phantom inventory confirmation
 │   │   └── triage_agent.py        # Full pipeline orchestrator (Task 5.4)
-│   ├── output/                    # ← Layer 4 (NOT STARTED)
+│   ├── output/                    # ← Layer 4 (🔶 IN PROGRESS)
+│   │   ├── router.py              # ✅ BUILT: partitions TriageRunResult into 4 priority JSON queue files
+│   │   ├── alert_dispatcher.py    # ✅ BUILT: email/webhook/SLA alerts for CRITICAL & HIGH exceptions
+│   │   ├── briefing_generator.py  # 🔲 NOT YET BUILT
+│   │   └── exception_logger.py    # 🔲 NOT YET BUILT
 │   └── utils/
 │       ├── config_loader.py       # YAML + ${ENV_VAR} resolution → AppConfig
 │       ├── validators.py          # Pydantic validators
@@ -144,7 +150,10 @@ AI-driven-replenishment-exception-triage-agent/
 │   ├── test_phantom_webhook.py    # Phantom webhook tests (6)
 │   ├── test_batch_processor.py    # Inference loop tests (32)
 │   ├── test_pattern_analyzer.py   # Pattern aggregation tests (33)
-│   └── test_validators.py         # Schema validator tests (26)
+│   ├── test_triage_agent.py       # Triage agent orchestrator tests (18)
+│   ├── test_validators.py         # Schema validator tests (26)
+│   ├── test_router.py             # Layer 4 priority router tests (5)
+│   └── test_alert_dispatcher.py   # Layer 4 alert dispatcher tests (10)
 ├── scripts/
 │   └── generate_sample_data.py    # Synthetic data generator
 ├── output/
@@ -202,7 +211,7 @@ python scripts/generate_sample_data.py
 
 ```bash
 ./.venv/bin/pytest tests/ -v
-# 232 tests — all passing
+# 265 tests — all passing
 ```
 
 ### Verify Current Implemented Scope
@@ -225,10 +234,10 @@ pytest tests/test_pattern_analyzer.py -v
 
 | Layer | Status | Details |
 |---|---|---|
-| **Layer 1 — Ingestion** | ✅ Complete | CSV adapter, normalizer, 25 tests passing |
+| **Layer 1 — Ingestion** | ✅ Complete | CSV adapter, normalizer, 35 tests passing |
 | **Layer 2 — Enrichment** | ✅ Complete | `DataLoader` + `EnrichmentEngine` emit validated enriched exceptions for Layer 3 |
 | **Layer 3 — Reasoning Engine** | ✅ Complete | Prompt system, LLM abstractions, Phantom Webhook, Batch Processor, Pattern Analyzer, and Triage Agent built |
-| **Layer 4 — Output & Alerts** | 🔲 Not Started | Morning briefing, Slack/email routing |
+| **Layer 4 — Output & Alerts** | 🔶 In Progress | Priority Router ✅ · Alert Dispatcher ✅ · Morning Briefing 🔲 · Exception Logger 🔲 · CLI script 🔲 |
 
 ### Layer 2 — Implementation
 
@@ -269,7 +278,7 @@ This project is intentionally staged. To avoid confusion, use this guide when ev
 | Batched inference loop | ✅ Implemented | `batch_processor.py` processes exceptions through LLM and validates JSON |
 | Pattern analyzer | ✅ Implemented | `pattern_analyzer.py` aggregates and escalates systemic exceptions |
 | Triage Agent orchestrator | ✅ Implemented | `triage_agent.py` acts as full pipeline orchestrator |
-| Routing/alerts/briefing outputs | ⏳ Planned | Layer 4 not implemented yet |
+| Routing/alerts/briefing outputs | 🔶 In Progress | Priority Router + Alert Dispatcher (email, Slack, Teams, SLA) built and tested |
 | CLI pipeline run (`run_triage.py`) | ⏳ Planned | Not yet available in `scripts/` |
 
 If you are onboarding today, start with ingestion and data-loader tests before extending enrichment logic.
