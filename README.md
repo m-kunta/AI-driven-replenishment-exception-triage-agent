@@ -13,7 +13,7 @@
 **GitHub:** [github.com/m-kunta](https://github.com/m-kunta)  
 **Domain:** Supply Chain Planning / Retail Replenishment
 
-> This project is actively under development. Layers 1–2 are complete. Layer 3 reasoning engine is mostly built (LLM abstraction, prompt system, batch processor, pattern analyzer, phantom webhook); the triage agent orchestrator (`triage_agent.py`) is the final Layer 3 piece. Layer 4 is not started.
+> This project is actively under development. Layers 1–3 are complete. Layer 3 reasoning engine is fully built (LLM abstraction, prompt system, batch processor, pattern analyzer, phantom webhook, triage agent orchestrator). Layer 4 is not started.
 
 ---
 
@@ -53,9 +53,9 @@ The agent ingests raw replenishment exceptions, enriches them with 15+ contextua
 │           Store master · Item master · Promo calendar            │
 │           Vendor fill rates · DC inventory · Regional signals    │
 ├──────────────────────────────────────────────────────────────────┤
-│  Layer 3: Reasoning Engine          ← 🚧 IN PROGRESS                  │
+│  Layer 3: Reasoning Engine          ← ✅ BUILT & TESTED               │
 │           LLM Abstractions · Prompt System · Batch Processor       │
-│           Pattern Analyzer built · (Triage Agent loop pending)     │
+│           Pattern Analyzer · Triage Agent Orchestrator built       │
 ├──────────────────────────────────────────────────────────────────┤
 │  Layer 4: Routing, Alerting & Output ← 🔲 NOT STARTED           │
 │           Morning briefing · Email/Slack/Teams · JSON export     │
@@ -103,13 +103,13 @@ AI-driven-replenishment-exception-triage-agent/
 │   ├── enrichment/                # ← Layer 2 (✅ BUILT & TESTED)
 │   │   ├── data_loader.py         # Loads & indexes 6 reference datasets
 │   │   └── engine.py              # EnrichmentEngine (joins + financials + scores)
-│   ├── agent/                     # ← Layer 3 (🚧 IN PROGRESS)
+│   ├── agent/                     # ← Layer 3 (✅ BUILT & TESTED)
 │   │   ├── llm_provider.py        # Provider ABC + LLM abstractions
 │   │   ├── prompt_composer.py     # Builds system + user prompts
 │   │   ├── batch_processor.py     # Inference loop + JSON parser
 │   │   ├── pattern_analyzer.py    # Aggregates + escalates patterns
 │   │   ├── phantom_webhook.py     # HTTP POST for phantom inventory confirmation
-│   │   └── triage_agent.py        # NOT YET BUILT — full pipeline orchestrator (Task 5.4)
+│   │   └── triage_agent.py        # Full pipeline orchestrator (Task 5.4)
 │   ├── output/                    # ← Layer 4 (NOT STARTED)
 │   └── utils/
 │       ├── config_loader.py       # YAML + ${ENV_VAR} resolution → AppConfig
@@ -227,7 +227,7 @@ pytest tests/test_pattern_analyzer.py -v
 |---|---|---|
 | **Layer 1 — Ingestion** | ✅ Complete | CSV adapter, normalizer, 25 tests passing |
 | **Layer 2 — Enrichment** | ✅ Complete | `DataLoader` + `EnrichmentEngine` emit validated enriched exceptions for Layer 3 |
-| **Layer 3 — Reasoning Engine** | 🚧 In Progress | Prompt system, LLM abstractions, Phantom Webhook, Batch Processor, and Pattern Analyzer built. Triage Agent orchestrator pending |
+| **Layer 3 — Reasoning Engine** | ✅ Complete | Prompt system, LLM abstractions, Phantom Webhook, Batch Processor, Pattern Analyzer, and Triage Agent built |
 | **Layer 4 — Output & Alerts** | 🔲 Not Started | Morning briefing, Slack/email routing |
 
 ### Layer 2 — Implementation
@@ -268,7 +268,7 @@ This project is intentionally staged. To avoid confusion, use this guide when ev
 | Phantom inventory webhook | ✅ Implemented | HTTP POST confirmation; mutates `TriageResult` on confirmed phantom |
 | Batched inference loop | ✅ Implemented | `batch_processor.py` processes exceptions through LLM and validates JSON |
 | Pattern analyzer | ✅ Implemented | `pattern_analyzer.py` aggregates and escalates systemic exceptions |
-| Triage Agent orchestrator | 🚧 In Progress | `triage_agent.py` — next to build |
+| Triage Agent orchestrator | ✅ Implemented | `triage_agent.py` acts as full pipeline orchestrator |
 | Routing/alerts/briefing outputs | ⏳ Planned | Layer 4 not implemented yet |
 | CLI pipeline run (`run_triage.py`) | ⏳ Planned | Not yet available in `scripts/` |
 
