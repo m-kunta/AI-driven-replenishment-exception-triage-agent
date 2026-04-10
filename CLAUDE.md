@@ -12,7 +12,7 @@ AI-powered agentic system that ingests replenishment exceptions from retail plan
 Layer 1: Ingestion & Normalization    ← BUILT (CSV adapter + normalizer)
 Layer 2: Context Enrichment           ← COMPLETE (DataLoader + EnrichmentEngine; stable handoff contract for Layer 3)
 Layer 3: Reasoning Engine             ← COMPLETE (all components built: batch_processor, pattern_analyzer, phantom_webhook, triage_agent)
-Layer 4: Routing, Alerting & Output   ← IN PROGRESS (router ✅, alert_dispatcher ✅, briefing_generator 🔲, exception_logger 🔲, run_triage.py 🔲)
+Layer 4: Routing, Alerting & Output   ← IN PROGRESS (router ✅, alert_dispatcher ✅, briefing_generator ✅, exception_logger 🔲, run_triage.py 🔲)
 ```
 
 ## Stack
@@ -38,7 +38,7 @@ python -m pytest tests/ -v               # run tests
 
 ```bash
 # NOTE: 'pytest'/'python' aren't on PATH in non-interactive shells; use .venv/bin/python -m pytest
-.venv/bin/python -m pytest tests/ -v                           # 265 tests, all passing
+.venv/bin/python -m pytest tests/ -v                           # 292 tests, all passing
 .venv/bin/python -m pytest tests/test_ingestion.py -v          # 25 ingestion tests
 .venv/bin/python -m pytest tests/test_enrichment.py -v         # enrichment tests
 .venv/bin/python -m pytest tests/test_llm_provider.py -v       # LLM provider abstraction tests
@@ -49,6 +49,7 @@ python -m pytest tests/ -v               # run tests
 .venv/bin/python -m pytest tests/test_triage_agent.py -v       # triage agent orchestrator tests
 .venv/bin/python -m pytest tests/test_router.py -v             # Layer 4 priority router tests
 .venv/bin/python -m pytest tests/test_alert_dispatcher.py -v   # Layer 4 alert dispatcher tests
+.venv/bin/python -m pytest tests/test_briefing_generator.py -v # Layer 4 morning briefing generator tests
 .venv/bin/python scripts/generate_sample_data.py               # reproducible (fixed seed=42)
 ```
 
@@ -74,7 +75,7 @@ src/
 ├── output/                    # Layer 4 — IN PROGRESS
 │   ├── router.py              # BUILT: routes TriageRunResult into 4 priority JSON queue files
 │   ├── alert_dispatcher.py    # BUILT: formats + dispatches CRITICAL/HIGH alerts (email, webhook); SLA timer
-│   ├── briefing_generator.py  # NOT YET BUILT
+│   ├── briefing_generator.py  # BUILT: markdown briefing with LLM executive summary
 │   └── exception_logger.py    # NOT YET BUILT
 └── utils/
     ├── config_loader.py       # YAML + env var resolution → AppConfig (multi-provider)
@@ -124,6 +125,7 @@ The generated sample data includes intentional scenarios for testing triage qual
 - `src/agent/triage_agent.py`: `TriageAgent(config).run(enriched_exceptions)` orchestrates the full Layer 3 pipeline — batch inference → phantom webhook → pattern analysis → `TriageRunResult`. Entry point for Layer 4.
 - `src/output/router.py`: `PriorityRouter(config).route(run_result)` partitions all `TriageResult` objects into 4 priority queue JSON files (`CRITICAL/HIGH/MEDIUM/LOW_{run_date}.json`) sorted descending by `est_lost_sales_value`. Returns `Dict[Priority, Path]`.
 - `src/output/alert_dispatcher.py`: `AlertDispatcher(config).dispatch(run_result)` fires formatted plaintext alerts for all `CRITICAL` and `HIGH` exceptions across configured channels (Slack, Teams, generic webhook via `httpx`; SMTP email via `smtplib`). Channels are independently toggled in config. Spawns a daemon `threading.Timer` per actionable exception for SLA escalation if unacknowledged.
+- `src/output/briefing_generator.py`: `BriefingGenerator(config).generate(run_result) -> Path` writes `output/briefings/briefing_{run_date}.md`. Calls LLM exactly once for a 3-4 sentence executive summary (top 5 CRITICAL + pattern report as context); all other sections (at-a-glance table, pattern list, critical cards, full queue table, run stats) are templated. Gracefully falls back if the LLM call fails.
 - `scripts/run_triage.py` is not yet present (remaining Layer 4 work); use module-level tests for current verification.
 
 ## Multi-Provider LLM Configuration
