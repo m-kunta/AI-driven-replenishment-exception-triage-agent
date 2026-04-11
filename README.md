@@ -6,14 +6,14 @@
 [![Pydantic](https://img.shields.io/badge/Pydantic-v2-e92063.svg)](https://docs.pydantic.dev/)
 [![Claude AI](https://img.shields.io/badge/Claude-AI-blueviolet.svg)](https://www.anthropic.com/)
 [![Gemini AI](https://img.shields.io/badge/Gemini-AI-4285F4.svg)](https://deepmind.google/technologies/gemini/)
-[![Status](https://img.shields.io/badge/Status-Work%20In%20Progress-orange.svg)](#project-status)
+[![Status](https://img.shields.io/badge/Status-Pipeline%20Complete-brightgreen.svg)](#project-status)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 **Author:** Mohith Kunta  
 **GitHub:** [github.com/m-kunta](https://github.com/m-kunta)  
 **Domain:** Supply Chain Planning / Retail Replenishment
 
-> This project is actively under development. Layers 1–3 are complete. Layer 4 is now **in progress**: the Priority Router and Alert Dispatcher are built and tested. Morning Briefing, Exception Logger, and the CLI run script remain.
+> All four pipeline layers are now complete and tested (310 tests passing). The full pipeline runs end-to-end via `python scripts/run_triage.py`. Phase 8 (Backtesting) is the next planned milestone.
 
 ---
 
@@ -45,22 +45,24 @@ The agent ingests raw replenishment exceptions, enriches them with 15+ contextua
 
 ```
 ┌──────────────────────────────────────────────────────────────────┐
-│  Layer 1: Ingestion & Normalization   ← ✅ BUILT & TESTED       │
-│           CSV → field mapping → type coercion → dedup            │
-│           → quarantine → CanonicalException schema               │
+│  Layer 1: Ingestion & Normalization   ← ✅ COMPLETE                    │
+│           CSV → field mapping → type coercion → dedup              │
+│           → quarantine → CanonicalException schema                  │
 ├──────────────────────────────────────────────────────────────────┤
-│  Layer 2: Context Enrichment          ← ✅ COMPLETE              │
-│           Store master · Item master · Promo calendar            │
-│           Vendor fill rates · DC inventory · Regional signals    │
+│  Layer 2: Context Enrichment          ← ✅ COMPLETE                    │
+│           Store master · Item master · Promo calendar                │
+│           Vendor fill rates · DC inventory · Regional signals        │
 ├──────────────────────────────────────────────────────────────────┤
-│  Layer 3: Reasoning Engine            ← ✅ BUILT & TESTED       │
-│           LLM Abstractions · Prompt System · Batch Processor     │
-│           Pattern Analyzer · Triage Agent Orchestrator built     │
+│  Layer 3: Reasoning Engine            ← ✅ COMPLETE                    │
+│           LLM Abstractions · Prompt System · Batch Processor         │
+│           Pattern Analyzer · Phantom Webhook · Triage Orchestrator   │
 ├──────────────────────────────────────────────────────────────────┤
-│  Layer 4: Routing, Alerting & Output  ← 🔶 IN PROGRESS          │
-│  ✅ Priority Router · ✅ Alert Dispatcher (Email/Webhook/SLA)    │
-│  🔲 Morning Briefing Generator · 🔲 Exception Logger            │
-│  🔲 CLI run script (scripts/run_triage.py)                       │
+│  Layer 4: Routing, Alerting & Output  ← ✅ COMPLETE                    │
+│  ✅ Priority Router · ✅ Alert Dispatcher (Email/Webhook/SLA)          │
+│  ✅ Morning Briefing Generator · ✅ Exception Logger (CSV audit log)   │
+├──────────────────────────────────────────────────────────────────┤
+│  Main Orchestrator & CLI              ← ✅ COMPLETE                    │
+│  ✅ src/main.py (4-layer pipeline) · ✅ scripts/run_triage.py (CLI)    │
 └──────────────────────────────────────────────────────────────────┘
 ```
 
@@ -98,25 +100,26 @@ The agent ingests raw replenishment exceptions, enriches them with 15+ contextua
 AI-driven-replenishment-exception-triage-agent/
 ├── src/
 │   ├── models.py                  # All Pydantic schemas (all 4 layers)
+│   ├── main.py                    # Full 4-layer pipeline orchestrator
 │   ├── ingestion/
 │   │   ├── base_adapter.py        # Abstract base: fetch(), validate_connection()
 │   │   ├── csv_adapter.py         # CSV reader (BOM, delimiter, empty rows)
 │   │   └── normalizer.py          # Field mapping, coercion, dedup, quarantine
-│   ├── enrichment/                # ← Layer 2 (✅ BUILT & TESTED)
+│   ├── enrichment/                # ← Layer 2 (✅ COMPLETE)
 │   │   ├── data_loader.py         # Loads & indexes 6 reference datasets
 │   │   └── engine.py              # EnrichmentEngine (joins + financials + scores)
-│   ├── agent/                     # ← Layer 3 (✅ BUILT & TESTED)
+│   ├── agent/                     # ← Layer 3 (✅ COMPLETE)
 │   │   ├── llm_provider.py        # Provider ABC + LLM abstractions
 │   │   ├── prompt_composer.py     # Builds system + user prompts
 │   │   ├── batch_processor.py     # Inference loop + JSON parser
 │   │   ├── pattern_analyzer.py    # Aggregates + escalates patterns
 │   │   ├── phantom_webhook.py     # HTTP POST for phantom inventory confirmation
 │   │   └── triage_agent.py        # Full pipeline orchestrator (Task 5.4)
-│   ├── output/                    # ← Layer 4 (🔶 IN PROGRESS)
-│   │   ├── router.py              # ✅ BUILT: partitions TriageRunResult into 4 priority JSON queue files
-│   │   ├── alert_dispatcher.py    # ✅ BUILT: email/webhook/SLA alerts for CRITICAL & HIGH exceptions
-│   │   ├── briefing_generator.py  # 🔲 NOT YET BUILT
-│   │   └── exception_logger.py    # 🔲 NOT YET BUILT
+│   ├── output/                    # ← Layer 4 (✅ COMPLETE)
+│   │   ├── router.py              # Partitions TriageRunResult into 4 priority JSON queue files
+│   │   ├── alert_dispatcher.py    # Email/webhook/SLA timer alerts for CRITICAL & HIGH
+│   │   ├── briefing_generator.py  # Daily markdown briefing with LLM executive summary
+│   │   └── exception_logger.py    # Appends 26-field CSV audit row per exception; idempotent
 │   └── utils/
 │       ├── config_loader.py       # YAML + ${ENV_VAR} resolution → AppConfig
 │       ├── validators.py          # Pydantic validators
@@ -153,12 +156,16 @@ AI-driven-replenishment-exception-triage-agent/
 │   ├── test_triage_agent.py       # Triage agent orchestrator tests (18)
 │   ├── test_validators.py         # Schema validator tests (26)
 │   ├── test_router.py             # Layer 4 priority router tests (5)
-│   └── test_alert_dispatcher.py   # Layer 4 alert dispatcher tests (10)
+│   ├── test_alert_dispatcher.py   # Layer 4 alert dispatcher tests (10)
+│   ├── test_briefing_generator.py # Layer 4 morning briefing tests (17)
+│   ├── test_exception_logger.py   # Layer 4 exception logger tests (10)
+│   └── test_main.py               # Main orchestrator + CLI tests (7)
 ├── scripts/
-│   └── generate_sample_data.py    # Synthetic data generator
+│   ├── generate_sample_data.py    # Synthetic data generator
+│   └── run_triage.py              # CLI entry point for the full pipeline
 ├── output/
 │   ├── briefings/                 # Generated morning briefings (git-ignored)
-│   └── logs/                      # Quarantine files + run logs (git-ignored)
+│   └── logs/                      # Quarantine files + exception audit log (git-ignored)
 ├── requirements.txt
 ├── .env.example
 └── CLAUDE.md                      # Developer context for Claude Code
@@ -210,22 +217,24 @@ python scripts/generate_sample_data.py
 ### Run Tests
 
 ```bash
-./.venv/bin/pytest tests/ -v
-# 265 tests — all passing
+./.venv/bin/python -m pytest tests/ -v
+# 310 tests — all passing
 ```
 
-### Verify Current Implemented Scope
+### Run the Full Pipeline (CLI)
 
 ```bash
-# 1) Regenerate deterministic sample data
-python scripts/generate_sample_data.py
+# Dry run — Layer 1+2 only, prints enrichment summary (no AI calls, no output files)
+python scripts/run_triage.py --sample --dry-run
 
-# 2) Full test suite (ingestion + enrichment + prompt system + phantom webhook)
-pytest tests/ -v
+# Full pipeline — all 4 layers, no alert dispatch (safe for testing)
+python scripts/run_triage.py --sample --no-alerts
 
-# Run a single module
-pytest tests/test_batch_processor.py -v
-pytest tests/test_pattern_analyzer.py -v
+# Full pipeline with alerts enabled (requires configured channels in config.yaml)
+python scripts/run_triage.py --sample
+
+# All CLI options
+python scripts/run_triage.py --help
 ```
 
 ---
@@ -234,10 +243,12 @@ pytest tests/test_pattern_analyzer.py -v
 
 | Layer | Status | Details |
 |---|---|---|
-| **Layer 1 — Ingestion** | ✅ Complete | CSV adapter, normalizer, 35 tests passing |
-| **Layer 2 — Enrichment** | ✅ Complete | `DataLoader` + `EnrichmentEngine` emit validated enriched exceptions for Layer 3 |
-| **Layer 3 — Reasoning Engine** | ✅ Complete | Prompt system, LLM abstractions, Phantom Webhook, Batch Processor, Pattern Analyzer, and Triage Agent built |
-| **Layer 4 — Output & Alerts** | 🔶 In Progress | Priority Router ✅ · Alert Dispatcher ✅ · Morning Briefing 🔲 · Exception Logger 🔲 · CLI script 🔲 |
+| **Layer 1 — Ingestion** | ✅ Complete | CSV adapter, normalizer, 35 tests |
+| **Layer 2 — Enrichment** | ✅ Complete | `DataLoader` + `EnrichmentEngine` with enriched exception output for Layer 3 |
+| **Layer 3 — Reasoning Engine** | ✅ Complete | Prompt system, LLM abstractions, Phantom Webhook, Batch Processor, Pattern Analyzer, Triage Agent |
+| **Layer 4 — Output & Alerts** | ✅ Complete | Priority Router · Alert Dispatcher · Morning Briefing · Exception Logger (CSV audit log) |
+| **Main Orchestrator & CLI** | ✅ Complete | `src/main.py` wires all 4 layers; `scripts/run_triage.py` provides full CLI |
+| **Phase 8 — Backtesting** | ⏳ Planned | `scripts/run_backtest.py` — outcome scoring at Week 4/8 after exception date |
 
 ### Layer 2 — Implementation
 
@@ -271,17 +282,21 @@ This project is intentionally staged. To avoid confusion, use this guide when ev
 | CSV ingestion adapter | ✅ Implemented | UTF-8/BOM, delimiter support, empty-row handling |
 | Canonical normalization | ✅ Implemented | Type coercion, dedup, quarantine |
 | Enrichment data loading | ✅ Implemented | Loads and indexes store/item/promo/vendor/DC/regional sources |
-| Full enrichment engine output | ✅ Stable Layer 2 contract | Current engine joins the implemented sources, computes financials, emits confidence/missing-field metadata, includes `day_of_week_demand_index`, and marks failed enrichments as low-confidence fallback records |
+| Full enrichment engine output | ✅ Implemented | Joins all 6 sources, computes financials, emits confidence/missing-field metadata |
 | Prompt system | ✅ Implemented | 6 modular prompt files + 5-example few-shot library |
 | Multi-provider LLM abstraction | ✅ Implemented | Claude / OpenAI / Gemini / Ollama via single `get_provider()` factory |
 | Phantom inventory webhook | ✅ Implemented | HTTP POST confirmation; mutates `TriageResult` on confirmed phantom |
 | Batched inference loop | ✅ Implemented | `batch_processor.py` processes exceptions through LLM and validates JSON |
 | Pattern analyzer | ✅ Implemented | `pattern_analyzer.py` aggregates and escalates systemic exceptions |
-| Triage Agent orchestrator | ✅ Implemented | `triage_agent.py` acts as full pipeline orchestrator |
-| Routing/alerts/briefing outputs | 🔶 In Progress | Priority Router + Alert Dispatcher (email, Slack, Teams, SLA) built and tested |
-| CLI pipeline run (`run_triage.py`) | ⏳ Planned | Not yet available in `scripts/` |
+| Triage Agent orchestrator | ✅ Implemented | `triage_agent.py` orchestrates batch → phantom → pattern → `TriageRunResult` |
+| Priority Router | ✅ Implemented | Partitions results into 4 priority JSON queue files sorted by financial impact |
+| Alert Dispatcher | ✅ Implemented | Email/Slack/Teams/webhook alerts for CRITICAL & HIGH; per-exception SLA timer |
+| Morning Briefing Generator | ✅ Implemented | Markdown briefing with LLM executive summary, exception cards, pattern report |
+| Exception Logger | ✅ Implemented | 26-field CSV audit log per exception; idempotent on `(run_id, exception_id)` |
+| CLI pipeline run | ✅ Implemented | `python scripts/run_triage.py [--sample] [--dry-run] [--no-alerts] [--verbose]` |
+| Backtesting pipeline | ⏳ Planned | `scripts/run_backtest.py` — Week 4/8 outcome scoring |
 
-If you are onboarding today, start with ingestion and data-loader tests before extending enrichment logic.
+Run `python scripts/run_triage.py --help` to see all available options.
 
 ---
 
