@@ -12,7 +12,8 @@ AI-powered agentic system that ingests replenishment exceptions from retail plan
 Layer 1: Ingestion & Normalization    ← BUILT (CSV adapter + normalizer)
 Layer 2: Context Enrichment           ← COMPLETE (DataLoader + EnrichmentEngine; stable handoff contract for Layer 3)
 Layer 3: Reasoning Engine             ← COMPLETE (all components built: batch_processor, pattern_analyzer, phantom_webhook, triage_agent)
-Layer 4: Routing, Alerting & Output   ← IN PROGRESS (router ✅, alert_dispatcher ✅, briefing_generator ✅, exception_logger 🔲, run_triage.py 🔲)
+Layer 4: Routing, Alerting & Output   ← COMPLETE (router ✅, alert_dispatcher ✅, briefing_generator ✅, exception_logger ✅, run_triage.py ✅)
+Main Orchestrator & CLI               ← COMPLETE (src/main.py ✅, scripts/run_triage.py ✅)
 ```
 
 ## Stack
@@ -38,7 +39,7 @@ python -m pytest tests/ -v               # run tests
 
 ```bash
 # NOTE: 'pytest'/'python' aren't on PATH in non-interactive shells; use .venv/bin/python -m pytest
-.venv/bin/python -m pytest tests/ -v                           # 292 tests, all passing
+.venv/bin/python -m pytest tests/ -v                           # 310 tests, all passing
 .venv/bin/python -m pytest tests/test_ingestion.py -v          # 25 ingestion tests
 .venv/bin/python -m pytest tests/test_enrichment.py -v         # enrichment tests
 .venv/bin/python -m pytest tests/test_llm_provider.py -v       # LLM provider abstraction tests
@@ -50,7 +51,12 @@ python -m pytest tests/ -v               # run tests
 .venv/bin/python -m pytest tests/test_router.py -v             # Layer 4 priority router tests
 .venv/bin/python -m pytest tests/test_alert_dispatcher.py -v   # Layer 4 alert dispatcher tests
 .venv/bin/python -m pytest tests/test_briefing_generator.py -v # Layer 4 morning briefing generator tests
+.venv/bin/python -m pytest tests/test_exception_logger.py -v   # Layer 4 exception audit logger tests
+.venv/bin/python -m pytest tests/test_main.py -v               # main orchestrator tests
 .venv/bin/python scripts/generate_sample_data.py               # reproducible (fixed seed=42)
+# CLI entry point:
+python scripts/run_triage.py --sample --dry-run                 # Layers 1+2 only; prints enrichment summary
+python scripts/run_triage.py --sample --no-alerts               # full pipeline; skip alert dispatch
 ```
 
 ## Project Structure
@@ -72,11 +78,11 @@ src/
 │   ├── batch_processor.py     # BUILT: inference loop, API retry, JSON parse
 │   ├── pattern_analyzer.py    # BUILT: aggregates anomalies & calls LLM to escalate
 │   └── triage_agent.py        # BUILT: orchestrates batch→phantom→pattern→TriageRunResult
-├── output/                    # Layer 4 — IN PROGRESS
+├── output/                    # Layer 4 — COMPLETE
 │   ├── router.py              # BUILT: routes TriageRunResult into 4 priority JSON queue files
 │   ├── alert_dispatcher.py    # BUILT: formats + dispatches CRITICAL/HIGH alerts (email, webhook); SLA timer
 │   ├── briefing_generator.py  # BUILT: markdown briefing with LLM executive summary
-│   └── exception_logger.py    # NOT YET BUILT
+│   └── exception_logger.py    # BUILT: appends flat CSV row per TriageResult; idempotent on (run_id, exception_id)
 └── utils/
     ├── config_loader.py       # YAML + env var resolution → AppConfig (multi-provider)
     ├── validators.py          # Pydantic-based schema validators
@@ -126,7 +132,9 @@ The generated sample data includes intentional scenarios for testing triage qual
 - `src/output/router.py`: `PriorityRouter(config).route(run_result)` partitions all `TriageResult` objects into 4 priority queue JSON files (`CRITICAL/HIGH/MEDIUM/LOW_{run_date}.json`) sorted descending by `est_lost_sales_value`. Returns `Dict[Priority, Path]`.
 - `src/output/alert_dispatcher.py`: `AlertDispatcher(config).dispatch(run_result)` fires formatted plaintext alerts for all `CRITICAL` and `HIGH` exceptions across configured channels (Slack, Teams, generic webhook via `httpx`; SMTP email via `smtplib`). Channels are independently toggled in config. Spawns a daemon `threading.Timer` per actionable exception for SLA escalation if unacknowledged.
 - `src/output/briefing_generator.py`: `BriefingGenerator(config).generate(run_result) -> Path` writes `output/briefings/briefing_{run_date}.md`. Calls LLM exactly once for a 3-4 sentence executive summary (top 5 CRITICAL + pattern report as context); all other sections (at-a-glance table, pattern list, critical cards, full queue table, run stats) are templated. Gracefully falls back if the LLM call fails.
-- `scripts/run_triage.py` is not yet present (remaining Layer 4 work); use module-level tests for current verification.
+- `src/output/exception_logger.py`: `ExceptionLogger(config).log(run_result) -> Path` appends 26 fields per `TriageResult` to `output/logs/exception_log.csv`. Idempotent on `(run_id, exception_id)` — re-running the same run produces no duplicate rows. Header written only on first write; purely stdlib `csv` (no pandas dep).
+- `src/main.py`: `run_triage_pipeline(config_path, run_date, dry_run, no_alerts, sample, verbose)` wires all four layers end-to-end. `dry_run` stops after Layer 2 and prints an enrichment summary. `no_alerts` skips `AlertDispatcher`. `sample` forces CSV path to sample dataset regardless of config.
+- `scripts/run_triage.py` is the CLI entry point. Accepts `--config`, `--date`, `--dry-run`, `--no-alerts`, `--sample`, `--verbose`, `--output-format`. Calls `run_triage_pipeline()` and prints a formatted run summary.
 
 ## Multi-Provider LLM Configuration
 
