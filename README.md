@@ -27,6 +27,172 @@ This agent changes that by reasoning about **business consequence**: promo statu
 
 ---
 
+## Business Context & Personas
+
+### Who This Affects
+
+| Persona | Role | Daily Pain Point |
+|---|---|---|
+| **Replenishment Planner** | Day-to-day inventory manager | Drowns in exception alerts, manually prioritizes by gut feeling, misses critical OOS on high-performing stores |
+| **Supply Chain Manager** | Oversees regional operations | No visibility into systemic vendor/DC failures until they become major disruptions |
+| **Category Manager** | Owns product portfolio | Can't distinguish inventory issues from promotional opportunities; reacts late to phantom inventory |
+| **Store Manager** | Store-level operations | Suffers from stockouts on hero items during peak periods; no recourse when regional signals ignored |
+| **Finance/Planning Director** | Strategic oversight | Unable to quantify true lost sales; reports based on magnitude not business impact |
+
+### The Business Impact
+
+- **Lost Sales**: A Tier 1 store OOS during a promoted period can cost $15,000–$50,000 in a single week
+- **Customer Churn**: Stockouts on preferred items drive shoppers to competitors — especially for perishable categories
+- **Vendor Accountability**: Systemic vendor failures go unnoticed until they cascade across regions
+- **Planner Burnout**: Manual triage of 200+ exceptions daily leads to decision fatigue and inconsistent prioritization
+- **Phantom Inventory**: "Phantom" stock (system shows inventory, but none on shelf) creates false confidence and missed replenishment opportunities
+
+---
+
+## Problem Statement
+
+### The Core Issue
+
+Retail replenishment systems generate exception alerts based on **statistical deviation** — how far actual inventory differs from forecast. However, this approach fundamentally misses the business reality:
+
+> **A 10% variance on a Tier 1 store's promotional item is a crisis. A 500% variance on a Tier 4 store's slow-moving staple is noise.**
+
+Current systems:
+- ❌ Prioritize by magnitude, not business consequence
+- ❌ Ignore contextual signals (promo status, store tier, vendor health, competitor proximity, perishability)
+- ❌ Fail to detect systemic patterns (vendor failures, DC lane issues, category trends)
+- ❌ Don't distinguish phantom inventory from real stockouts
+- ❌ Produce unactionable alerts that planners must manually review
+
+### What Success Looks Like
+
+The ideal state is a **self-prioritizing exception queue** where:
+- ✅ CRITICAL items (high business consequence) surface immediately
+- ✅ LOW priority items (noise) are auto-relegated
+- ✅ Root cause and recommended action are provided for each exception
+- ✅ Financial impact (lost sales, margin at risk) is quantified
+- ✅ Systemic patterns are detected and escalated before they become crises
+- ✅ Phantom inventory is flagged and confirmed automatically
+- ✅ A morning briefing summarizes everything in 5 minutes
+
+---
+
+## User-Facing Benefits
+
+| Benefit | Impact |
+|---|---|
+| **Prioritized by Business Consequence** | Planners see the most important exceptions first — not the loudest |
+| **Actionable Output** | Every exception includes root cause + recommended action — no more "figure it out" |
+| **Financial Clarity** | Lost sales and margin-at-risk quantified — justifies action to leadership |
+| **Pattern Detection** | Systemic vendor/DC/category issues flagged before they cascade |
+| **Phantom Inventory Detection** | False OOS alerts identified and auto-corrected |
+| **5-Minute Morning Briefing** | Entire daily queue summarized — read and act, not search and sort |
+| **Multi-Channel Alerts** | CRITICAL alerts sent to Slack/Teams/Email with SLA timers |
+| **Audit Trail** | Full CSV log of all decisions — compliance and continuous improvement |
+
+---
+
+## Detailed Use Cases
+
+### Use Case 1: Promotional Stockout at High-Volume Store
+
+**Scenario:**
+- Store STR-001 (Tier 1, Los Angeles) has OOS on "Organic Oat Milk 64oz" — a featured item in an active TPR (40% off)
+- Competitor Walmart is running a competing promo on their store-brand alternative
+- Planner sees 15 OOS alerts at the top of their queue
+
+**Without This Agent:**
+- Planner manually checks promo calendar, store tier, competitor presence
+- May deprioritize because "it's just one SKU" — missing the $28,000 lost sales potential
+- Competitor captures customers during the 3-day gap
+
+**With This Agent:**
+- Agent enriches with: Tier 1, active TPR, competitor within 2 miles, perishable (dairy alternative)
+- LLM reasons: "Tier 1 store + active TPR + competitor nearby + perishable = CRITICAL"
+- Output includes: Lost sales estimate ($28K), recommended action ("Expedite from DC-502, override safety stock")
+- Alert dispatched to planner's Slack with 2-hour SLA
+
+---
+
+### Use Case 2: Phantom Inventory Detection
+
+**Scenario:**
+- Store STR-005 shows OOS on "Premium Coffee Beans 2lb"
+- System shows 0 units on-hand, planner receives OOS alert
+
+**Without This Agent:**
+- Planner creates expedited order, incurring $450 in rush shipping
+- Delivery arrives, but shelves still empty — product was on-hand but hidden/damaged
+- Waste: expedited cost + continued OOS
+
+**With This Agent:**
+- Agent enriches with: DC-102 has 35 days supply, vendor VND-125 has 97% fill rate, no recent warehouse discrepancy
+- LLM flags as **POTENTIAL_PHANTOM_INVENTORY**
+- Phantom webhook fires → API call to inventory system confirms actual on-shelf qty
+- System confirms phantom: `phantom_confirmed: true`, exception type changes to `DATA_INTEGRITY`
+- Planner notified: "False OOS — do not expedite, investigate shelf display"
+
+---
+
+### Use Case 3: Systemic Vendor Failure Pattern
+
+**Scenario:**
+- Planner receives 14 separate OOS alerts across 8 stores over 5 days
+- Each alert shows different SKUs, different stores — appears as isolated incidents
+
+**Without This Agent:**
+- Each exception handled independently
+- Vendor continues delivering 72% of orders — no escalation
+- Problem compounds over weeks until category manager notices
+
+**With This Agent:**
+- Pattern analyzer groups 14 exceptions by vendor (VND-400, CleanHome Distributors)
+- Calculates: vendor fill rate 72% (below threshold), failures span 3 DCs
+- Escalation triggered → LLM generates pattern report: "Vendor CleanHome Distributors showing systemic deterioration"
+- Morning briefing includes: "⚠️ VENDOR PATTERN — 14 exceptions from VND-400 (72% fill rate) — escalate to supply chain"
+- Supply chain manager receives dedicated alert with vendor scorecard
+
+---
+
+### Use Case 4: Perishable Category Urgency
+
+**Scenario:**
+- Store STR-008 (Tier 2) shows LOW_STOCK on "Fresh Sourdough Bread" — 3 days of supply
+- Same SKU shows LOW_STOCK at STR-012 (Tier 4) — also 3 days of supply
+
+**Without This Agent:**
+- Both appear equal priority — same days of supply
+- Planner works through queue sequentially
+- Fresh bread at Tier 2 (higher traffic) spoils while Tier 4 bread sits
+
+**With This Agent:**
+- Agent enriches with: perishable (shelf life 5 days), bakery category
+- Tier 2 store has 3x the traffic of Tier 4
+- LLM output: STR-008 = **HIGH** (fresh bakery, Tier 2, high traffic), STR-012 = **MEDIUM** (fresh bakery, Tier 4)
+- Planner focuses on Tier 2 first — prevents $2,400 in potential shrink + lost sales
+
+---
+
+### Use Case 5: Regional Disruption Cascade
+
+**Scenario:**
+- Heavy storm warning issued for Pacific Northwest region
+- 23 LOW_STOCK alerts appear across 12 stores in the region
+
+**Without This Agent:**
+- Each LOW_STOCK treated as independent
+- Planner doesn't connect weather to inventory
+- No proactive communication to store managers
+
+**With This Agent:**
+- Agent enriches with: regional signal "Pacific NW Storm Warning — 3-day disruption expected"
+- All 23 exceptions flagged with regional context
+- Pattern analyzer identifies 23 exceptions across 12 stores in same region
+- Morning briefing includes: "🌧️ REGIONAL DISRUPTION — 23 exceptions in Pacific NW linked to storm — consider regional inventory hold"
+- Supply chain manager notified to activate contingency routing
+
+---
+
 ## What It Does
 
 The agent ingests raw replenishment exceptions, enriches them with 15+ contextual signals, and uses **Claude** to produce a prioritized, actionable triage output:
