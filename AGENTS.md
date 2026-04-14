@@ -11,8 +11,8 @@ AI-powered agentic system that ingests replenishment exceptions from retail plan
 ```
 Layer 1: Ingestion & Normalization    ← BUILT (CSV adapter + normalizer)
 Layer 2: Context Enrichment           ← COMPLETE (DataLoader + EnrichmentEngine; stable handoff contract for Layer 3)
-Layer 3: Reasoning Engine             ← IN PROGRESS (LLM abstraction, prompt system, batch processor, pattern analyzer, phantom webhook built; triage_agent.py orchestrator pending)
-Layer 4: Routing, Alerting & Output   ← NOT STARTED
+Layer 3: Reasoning Engine             ← COMPLETE (LLM abstraction, prompt system, batch processor, pattern analyzer, phantom webhook built; triage_agent.py orchestrator)
+Layer 4: Routing, Alerting & Output   ← COMPLETE (Priority router, alert dispatcher, exception logger, morning briefing)
 ```
 
 ## Stack
@@ -63,14 +63,14 @@ src/
 ├── enrichment/                # COMPLETE (Layer 2)
 │   ├── data_loader.py         # Loads & indexes 6 reference datasets
 │   └── engine.py              # EnrichmentEngine (joins + financials + confidence scores)
-├── agent/                     # IN PROGRESS (Layer 3)
+├── agent/                     # COMPLETE (Layer 3)
 │   ├── llm_provider.py        # Provider ABC + Claude/OpenAI/Gemini/Ollama implementations
 │   ├── prompt_composer.py     # Loads prompts/, assembles system + user prompts
 │   ├── batch_processor.py     # Inference loop, API retry, JSON parse
 │   ├── pattern_analyzer.py    # Aggregates anomalies, calls LLM to escalate
 │   ├── phantom_webhook.py     # HTTP POST on POTENTIAL_PHANTOM_INVENTORY flag
-│   └── triage_agent.py        # NOT YET BUILT — full pipeline orchestrator (Task 5.4)
-├── output/                    # NOT YET BUILT (Layer 4)
+│   └── triage_agent.py        # Full pipeline orchestrator (Task 5.4)
+├── output/                    # COMPLETE (Layer 4)
 └── utils/
     ├── config_loader.py       # YAML + env var resolution → AppConfig
     ├── validators.py          # Pydantic-based schema validators
@@ -108,8 +108,8 @@ The generated sample data includes intentional scenarios for testing triage qual
 - `src/agent/batch_processor.py`: processes exceptions in configurable chunks (default 30), with parse retries and API backoff.
 - `src/agent/pattern_analyzer.py`: groups exceptions by `PatternType` (VENDOR, CATEGORY, REGION), passes summaries to LLM, triggers priority escalation.
 - `src/agent/phantom_webhook.py`: fires on `POTENTIAL_PHANTOM_INVENTORY` flag; on `phantom_confirmed: true` sets `exception_type = DATA_INTEGRITY`.
-- `src/agent/triage_agent.py`: **NOT YET BUILT** — will orchestrate the full pipeline (ingestion → enrichment → batch_processor → pattern_analyzer → phantom_webhook → output).
-- `scripts/run_triage.py` is not yet present; use module-level tests and sample generation for current verification.
+- `src/agent/triage_agent.py`: orchestrates the full pipeline (ingestion → enrichment → batch_processor → pattern_analyzer → phantom_webhook → output).
+- `scripts/run_triage.py` provides the end-to-end CLI entrypoint.
 
 ## Implementation Patterns
 
