@@ -1,0 +1,6 @@
+exception_id,outcome,notes
+00000000-0000-0000-0000-000000000001,RESOLVED,Store ran out of stock later that day
+00000000-0000-0000-0000-000000000002,MISS,Item was available but missed critical promo
+00000000-0000-0000-0000-000000000003,FALSE_ALARM,System showed OOS but shelf was full
+00000000-0000-0000-0000-000000000004,RESOLVED,Expedited shipment arrived in time
+00000000-0000-0000-0000-000000000005,MISS,Vendor did not deliver

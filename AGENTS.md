@@ -13,6 +13,7 @@ Layer 1: Ingestion & Normalization    ← BUILT (CSV adapter + normalizer)
 Layer 2: Context Enrichment           ← COMPLETE (DataLoader + EnrichmentEngine; stable handoff contract for Layer 3)
 Layer 3: Reasoning Engine             ← COMPLETE (LLM abstraction, prompt system, batch processor, pattern analyzer, phantom webhook built; triage_agent.py orchestrator)
 Layer 4: Routing, Alerting & Output   ← COMPLETE (Priority router, alert dispatcher, exception logger, morning briefing)
+Phase 8: Backtesting Pipeline         ← COMPLETE (run_backtest.py to score accuracy)
 ```
 
 ## Stack
@@ -47,6 +48,7 @@ pytest tests/test_pattern_analyzer.py -v # pattern analyzer tests
 pytest tests/test_phantom_webhook.py -v  # phantom webhook tests
 pytest tests/test_validators.py -v       # schema validator tests
 python scripts/generate_sample_data.py   # reproducible (fixed seed=42)
+python scripts/run_backtest.py --date 2026-04-11 --week 4 --sample  # run backtesting
 ```
 
 ## Project Structure
@@ -110,6 +112,7 @@ The generated sample data includes intentional scenarios for testing triage qual
 - `src/agent/phantom_webhook.py`: fires on `POTENTIAL_PHANTOM_INVENTORY` flag; on `phantom_confirmed: true` sets `exception_type = DATA_INTEGRITY`.
 - `src/agent/triage_agent.py`: orchestrates the full pipeline (ingestion → enrichment → batch_processor → pattern_analyzer → phantom_webhook → output).
 - `scripts/run_triage.py` provides the end-to-end CLI entrypoint.
+- `scripts/run_backtest.py` completes Phase 8 by computing LLM accuracy vs ground truth.
 
 ## Implementation Patterns
 
