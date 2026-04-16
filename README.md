@@ -389,7 +389,7 @@ python scripts/generate_sample_data.py
 
 ```bash
 ./.venv/bin/python -m pytest tests/ -v
-# 310 tests — all passing
+# 312 tests — all passing
 ```
 
 ### Run the Full Pipeline (CLI)
