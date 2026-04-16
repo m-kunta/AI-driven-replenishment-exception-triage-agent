@@ -39,7 +39,7 @@ python -m pytest tests/ -v               # run tests
 
 ```bash
 # NOTE: 'pytest'/'python' aren't on PATH in non-interactive shells; use .venv/bin/python -m pytest
-.venv/bin/python -m pytest tests/ -v                           # 310 tests, all passing
+.venv/bin/python -m pytest tests/ -v                           # 312 tests, all passing
 .venv/bin/python -m pytest tests/test_ingestion.py -v          # 25 ingestion tests
 .venv/bin/python -m pytest tests/test_enrichment.py -v         # enrichment tests
 .venv/bin/python -m pytest tests/test_llm_provider.py -v       # LLM provider abstraction tests
@@ -126,15 +126,15 @@ The generated sample data includes intentional scenarios for testing triage qual
 - `src/agent/llm_provider.py`: provider-agnostic LLM abstraction. Call `get_provider(config.agent)` to get an `LLMProvider` instance; call `.complete(system, user) -> LLMResponse` to invoke any supported model.
 - `src/agent/prompt_composer.py`: `PromptComposer` loads all 7 files in `prompts/` at init. Call `compose_system_prompt()` + `compose_user_prompt(batch, reasoning_trace_enabled)` to build prompts ready for any provider.
 - `src/agent/phantom_webhook.py`: `process_phantom_inventory(triage_result, config)` fires on `POTENTIAL_PHANTOM_INVENTORY` flag; 5s timeout; on `phantom_confirmed: true` sets `exception_type = DATA_INTEGRITY` and `priority = MEDIUM` (or webhook-provided level).
-- `src/agent/batch_processor.py`: `BatchProcessor` loops over exceptions in chunks (default 30) using `prompt_composer` and `llm_provider`. Features built-in parse retries (1 attempt) and API backoff (3 attempts).
+- `src/agent/batch_processor.py`: `BatchProcessor` loops over exceptions in chunks (default 30) using `prompt_composer` and `llm_provider`. Features built-in parse retries (1 attempt) and API backoff (3 attempts). After LLM alignment, carries all enriched context fields forward onto each `TriageResult` (item, store, dates, financials, etc.) so the output layer needs no re-join.
 - `src/agent/pattern_analyzer.py`: `PatternAnalyzer` groups exceptions by `PatternType` (VENDOR, DC_LANE, CATEGORY, REGION), passes summaries to the LLM, and triggers priority escalation (e.g. MEDIUM → HIGH) for matching events.
 - `src/agent/triage_agent.py`: `TriageAgent(config).run(enriched_exceptions)` orchestrates the full Layer 3 pipeline — batch inference → phantom webhook → pattern analysis → `TriageRunResult`. Entry point for Layer 4.
 - `src/output/router.py`: `PriorityRouter(config).route(run_result)` partitions all `TriageResult` objects into 4 priority queue JSON files (`CRITICAL/HIGH/MEDIUM/LOW_{run_date}.json`) sorted descending by `est_lost_sales_value`. Returns `Dict[Priority, Path]`.
 - `src/output/alert_dispatcher.py`: `AlertDispatcher(config).dispatch(run_result)` fires formatted plaintext alerts for all `CRITICAL` and `HIGH` exceptions across configured channels (Slack, Teams, generic webhook via `httpx`; SMTP email via `smtplib`). Channels are independently toggled in config. Spawns a daemon `threading.Timer` per actionable exception for SLA escalation if unacknowledged.
 - `src/output/briefing_generator.py`: `BriefingGenerator(config).generate(run_result) -> Path` writes `output/briefings/briefing_{run_date}.md`. Calls LLM exactly once for a 3-4 sentence executive summary (top 5 CRITICAL + pattern report as context); all other sections (at-a-glance table, pattern list, critical cards, full queue table, run stats) are templated. Gracefully falls back if the LLM call fails.
-- `src/output/exception_logger.py`: `ExceptionLogger(config).log(run_result) -> Path` appends 26 fields per `TriageResult` to `output/logs/exception_log.csv`. Idempotent on `(run_id, exception_id)` — re-running the same run produces no duplicate rows. Header written only on first write; purely stdlib `csv` (no pandas dep).
+- `src/output/exception_logger.py`: `ExceptionLogger(config).log(run_result) -> Path` appends 27 fields per `TriageResult` to `output/logs/exception_log.csv` (includes `exception_date` carried forward from Layer 2). Idempotent on `(run_id, exception_id)` — re-running the same run produces no duplicate rows. Header written only on first write; purely stdlib `csv` (no pandas dep).
 - `src/main.py`: `run_triage_pipeline(config_path, run_date, dry_run, no_alerts, sample, verbose)` wires all four layers end-to-end. `dry_run` stops after Layer 2 and prints an enrichment summary. `no_alerts` skips `AlertDispatcher`. `sample` forces CSV path to sample dataset regardless of config.
-- `scripts/run_triage.py` is the CLI entry point. Accepts `--config`, `--date`, `--dry-run`, `--no-alerts`, `--sample`, `--verbose`, `--output-format`. Calls `run_triage_pipeline()` and prints a formatted run summary.
+- `scripts/run_triage.py` is the CLI entry point. Accepts `--config`, `--date`, `--dry-run`, `--no-alerts`, `--sample`, `--verbose`. Calls `run_triage_pipeline()` and prints a formatted run summary.
 
 ## Multi-Provider LLM Configuration
 
@@ -159,3 +159,4 @@ agent:
 - **Field mapping** in config allows source field names to differ from canonical names
 - All imports use `from __future__ import annotations` for Python 3.9+ compatibility
 - **`TriageResult` is mutable by design** — phantom webhook and pattern analyzer mutate fields (`exception_type`, `priority`, `phantom_flag`, `pattern_id`, `escalated_from`) after initial AI assignment
+- **Enriched context carry-forward** — `batch_processor` populates all enrichment fields on `TriageResult` (including `exception_date`) after LLM alignment; output layer requires no re-join to Layer 2 data

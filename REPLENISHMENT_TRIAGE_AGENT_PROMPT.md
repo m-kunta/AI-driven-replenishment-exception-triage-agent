@@ -970,7 +970,6 @@ Options:
   --no-alerts            Skip alert dispatch (useful for testing)
   --sample               Use sample data regardless of config adapter setting
   --verbose              Detailed logging to console
-  --output-format FORMAT markdown | json | both (overrides config)
 ```
 
 **Acceptance criteria:** `python scripts/run_triage.py --sample --dry-run` completes successfully and prints enrichment summary. `python scripts/run_triage.py --sample --no-alerts` completes full pipeline and generates briefing.
