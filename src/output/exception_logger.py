@@ -178,7 +178,7 @@ class ExceptionLogger:
             "item_id": _safe(result.item_id),
             "store_id": _safe(result.store_id),
             "exception_type": _safe(result.exception_type),
-            "exception_date": "",  # not carried forward in TriageResult; enriched layer field
+            "exception_date": _safe(result.exception_date),
             "days_of_supply": _safe(result.days_of_supply),
             "promo_active": _safe(result.promo_active),
             "store_tier": _safe(result.store_tier),

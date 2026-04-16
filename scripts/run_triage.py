@@ -11,7 +11,6 @@ Options:
     --no-alerts             Full pipeline but skip alert dispatch
     --sample                Force sample data path (data/sample/exceptions_sample.csv)
     --verbose               Verbose / DEBUG logging to stderr
-    --output-format FORMAT  markdown | json | both  [not yet wired to output layer]
 
 Author: Mohith Kunta <mohith.kunta@gmail.com>
 GitHub: https://github.com/m-kunta
@@ -75,13 +74,6 @@ def _build_parser() -> argparse.ArgumentParser:
         action="store_true",
         default=False,
         help="Enable DEBUG-level logging to stderr",
-    )
-    parser.add_argument(
-        "--output-format",
-        metavar="FORMAT",
-        choices=["markdown", "json", "both"],
-        default="markdown",
-        help="Output format: markdown | json | both (default: markdown)",
     )
     return parser
 

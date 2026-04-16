@@ -117,21 +117,21 @@ def run_backtest(date, week, config, sample):
     """
     Runs the backtesting pipeline to evaluate AI triage accuracy.
     """
-    logger.info(f"Starting backtest for date {date} (Week {week})")
+    logger.info("Starting backtest for date {} (Week {})", date, week)
     
     app_config = load_config(config)
     log_dir = app_config.output.log_dir
     exception_log_path = os.path.join(log_dir, "exception_log.csv")
     
     if not os.path.exists(exception_log_path):
-        logger.error(f"Exception log not found at {exception_log_path}")
+        logger.error("Exception log not found at {}", exception_log_path)
         sys.exit(1)
 
-    logger.info(f"Reading exception logs from {exception_log_path}")
+    logger.info("Reading exception logs from {}", exception_log_path)
     try:
         exceptions_df = pd.read_csv(exception_log_path)
     except Exception as e:
-        logger.error(f"Failed to read exception log: {e}")
+        logger.error("Failed to read exception log: {}", e)
         sys.exit(1)
         
     # Filter for the target date
@@ -146,17 +146,17 @@ def run_backtest(date, week, config, sample):
         target_df = exceptions_df[exceptions_df['exception_date'] == date]
 
     if target_df.empty:
-        logger.warning(f"No exceptions found for date {date} in {exception_log_path}")
+        logger.warning("No exceptions found for date {} in {}", date, exception_log_path)
         sys.exit(0)
 
     # Resolve Outcomes Source
     # Let's use the sample data if '--sample' is specified or if no DB config is present
     outcomes_path = "data/sample/backtest_outcomes.csv"
     if not os.path.exists(outcomes_path):
-         logger.error(f"Outcome data not found at {outcomes_path}. Cannot perform backtest.")
+         logger.error("Outcome data not found at {}. Cannot perform backtest.", outcomes_path)
          sys.exit(1)
          
-    logger.info(f"Reading outcome data from {outcomes_path}")
+    logger.info("Reading outcome data from {}", outcomes_path)
     outcomes_df = pd.read_csv(outcomes_path)
 
     # Join on Exception ID
@@ -164,7 +164,7 @@ def run_backtest(date, week, config, sample):
     merged_df = target_df.merge(outcomes_df, on="exception_id", how="inner")
     
     if merged_df.empty:
-         logger.warning(f"No overlapping records found between backtest outcomes and target date exceptions.")
+         logger.warning("No overlapping records found between backtest outcomes and target date exceptions.")
          sys.exit(0)
 
     # Calculate Metrics
@@ -172,10 +172,11 @@ def run_backtest(date, week, config, sample):
     metrics = calculate_metrics(merged_df)
     
     # Generate Report
-    backtest_output_dir = getattr(app_config, 'backtest', type('obj', (object,), {'log_dir': 'output/backtest'})).log_dir
+    _BACKTEST_OUTPUT_DIR = "output/backtest"
+    backtest_output_dir = _BACKTEST_OUTPUT_DIR
     report_path = generate_markdown_report(metrics, date, week, backtest_output_dir)
     
-    logger.info(f"Backtest complete. Report generated at {report_path}")
+    logger.info("Backtest complete. Report generated at {}", report_path)
 
 if __name__ == "__main__":
     run_backtest()

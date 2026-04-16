@@ -26,6 +26,8 @@ _PRIORITY_ICON = {
     Priority.LOW: "🟢",
 }
 
+_PRIORITY_ORDER = {p: i for i, p in enumerate(Priority)}
+
 _EXECUTIVE_SUMMARY_SYSTEM = (
     "You are a supply chain analyst writing a concise executive briefing "
     "for a supply chain director. Be direct, specific, and avoid jargon."
@@ -259,7 +261,7 @@ class BriefingGenerator:
         all_results = sorted(
             run_result.triage_results,
             key=lambda r: (
-                list(Priority).index(r.priority),
+                _PRIORITY_ORDER[r.priority],
                 -(r.est_lost_sales_value or 0.0),
             ),
         )
