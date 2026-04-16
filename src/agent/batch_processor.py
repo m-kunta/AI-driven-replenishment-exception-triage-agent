@@ -132,6 +132,23 @@ class BatchProcessor:
                 # Preserve positional alignment with the input batch for downstream passes.
                 triage_by_id = {tr.exception_id: tr for tr in triage_results}
                 triage_results = [triage_by_id[ex.exception_id] for ex in batch]
+                # Carry enriched context forward so output layer has it without re-joining.
+                enriched_by_id = {ex.exception_id: ex for ex in batch}
+                for tr in triage_results:
+                    ex = enriched_by_id[tr.exception_id]
+                    tr.item_id = ex.item_id
+                    tr.item_name = ex.item_name
+                    tr.store_id = ex.store_id
+                    tr.store_name = ex.store_name
+                    tr.exception_type = ex.exception_type
+                    tr.exception_date = ex.exception_date
+                    tr.days_of_supply = ex.days_of_supply
+                    tr.store_tier = ex.store_tier
+                    tr.promo_active = ex.promo_active
+                    tr.est_lost_sales_value = ex.est_lost_sales_value
+                    tr.promo_margin_at_risk = ex.promo_margin_at_risk
+                    tr.dc_inventory_days = ex.dc_inventory_days
+                    tr.vendor_fill_rate_90d = ex.vendor_fill_rate_90d
                 logger.debug(
                     f"Batch of {len(batch)} parsed successfully "
                     f"(attempt {attempt}, {response.input_tokens} in / {response.output_tokens} out tokens)."

@@ -213,6 +213,7 @@ class TriageResult(BaseModel):
     store_id: Optional[str] = None
     store_name: Optional[str] = None
     exception_type: Optional[str] = None
+    exception_date: Optional[date] = None
     days_of_supply: Optional[float] = None
     store_tier: Optional[int] = None
     promo_active: Optional[bool] = None

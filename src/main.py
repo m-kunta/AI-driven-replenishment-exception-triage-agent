@@ -42,6 +42,9 @@ from src.utils.config_loader import AppConfig, load_config, validate_required_en
 # Path to sample data (relative to project root)
 _SAMPLE_CSV_PATH = "data/sample/exceptions_sample.csv"
 
+# Guard flag so _configure_logging only removes the default sink once.
+_logging_configured = False
+
 
 def run_triage_pipeline(
     config_path: str = "config/config.yaml",
@@ -188,8 +191,16 @@ def run_triage_pipeline(
 # ---------------------------------------------------------------------------
 
 def _configure_logging(verbose: bool) -> None:
-    """Configure loguru sink with the requested verbosity level."""
-    logger.remove()
+    """Configure loguru sink with the requested verbosity level.
+
+    Removes the default loguru sink on the first call only, so that
+    programmatic callers (tests, web services) that installed their own
+    sinks are not affected on subsequent invocations.
+    """
+    global _logging_configured
+    if not _logging_configured:
+        logger.remove()
+        _logging_configured = True
     level = "DEBUG" if verbose else "INFO"
     logger.add(
         sys.stderr,
