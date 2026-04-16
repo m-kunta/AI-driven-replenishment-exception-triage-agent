@@ -1179,9 +1179,6 @@ cat output/logs/CRITICAL_$(date +%Y-%m-%d).json | python -m json.tool
 ## FUTURE PHASES (Out of Scope for Initial Build)
 
 - Real-time webhook trigger mode (replace daily batch)
-- Web UI dashboard with exception queue visualization
-- Planner feedback capture form (override reason collection)
-- Active learning pipeline (promote override reasons to few-shot library)
 - New Item Ramp Forecaster agent integration
 - Demand Signal Fusion Engine agent integration
 - Multi-tenant / SaaS deployment mode
@@ -1189,6 +1186,61 @@ cat output/logs/CRITICAL_$(date +%Y-%m-%d).json | python -m json.tool
 
 ---
 
+## PART 2: THE WEB UI (AGENTIC COPILOT)
+
+The original CLI tool (Phases 1-10) is complete. The next major milestone transitions the application into an interactive full-stack AI Copilot with three core UI phases.
+
+### PHASE 11 — MVP COMMAND CENTER (System of Intelligence)
+
+**Goal:** An interactive dashboard functioning purely as an ingestion/review mechanism. 
+
+#### Task 11.1 — FastAPI Backend Scaffold
+- Initialize `src/api/app.py`
+- Expose GET endpoints to read structured routing queue outputs (CRITICAL, HIGH, MEDIUM, LOW)
+- Implement HTTP Basic Auth via `.env`
+- Expose POST endpoints to trigger `run_triage_pipeline()` asynchronously
+
+#### Task 11.2 — Next.js Frontend Scaffold
+- scaffold Next.js (App Router) in `/frontend`
+- Install TailwindCSS and shadcn/ui components (Data Table, Button, Dialog)
+
+#### Task 11.3 — The Morning Brief View
+- Render the LLM-generated executive summary and high-level KPI cards at the top of the dashboard.
+- Display Pattern Escalations.
+
+#### Task 11.4 — The Priority Data Table
+- Build an expandable `TanStack Table` viewing pipeline results.
+- Render conditional pills for exceptions, confidence levels, and priority.
+- Clicking a row expands to show Claude's "chain-of-thought" and root cause analysis.
+
+### PHASE 12 — ACTIVE LEARNING & FEEDBACK (System of Record)
+
+**Goal:** Capture human expertise and persist historical tracking.
+
+#### Task 12.1 — SQLite / PostgreSQL Migration
+- Replace JSON file state toggling with an SQLite Database implementation (`triage_runs`, `exception_status`, `overrides`).
+
+#### Task 12.2 — Priority Override Workflow
+- Build a UI modal allowing planners to modify a priority layer by providing a structured reason.
+
+#### Task 12.3 — The "Suggested Learnings" Gate
+- A panel comparing past overrides into candidate few-shot prompt updates.
+- A Lead Planner can "Approve" which writes to `few_shot_library.json`.
+
+### PHASE 13 — AGENTIC COPILOT EXECUTION (System of Engagement)
+
+**Goal:** Execute actions back into the supply chain ecosystem natively.
+
+#### Task 13.1 — Action Webhooks
+- Render dynamic execution buttons (`Approve Expedite`, `Email Vendor`) based on LLM outputs.
+- Push API requests to external ERPs on click.
+
+#### Task 13.2 — Chat-with-Queue (RAG)
+- Render an LLM Chat sidebar allowing planners to query the entire daily dataset conversationally.
+
+---
+
 *Project Scope Document: `Replenishment_Exception_Triage_Agent_Scope.docx`*  
 *Repository: `https://github.com/m-kunta/replenishment-triage-ai`*  
 *License: MIT © 2026 Mohith Kunta*
+

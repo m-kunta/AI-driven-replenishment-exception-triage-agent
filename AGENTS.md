@@ -1,124 +1,35 @@
-# AGENTS.md — Replenishment Exception Triage Agent
+# AGENTS.md — Domain Logic & Application Architecture
+
+This document describes the **Replenishment Exception Triage Agent**'s business logic, application architecture, and operational domain.
 
 ## Project Overview
+An AI-powered agentic system that ingests replenishment exceptions from retail planning systems, enriches them with contextual business signals, and uses AI (Claude, OpenAI, Gemini) to triage them by **business consequence**, rather than purely by statistical magnitude.
 
-AI-powered agentic system that ingests replenishment exceptions from retail planning systems, enriches with contextual business signals, and uses **Claude** and **Codex** to triage by **business consequence** (not magnitude). Outputs prioritized exception lists with action briefs, financial impact, pattern flags, and morning briefing documents.
+## Business Context & Problem
+Retail replenishment systems generate exceptions based on actual vs. forecast deviations.
+- A 10% variance on a Tier 1 store's promotional item is a crisis.
+- A 500% variance on a Tier 4 store's slow-moving staple is noise.
 
-**Spec document:** `REPLENISHMENT_TRIAGE_AGENT_PROMPT.md` — contains the full task list, schemas, architecture, and acceptance criteria for all phases.
+Current systems prioritize by magnitude. This agent acts as a **Virtual Planner** that prioritizes by business impact, catching phantom inventory, systemic vendor issues, and critical promotional misses.
 
-## Architecture — Four Layers
+## Four-Layer Architecture
+1. **Layer 1: Ingestion & Normalization**
+   - Accept CSV, API, or SQL outputs and normalize them into a `CanonicalException`.
+2. **Layer 2: Context Enrichment**
+   - Join 6 reference datasets (Store master, item master, promo calendar, vendor performance, DC inventory, regional signals) to compute dynamic financial impact scores (`est_lost_sales_value`).
+3. **Layer 3: Reasoning Engine (The Agent)**
+   - Utilize prompt-composers and multi-provider LLMs. Processes exceptions asynchronously, detects macro-patterns (e.g., repeating vendor failures), and flags potential phantom inventory.
+4. **Layer 4: Routing, Alerting & Output**
+   - Generates priority queues (`CRITICAL`, `HIGH`, etc.), dispatches email/webhook alerts with SLA timers, and compiles a daily Markdown Morning Briefing.
 
-```
-Layer 1: Ingestion & Normalization    ← BUILT (CSV adapter + normalizer)
-Layer 2: Context Enrichment           ← COMPLETE (DataLoader + EnrichmentEngine; stable handoff contract for Layer 3)
-Layer 3: Reasoning Engine             ← COMPLETE (LLM abstraction, prompt system, batch processor, pattern analyzer, phantom webhook built; triage_agent.py orchestrator)
-Layer 4: Routing, Alerting & Output   ← COMPLETE (Priority router, alert dispatcher, exception logger, morning briefing)
-Phase 8: Backtesting Pipeline         ← COMPLETE (run_backtest.py to score accuracy)
-```
+## Future Web UI (Agentic Copilot)
+The system is migrating from a CLI batch process to a Web UI Copilot.
+- **Phase 11:** MVP Command Center (Interactive queue viewing via FastAPI & Next.js)
+- **Phase 12:** Active Learning (Overrides & "Suggested Learnings" stored in SQLite/PostgreSQL)
+- **Phase 13:** Agentic Engagement (Native webhook buttons syncing back to the ERP)
 
-## Stack
-
-- **Language:** Python 3.9+
-- **Models:** Pydantic v2
-- **Config:** YAML with `${ENV_VAR}` resolution
-- **Logging:** loguru
-- **HTTP:** httpx
-- **DB:** SQLAlchemy (for SQL adapter, not yet built)
-- **AI:** Provider-agnostic — Claude / Codex (OpenAI) / Gemini / Ollama
-- **Tests:** pytest
-
-## Setup
-
-```bash
-source .venv/bin/activate
-python scripts/generate_sample_data.py   # generates data/sample/*.csv
-python -m pytest tests/ -v               # run tests (232 passing)
-```
-
-## Key Commands
-
-```bash
-pytest tests/ -v                         # 232 tests, all passing
-pytest tests/test_ingestion.py -v        # ingestion tests
-pytest tests/test_enrichment.py -v       # enrichment tests
-pytest tests/test_llm_provider.py -v     # LLM provider abstraction tests
-pytest tests/test_prompt_composer.py -v  # prompt composer tests
-pytest tests/test_batch_processor.py -v  # batch processor tests
-pytest tests/test_pattern_analyzer.py -v # pattern analyzer tests
-pytest tests/test_phantom_webhook.py -v  # phantom webhook tests
-pytest tests/test_validators.py -v       # schema validator tests
-python scripts/generate_sample_data.py   # reproducible (fixed seed=42)
-python scripts/run_backtest.py --date 2026-04-11 --week 4 --sample  # run backtesting
-```
-
-## Project Structure
-
-```
-src/
-├── models.py                  # All Pydantic schemas (Canonical, Enriched, Triage, Pattern, etc.)
-├── ingestion/
-│   ├── base_adapter.py        # ABC: fetch(), validate_connection()
-│   ├── csv_adapter.py         # CSV reader (BOM, delimiter, empty rows)
-│   ├── normalizer.py          # Field mapping, type coercion, dedup, quarantine
-│   ├── api_adapter.py         # NOT YET BUILT
-│   └── sql_adapter.py         # NOT YET BUILT
-├── enrichment/                # COMPLETE (Layer 2)
-│   ├── data_loader.py         # Loads & indexes 6 reference datasets
-│   └── engine.py              # EnrichmentEngine (joins + financials + confidence scores)
-├── agent/                     # COMPLETE (Layer 3)
-│   ├── llm_provider.py        # Provider ABC + Claude/OpenAI/Gemini/Ollama implementations
-│   ├── prompt_composer.py     # Loads prompts/, assembles system + user prompts
-│   ├── batch_processor.py     # Inference loop, API retry, JSON parse
-│   ├── pattern_analyzer.py    # Aggregates anomalies, calls LLM to escalate
-│   ├── phantom_webhook.py     # HTTP POST on POTENTIAL_PHANTOM_INVENTORY flag
-│   └── triage_agent.py        # Full pipeline orchestrator (Task 5.4)
-├── output/                    # COMPLETE (Layer 4)
-└── utils/
-    ├── config_loader.py       # YAML + env var resolution → AppConfig
-    ├── validators.py          # Pydantic-based schema validators
-    ├── logger.py              # loguru setup
-    └── exceptions.py          # Custom exception hierarchy
-config/
-└── config.yaml                # Full config with all layer settings
-data/
-├── sample/                    # 6 CSVs generated by scripts/generate_sample_data.py
-│   ├── exceptions_sample.csv  # 120 rows with intentional scenarios
-│   ├── store_master_sample.csv
-│   ├── item_master_sample.csv
-│   ├── promo_calendar_sample.csv
-│   ├── vendor_performance_sample.csv
-│   └── dc_inventory_sample.csv
-├── regional_signals.json      # 2 active disruptions
-└── schema/
-    └── canonical_exception_schema.json
-```
-
-## Sample Data Scenarios
-
-The generated sample data includes intentional scenarios for testing triage quality:
-- **CRITICAL:** OOS + Tier 1 store (STR-001) + active TPR + nearby competitor
-- **Phantom inventory:** OOS at STR-005 but vendor fill rate 97%, DC has 35 days supply
-- **Vendor pattern:** 14 exceptions from VND-400 (CleanHome Distributors, fill rate 72%)
-- **LOW priority:** 5 exceptions with high variance but zero business risk (Tier 4 stores, non-perishable)
-
-## Current Scope Notes
-
-- `src/enrichment/data_loader.py` is implemented and validated by tests.
-- `src/enrichment/engine.py` is implemented: joins all 6 reference sources, computes financials, emits confidence/missing-field metadata.
-- `src/agent/llm_provider.py`: provider-agnostic LLM abstraction. Call `get_provider(config.agent)` → `.complete(system, user) -> LLMResponse`.
-- `src/agent/prompt_composer.py`: loads all 7 files in `prompts/` at init; call `compose_system_prompt()` + `compose_user_prompt(batch, reasoning_trace_enabled)`.
-- `src/agent/batch_processor.py`: processes exceptions in configurable chunks (default 30), with parse retries and API backoff.
-- `src/agent/pattern_analyzer.py`: groups exceptions by `PatternType` (VENDOR, CATEGORY, REGION), passes summaries to LLM, triggers priority escalation.
-- `src/agent/phantom_webhook.py`: fires on `POTENTIAL_PHANTOM_INVENTORY` flag; on `phantom_confirmed: true` sets `exception_type = DATA_INTEGRITY`.
-- `src/agent/triage_agent.py`: orchestrates the full pipeline (ingestion → enrichment → batch_processor → pattern_analyzer → phantom_webhook → output).
-- `scripts/run_triage.py` provides the end-to-end CLI entrypoint.
-- `scripts/run_backtest.py` completes Phase 8 by computing LLM accuracy vs ground truth.
-
-## Implementation Patterns
-
-- **Adapters** return raw `List[Dict]` — normalizer handles all type coercion
-- **Normalizer** dedup key: `(item_id, store_id, exception_type, exception_date)`
-- **Quarantine** writes invalid records to `output/logs/quarantine_{date}_{batch_id}.json`
-- **Field mapping** in config allows source field names to differ from canonical names
-- All imports use `from __future__ import annotations` for Python 3.9+ compatibility
-- **`TriageResult` is mutable by design** — phantom webhook and pattern analyzer mutate fields after initial AI assignment
+## Typical Data Scenarios
+The agent must correctly handle these edge cases:
+- **CRITICAL Scenario:** OOS + Tier 1 store + active TPR + nearby competitor.
+- **Phantom Inventory:** OOS at Store but vendor fill rate is 97% and DC has 35 days remaining.
+- **Vendor Pattern:** Multiple low-priority exceptions aggregating underneath a single struggling vendor.
