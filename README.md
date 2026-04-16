@@ -13,7 +13,7 @@
 **GitHub:** [github.com/m-kunta](https://github.com/m-kunta)  
 **Domain:** Supply Chain Planning / Retail Replenishment
 
-> All four pipeline layers are now complete and tested (310 tests passing). The full pipeline runs end-to-end via `python scripts/run_triage.py`. Phase 8 (Backtesting) is the next planned milestone.
+> All four pipeline layers are now complete and tested (315+ tests passing). The full pipeline runs end-to-end via `python scripts/run_triage.py`. Phase 8 (Backtesting) is fully implemented.
 
 ---
 
@@ -229,6 +229,9 @@ The agent ingests raw replenishment exceptions, enriches them with 15+ contextua
 ├──────────────────────────────────────────────────────────────────┤
 │  Main Orchestrator & CLI              ← ✅ COMPLETE                    │
 │  ✅ src/main.py (4-layer pipeline) · ✅ scripts/run_triage.py (CLI)    │
+├──────────────────────────────────────────────────────────────────┤
+│  Phase 8: Backtesting Pipeline        ← ✅ COMPLETE                    │
+│  ✅ scripts/run_backtest.py measures accuracy against true outcomes    │
 └──────────────────────────────────────────────────────────────────┘
 ```
 
@@ -328,8 +331,10 @@ AI-driven-replenishment-exception-triage-agent/
 │   └── test_main.py               # Main orchestrator + CLI tests (7)
 ├── scripts/
 │   ├── generate_sample_data.py    # Synthetic data generator
-│   └── run_triage.py              # CLI entry point for the full pipeline
+│   ├── run_triage.py              # CLI entry point for the full pipeline
+│   └── run_backtest.py            # Backtesting pipeline evaluation script
 ├── output/
+│   ├── backtest/                  # Generated backtest evaluation reports (git-ignored)
 │   ├── briefings/                 # Generated morning briefings (git-ignored)
 │   └── logs/                      # Quarantine files + exception audit log (git-ignored)
 ├── requirements.txt
@@ -403,6 +408,13 @@ python scripts/run_triage.py --sample
 python scripts/run_triage.py --help
 ```
 
+### Run Backtesting Evaluation
+
+```bash
+# Evaluate historical triage outcomes for precision & recall grading
+python scripts/run_backtest.py --date 2026-04-11 --week 4 --sample
+```
+
 ---
 
 ## Project Status
@@ -414,7 +426,7 @@ python scripts/run_triage.py --help
 | **Layer 3 — Reasoning Engine** | ✅ Complete | Prompt system, LLM abstractions, Phantom Webhook, Batch Processor, Pattern Analyzer, Triage Agent |
 | **Layer 4 — Output & Alerts** | ✅ Complete | Priority Router · Alert Dispatcher · Morning Briefing · Exception Logger (CSV audit log) |
 | **Main Orchestrator & CLI** | ✅ Complete | `src/main.py` wires all 4 layers; `scripts/run_triage.py` provides full CLI |
-| **Phase 8 — Backtesting** | ⏳ Planned | `scripts/run_backtest.py` — outcome scoring at Week 4/8 after exception date |
+| **Phase 8 — Backtesting** | ✅ Complete | `scripts/run_backtest.py` — outcome accuracy scoring at Week 4/8 after exception date |
 
 ### Layer 2 — Implementation
 
@@ -460,7 +472,7 @@ This project is intentionally staged. To avoid confusion, use this guide when ev
 | Morning Briefing Generator | ✅ Implemented | Markdown briefing with LLM executive summary, exception cards, pattern report |
 | Exception Logger | ✅ Implemented | 26-field CSV audit log per exception; idempotent on `(run_id, exception_id)` |
 | CLI pipeline run | ✅ Implemented | `python scripts/run_triage.py [--sample] [--dry-run] [--no-alerts] [--verbose]` |
-| Backtesting pipeline | ⏳ Planned | `scripts/run_backtest.py` — Week 4/8 outcome scoring |
+| Backtesting pipeline | ✅ Implemented | `scripts/run_backtest.py` — Week 4/8 outcome scoring |
 
 Run `python scripts/run_triage.py --help` to see all available options.
 
