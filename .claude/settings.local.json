@@ -52,7 +52,9 @@
       "Bash(/Users/MKunta/AGENTS/CODE/AI-driven-replenishment-exception-triage-agent/.venv/bin/pytest /Users/MKunta/AGENTS/CODE/AI-driven-replenishment-exception-triage-agent/.worktrees/layer3-layer4/tests/ -v --tb=short)",
       "Bash(/Users/MKunta/AGENTS/CODE/AI-driven-replenishment-exception-triage-agent/.venv/bin/pytest /Users/MKunta/AGENTS/CODE/AI-driven-replenishment-exception-triage-agent/.worktrees/layer3-layer4/tests/test_exception_logger.py -v)",
       "Bash(.venv/bin/python -m pytest tests/test_briefing_generator.py tests/test_exception_logger.py tests/test_main.py tests/test_backtest.py -v)",
-      "Bash(.venv/bin/python -m pytest tests/ -v --tb=short)"
+      "Bash(.venv/bin/python -m pytest tests/ -v --tb=short)",
+      "Bash(npm test *)",
+      "Bash(.venv/bin/python -m pytest tests/test_api.py -v)"
     ]
   }
 }

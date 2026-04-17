@@ -233,8 +233,8 @@ The agent ingests raw replenishment exceptions, enriches them with 15+ contextua
 │  Phase 8: Backtesting Pipeline        ← ✅ COMPLETE                    │
 │  ✅ scripts/run_backtest.py measures accuracy against true outcomes    │
 ├──────────────────────────────────────────────────────────────────┤
-│  Phase 11: Web UI (Command Center)    ← ⏳ IN PROGRESS                 │
-│  ✅ FastAPI Backend Scaffolded  · ⏳ Next.js Frontend Pending          │
+│  Phase 11: Web UI (Command Center)    ← 🚧 MVP SCAFFOLD                │
+│  ✅ FastAPI Backend  · ✅ Next.js Frontend (MVP)                       │
 └──────────────────────────────────────────────────────────────────┘
 ```
 
@@ -411,6 +411,21 @@ python scripts/run_triage.py --sample
 python scripts/run_triage.py --help
 ```
 
+### Run the Web UI (Phase 11)
+
+To run the interactive Command Center dashboard, start both the backend and frontend servers:
+
+```bash
+# 1. Start the FastAPI Backend
+uvicorn src.api.app:app --reload --port 8000
+
+# 2. In a new terminal, start the Next.js Frontend
+cd frontend
+npm run dev
+
+# 3. Open http://localhost:3000 in your browser
+```
+
 ### Run Backtesting Evaluation
 
 ```bash
@@ -430,7 +445,7 @@ python scripts/run_backtest.py --date 2026-04-11 --week 4 --sample
 | **Layer 4 — Output & Alerts** | ✅ Complete | Priority Router · Alert Dispatcher · Morning Briefing · Exception Logger (CSV audit log) |
 | **Main Orchestrator & CLI** | ✅ Complete | `src/main.py` wires all 4 layers; `scripts/run_triage.py` provides full CLI |
 | **Phase 8 — Backtesting** | ✅ Complete | `scripts/run_backtest.py` — outcome accuracy scoring at Week 4/8 after exception date |
-| **Phase 11 — Web UI** | ⏳ In Progress | `src/api/app.py` complete. Next.js dashboard pending |
+| **Phase 11 — Web UI** | 🚧 MVP Scaffold | FastAPI backend + Next.js dashboard in `/frontend`. Briefing panel and /runs endpoint added; full Active Learning and Copilot features pending |
 
 ### Layer 2 — Implementation
 
@@ -478,7 +493,7 @@ This project is intentionally staged. To avoid confusion, use this guide when ev
 | CLI pipeline run | ✅ Implemented | `python scripts/run_triage.py [--sample] [--dry-run] [--no-alerts] [--verbose]` |
 | Backtesting pipeline | ✅ Implemented | `scripts/run_backtest.py` — Week 4/8 outcome scoring |
 | Web UI Backend (FastAPI) | ✅ Implemented | Exposes queues and triggers pipeline asynchronously (`src/api/app.py`) |
-| Web UI Frontend (Next.js) | ⏳ Planned | Interactive command center dashboard `/frontend` |
+| Web UI Frontend (Next.js) | 🚧 MVP Scaffold | Command Center dashboard with briefing panel, exception queue, and pipeline controls (`/frontend`) |
 
 Run `python scripts/run_triage.py --help` to see all available options.
 

@@ -25,13 +25,16 @@ security = HTTPBasic()
 
 # Setup paths (Assuming running from root dir)
 OUTPUT_LOGS_DIR = Path("output/logs")
+OUTPUT_BRIEFINGS_DIR = Path("output/briefings")
 
 
 def get_current_username(credentials: Annotated[HTTPBasicCredentials, Depends(security)]) -> str:
     """Verifies HTTP Basic Auth credentials from environment variables."""
-    # Pull secrets from environment
+    # Pull secrets from environment — both vars are required at runtime
     expected_username = os.environ.get("API_USERNAME", "admin")
-    expected_password = os.environ.get("API_PASSWORD", "secret123")
+    expected_password = os.environ.get("API_PASSWORD")
+    if expected_password is None:
+        raise RuntimeError("API_PASSWORD environment variable is not set")
 
     is_correct_username = secrets.compare_digest(
         credentials.username.encode("utf8"), expected_username.encode("utf8")
@@ -90,7 +93,7 @@ def get_queue(
     except json.JSONDecodeError:
         raise HTTPException(status_code=500, detail="Corrupted queue file format")
     except Exception as e:
-        logger.error(f"Failed to read queue file: {e}")
+        logger.error("Failed to read queue file: {}", e)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -103,7 +106,7 @@ def trigger_pipeline(
     """Triggers the massive daily batch logic asynchronously."""
     
     def run_pipeline_task():
-        logger.info(f"Background execution starting for API User: {username}")
+        logger.info("Background execution starting for API User: {}", username)
         try:
             run_triage_pipeline(
                 config_path="config/config.yaml",
@@ -115,12 +118,53 @@ def trigger_pipeline(
             )
             logger.info("Background execution completed.")
         except Exception as e:
-            logger.error(f"Pipeline crashed during API execution: {e}")
+            logger.error("Pipeline crashed during API execution: {}", e)
 
     background_tasks.add_task(run_pipeline_task)
-    
+
     return {
         "status": "queued",
         "message": "Pipeline triggered asynchronously. You can monitor the system logs.",
         "params": payload.model_dump()
     }
+
+
+@app.get("/runs")
+def list_runs(
+    username: Annotated[str, Depends(get_current_username)],
+) -> Dict[str, Any]:
+    """List available run dates derived from existing queue files in output/logs."""
+    if not OUTPUT_LOGS_DIR.exists():
+        return {"run_dates": []}
+
+    dates: set[str] = set()
+    for f in OUTPUT_LOGS_DIR.glob("*_????-??-??.json"):
+        # File name format: PRIORITY_YYYY-MM-DD.json — take the date portion
+        parts = f.stem.split("_", 1)
+        if len(parts) == 2:
+            dates.add(parts[1])
+
+    return {"run_dates": sorted(dates, reverse=True)}
+
+
+@app.get("/briefing/{run_date}")
+def get_briefing(
+    run_date: str,
+    username: Annotated[str, Depends(get_current_username)],
+) -> Dict[str, Any]:
+    """Return the morning briefing markdown for a given run date."""
+    file_path = OUTPUT_BRIEFINGS_DIR / f"briefing_{run_date}.md"
+
+    if not file_path.exists():
+        raise HTTPException(
+            status_code=404,
+            detail=f"Briefing for {run_date} not found. Trigger the pipeline first.",
+        )
+
+    try:
+        with open(file_path, "r", encoding="utf-8") as f:
+            content = f.read()
+        return {"run_date": run_date, "content": content}
+    except Exception as e:
+        logger.error("Failed to read briefing file: {}", e)
+        raise HTTPException(status_code=500, detail=str(e))

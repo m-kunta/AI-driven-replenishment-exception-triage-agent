@@ -1,16 +1,21 @@
-import os
 from unittest.mock import patch, mock_open
 
+import pytest
 from fastapi.testclient import TestClient
+
 from src.api.app import app
 
 client = TestClient(app)
 
-# Use valid credentials for testing
-os.environ["API_USERNAME"] = "admin"
-os.environ["API_PASSWORD"] = "secret123"
 valid_auth = ("admin", "secret123")
 invalid_auth = ("admin", "wrong_password")
+
+
+@pytest.fixture(autouse=True)
+def _api_credentials(monkeypatch):
+    """Scoped credential injection — prevents module-level env var leakage."""
+    monkeypatch.setenv("API_USERNAME", "admin")
+    monkeypatch.setenv("API_PASSWORD", "secret123")
 
 
 def test_health_check():
