@@ -24,22 +24,58 @@ This document defines the specific operational skills (playbooks) available in t
 
 ### `run_tests`
 ```bash
+# Python pipeline tests
 .venv/bin/python3 -m pytest tests/ -v
+
+# Frontend tests (run from frontend/ dir)
+cd frontend && npm test
 ```
 
 ### `triage_dry_run`
 ```bash
-python scripts/run_triage.py --sample --dry-run
+.venv/bin/python scripts/run_triage.py --sample --dry-run
 ```
 
 ### `triage_full_run`
 ```bash
-python scripts/run_triage.py --sample --no-alerts --verbose
+.venv/bin/python scripts/run_triage.py --sample --no-alerts --verbose
 ```
 
 ### `grade_backtest`
 ```bash
-python scripts/run_backtest.py --date <YYYY-MM-DD> --week 4 --sample
+.venv/bin/python scripts/run_backtest.py --date <YYYY-MM-DD> --week 4 --sample
+```
+
+### `add_enrichment`
+Touch these three files in order:
+1. `src/enrichment/data_loader.py` — add loader function for the new data source
+2. `src/enrichment/engine.py` — join the new signal into `EnrichedExceptionSchema`
+3. `src/models.py` — add the new field(s) to `EnrichedExceptionSchema` and `TriageResult`
+
+Then run `run_tests` to verify no schema regressions.
+
+### `tune_prompt`
+```bash
+# Review current few-shot examples
+cat prompts/few_shot_library.json
+
+# Edit examples to correct hallucinating behaviour — do NOT touch .py files
+# Then verify with a dry run:
+.venv/bin/python scripts/run_triage.py --sample --no-alerts --verbose
+```
+
+### `build_ui_view`
+```bash
+# Backend: add new endpoint to src/api/app.py, then verify
+.venv/bin/python3 -m pytest tests/test_api.py -v
+
+# Frontend: add component under frontend/src/components/, page under frontend/src/app/
+# Then verify
+cd frontend && npm test
+
+# Start both servers to test end-to-end
+uvicorn src.api.app:app --reload --port 8000 &
+cd frontend && npm run dev
 ```
 
 ---
@@ -48,14 +84,20 @@ python scripts/run_backtest.py --date <YYYY-MM-DD> --week 4 --sample
 
 When transitioning into the Web UI build architecture (FastAPI + Next.js), adhere strictly to these operational constraints:
 
-### Backend Extensions (FastAPI)
+### Backend Extensions (FastAPI) — Phase 11
 - **Do not rewrite existing Pytest coverage:** The FastAPI shell (`src/api/app.py`) must cleanly *import* from `src.main` without modifying the core functional boundaries of Layers 1 through 4.
-- **Asynchronous Flow:** FastAPI endpoints should primarily be `async def`. But because the core triage pipeline may be synchronous/blocking, wrap the pipeline executions utilizing `BackgroundTasks` to avoid freezing the UI.
-- **Database Rules:** Utilize SQLite via `SQLAlchemy ORM` for UI state toggling (Acknowledging/Resolving tasks). `output/logs/` remain the source of truth for the scheduled runs.
+- **Use sync `def` endpoints:** The pipeline is CPU-bound/blocking — `async def` is not appropriate. Long-running pipeline calls must use `BackgroundTasks` to avoid blocking the server.
+- **Auth on every non-health endpoint:** All endpoints except `/health` must use `Depends(get_current_username)`. `API_PASSWORD` must raise `RuntimeError` if unset — no silent defaults.
+- **`output/logs/` is the source of truth** for triage results. The API reads these files; it does not write to them.
 
-### Frontend Enhancements (Next.js)
-- **Monorepo Awareness:** Always scaffold Next.js tightly into a root `./frontend/` folder. All dependencies should be strictly scoped to `frontend/package.json`.
-- **Styling:** Use `TailwindCSS` with `Shadcn/UI` exclusively. Avoid raw CSS files where possible. Keep components modular in `frontend/components/`.
+### Frontend Enhancements (Next.js) — Phase 11
+- **Monorepo Awareness:** Always scaffold Next.js tightly into a root `./frontend/` folder. All dependencies must be strictly scoped to `frontend/package.json`. Never install JS packages at the project root.
+- **Environment variables:** Frontend credentials live in `frontend/.env.local` (copy from `.env.local.example`). Use `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_API_USERNAME`, `NEXT_PUBLIC_API_PASSWORD`.
+- **Styling:** Use TailwindCSS v4. Global utility classes (`.glass`, `.glass-hover`, `transition-all-smooth`) live in `frontend/src/app/globals.css` — use them before inventing new ones. Keep components modular in `frontend/src/components/`.
+- **Shadcn/UI is deferred to Phase 12+** — do not install it for Phase 11 work.
+
+### Database Rules — Phase 12 (not yet implemented)
+- Utilize SQLite via `SQLAlchemy ORM` for UI state toggling (Acknowledging/Resolving/Dismissing exceptions). Do not implement this in Phase 11 — `output/logs/` files are the sole source of truth until Phase 12.
 
 ---
 
@@ -64,6 +106,7 @@ When transitioning into the Web UI build architecture (FastAPI + Next.js), adher
 When an AI Agent is working on this repo, observe these epistemic constraints:
 
 1. **Be Data-Safe:** Never run commands that truncate databases or overwrite `data/sample/` without explicit permission.
-2. **Don't Assume Dependencies:** Always check `requirements.txt` via `cat` or `grep` before importing a new library. If you need a new dependency, add it to `requirements.txt` and request user permission to pip install. Pydantic v2 patterns apply.
+2. **Don't Assume Dependencies:** Always check `requirements.txt` via `cat` or `grep` before importing a new library. If you need a new dependency, add it to `requirements.txt` and request user permission to pip install. Pydantic v2 patterns apply. For frontend deps, check `frontend/package.json` first.
 3. **Respect Immutability Warnings:** The Triage Agent layer uses mutable objects (`TriageResult` fields are updated by phantom webhooks and pattern analyzers). Preserve this explicit mutability pattern during refactoring.
-4. **Loguru Standards:** No raw `print()` statements. Always use `from loguru import logger` and route outputs via structured `logger.info()` or `logger.warning()`.
+4. **Loguru Standards:** No raw `print()` statements. Always use `from loguru import logger` and route outputs via structured `logger.info()` or `logger.warning()`. Use lazy format: `logger.error("msg: {}", e)` — never f-strings inside logger calls.
+5. **Frontend Environment Setup:** The Next.js frontend requires `frontend/.env.local` before `npm run dev` will connect to the backend. Copy `frontend/.env.local.example` and set `NEXT_PUBLIC_API_PASSWORD` to match the backend's `API_PASSWORD` env var. Without this, all API calls will return 401.
