@@ -54,7 +54,24 @@
       "Bash(.venv/bin/python -m pytest tests/test_briefing_generator.py tests/test_exception_logger.py tests/test_main.py tests/test_backtest.py -v)",
       "Bash(.venv/bin/python -m pytest tests/ -v --tb=short)",
       "Bash(npm test *)",
-      "Bash(.venv/bin/python -m pytest tests/test_api.py -v)"
+      "Bash(.venv/bin/python -m pytest tests/test_api.py -v)",
+      "Bash(.venv/bin/python -m pytest tests/ -q)",
+      "Bash(.venv/bin/python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\(json.dumps\\(d[0], indent=2\\)\\)\")",
+      "Bash(.venv/bin/python3 -c ' *)",
+      "mcp__plugin_claude-mem_mcp-search__smart_outline",
+      "Bash(git push *)",
+      "Bash(goose --help)",
+      "WebFetch(domain:goose-docs.ai)",
+      "Bash(gh api *)",
+      "Read(//private/tmp/**)",
+      "Bash(rm -rf superpowers)",
+      "Bash(gh repo *)",
+      "Bash(cp /tmp/claude-mem/plugin/skills/mem-search/SKILL.md '~/.claude/plugins/cache/thedotmack/claude-mem/12.1.0/skills/mem-search/SKILL.md')",
+      "Bash(cp /tmp/claude-mem/plugin/skills/smart-explore/SKILL.md '~/.claude/plugins/cache/thedotmack/claude-mem/12.1.0/skills/smart-explore/SKILL.md')",
+      "Bash(echo \"exit: $?\")",
+      "mcp__plugin_claude-mem_mcp-search__search",
+      "mcp__plugin_claude-mem_mcp-search__get_observations",
+      "Bash(.venv/bin/python -m pytest tests/test_db_store.py -v)"
     ]
   }
 }
