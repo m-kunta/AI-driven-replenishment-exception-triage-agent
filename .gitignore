@@ -33,6 +33,8 @@ output/backtest/*
 !output/logs/.gitkeep
 !output/backtest/.gitkeep
 
+output/overrides.db
+
 # OS
 .DS_Store
 Thumbs.db
