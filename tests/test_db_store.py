@@ -213,6 +213,24 @@ def test_get_approved_few_shot_examples_90day_cutoff(store):
     assert store.get_approved_few_shot_examples() == []
 
 
+def test_get_approved_few_shot_examples_note_only_fill_path(store):
+    row_id = store.insert_override(
+        exception_id="EXC-NOTE",
+        run_date="2026-04-19",
+        analyst_username="analyst1",
+        enriched_input_snapshot=SAMPLE_SNAPSHOT,
+        analyst_note="Phantom inventory — no field corrections needed.",
+    )
+    store.approve_override(row_id, "buyer1")
+
+    examples = store.get_approved_few_shot_examples()
+
+    assert len(examples) == 1
+    ex = examples[0]
+    assert ex["output"].get("analyst_note") == "Phantom inventory — no field corrections needed."
+    assert "priority" not in ex["output"]
+
+
 def test_duplicate_exception_id_allowed(store):
     id1 = _insert(store, override_priority="HIGH")
     id2 = _insert(store, override_priority="CRITICAL")
