@@ -81,6 +81,22 @@ class OverrideStore:
         )
         self._conn.commit()
 
+    def reject_override(
+        self, override_id: int, rejected_by: str, reason: Optional[str] = None
+    ) -> None:
+        self._conn.execute(
+            """
+            UPDATE analyst_overrides
+            SET approval_status  = 'rejected',
+                rejected_by      = ?,
+                rejected_at      = ?,
+                rejection_reason = ?
+            WHERE id = ? AND approval_status = 'pending'
+            """,
+            (rejected_by, datetime.now(timezone.utc).isoformat(), reason, override_id),
+        )
+        self._conn.commit()
+
     def auto_approve_pending(self) -> int:
         now = datetime.now(timezone.utc)
         cutoff = (now - timedelta(days=1)).isoformat()
@@ -168,23 +184,9 @@ class OverrideStore:
             val = row[col]
             if val is not None:
                 output[out_key] = json.loads(val) if col == "override_compounding_risks" else val
+        if row["analyst_note"] is not None:
+            output["analyst_note"] = row["analyst_note"]
         return {
             "input": json.loads(row["enriched_input_snapshot"]),
             "output": output,
         }
-
-    def reject_override(
-        self, override_id: int, rejected_by: str, reason: Optional[str] = None
-    ) -> None:
-        self._conn.execute(
-            """
-            UPDATE analyst_overrides
-            SET approval_status  = 'rejected',
-                rejected_by      = ?,
-                rejected_at      = ?,
-                rejection_reason = ?
-            WHERE id = ? AND approval_status = 'pending'
-            """,
-            (rejected_by, datetime.now(timezone.utc).isoformat(), reason, override_id),
-        )
-        self._conn.commit()
