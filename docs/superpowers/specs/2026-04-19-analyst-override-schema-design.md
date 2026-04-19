@@ -40,7 +40,9 @@ CREATE TABLE IF NOT EXISTS analyst_overrides (
     approval_status                 TEXT    NOT NULL DEFAULT 'pending',
     approved_by                     TEXT,
     approved_at                     TEXT,
-    auto_approved                   INTEGER NOT NULL DEFAULT 0
+    auto_approved                   INTEGER NOT NULL DEFAULT 0,
+    rejected_by                     TEXT,
+    rejected_at                     TEXT
 );
 
 CREATE INDEX IF NOT EXISTS idx_overrides_exception_id
@@ -68,6 +70,8 @@ CREATE INDEX IF NOT EXISTS idx_overrides_approval_status_submitted
 | `approval_status` | One of: `pending`, `approved`, `rejected` |
 | `approved_by` | Analyst/buyer username, or `'auto'` for TTL-triggered auto-approval |
 | `auto_approved` | `1` if promoted by the 1-day TTL rule; `0` if manually approved or still pending |
+| `rejected_by` | Username of the buyer who rejected the override |
+| `rejected_at` | ISO-8601 UTC timestamp of rejection |
 
 ---
 
