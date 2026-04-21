@@ -2,27 +2,11 @@ import { api } from './api';
 
 global.fetch = jest.fn();
 
-// Stub env vars so validateEnv() does not throw in the happy-path tests
-const ORIG_ENV = process.env;
-
-beforeAll(() => {
-  process.env = {
-    ...ORIG_ENV,
-    NEXT_PUBLIC_API_URL: 'http://localhost:8000',
-    NEXT_PUBLIC_API_USERNAME: 'admin',
-    NEXT_PUBLIC_API_PASSWORD: 'testpass',
-  };
-});
-
-afterAll(() => {
-  process.env = ORIG_ENV;
+beforeEach(() => {
+  jest.clearAllMocks();
 });
 
 describe('API Client', () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-  });
-
   it('triggers the pipeline successfully', async () => {
     (fetch as jest.Mock).mockResolvedValueOnce({
       ok: true,
@@ -30,9 +14,9 @@ describe('API Client', () => {
     });
 
     const result = await api.triggerPipeline({ run_date: '2026-04-17', sample: true });
-    
+
     expect(fetch).toHaveBeenCalledWith(
-      expect.stringContaining('/pipeline/trigger'),
+      expect.stringContaining('/api/proxy/pipeline/trigger'),
       expect.objectContaining({
         method: 'POST',
         body: JSON.stringify({ run_date: '2026-04-17', sample: true }),
@@ -49,9 +33,9 @@ describe('API Client', () => {
     });
 
     const result = await api.getQueue('CRITICAL', '2026-04-17');
-    
+
     expect(fetch).toHaveBeenCalledWith(
-      expect.stringContaining('/exceptions/queue/CRITICAL/2026-04-17'),
+      expect.stringContaining('/api/proxy/exceptions/queue/CRITICAL/2026-04-17'),
       expect.objectContaining({ method: 'GET' })
     );
     expect(result).toEqual(mockQueue);
@@ -67,18 +51,7 @@ describe('API Client', () => {
     expect(result).toEqual([]);
   });
 
-  it('includes Authorization header with base64-encoded credentials', async () => {
-    (fetch as jest.Mock).mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({ status: 'ok' }),
-    });
-
-    await api.healthCheck();
-    // healthCheck skips auth — just verify the function exists and resolves
-    expect(fetch).toHaveBeenCalled();
-  });
-
-  it('includes Authorization header on queue requests', async () => {
+  it('does not include Authorization header in browser requests', async () => {
     (fetch as jest.Mock).mockResolvedValueOnce({
       ok: true,
       json: async () => [],
@@ -87,60 +60,62 @@ describe('API Client', () => {
     await api.getQueue('LOW', '2026-04-17');
 
     const [, options] = (fetch as jest.Mock).mock.calls[0];
-    expect(options.headers).toHaveProperty('Authorization');
-    expect(options.headers['Authorization']).toMatch(/^Basic /);
-  });
-});
-
-// ---------------------------------------------------------------------------
-// validateEnv guard — isolated so env mutations don't bleed into other tests
-// ---------------------------------------------------------------------------
-
-describe('validateEnv guard', () => {
-  const savedEnv = process.env;
-
-  afterEach(() => {
-    process.env = savedEnv;
-    jest.resetModules();
+    expect(options.headers).not.toHaveProperty('Authorization');
   });
 
-  it('throws when NEXT_PUBLIC_API_PASSWORD is the placeholder value', async () => {
-    process.env = {
-      ...savedEnv,
-      NEXT_PUBLIC_API_PASSWORD: 'your_password_here',
-    };
-    jest.resetModules();
-    const { api: freshApi } = await import('./api');
-
-    (fetch as jest.Mock).mockResolvedValueOnce({ ok: true, json: async () => [] });
-    await expect(freshApi.getQueue('LOW', '2026-04-17')).rejects.toThrow(
-      'NEXT_PUBLIC_API_PASSWORD is not configured'
-    );
-  });
-
-  it('throws when NEXT_PUBLIC_API_PASSWORD is absent', async () => {
-    const env = { ...savedEnv };
-    delete env.NEXT_PUBLIC_API_PASSWORD;
-    process.env = env;
-    jest.resetModules();
-    const { api: freshApi } = await import('./api');
-
-    (fetch as jest.Mock).mockResolvedValueOnce({ ok: true, json: async () => [] });
-    await expect(freshApi.getQueue('LOW', '2026-04-17')).rejects.toThrow(
-      'NEXT_PUBLIC_API_PASSWORD is not configured'
-    );
-  });
-
-  it('does NOT throw when password is a valid non-placeholder value', async () => {
-    process.env = { ...savedEnv, NEXT_PUBLIC_API_PASSWORD: 'supersecret' };
-    jest.resetModules();
-    const { api: freshApi } = await import('./api');
-
+  it('fetches runs successfully', async () => {
     (fetch as jest.Mock).mockResolvedValueOnce({
       ok: true,
-      json: async () => [],
+      json: async () => ({ run_dates: ['2026-04-17', '2026-04-16'] }),
     });
-    await expect(freshApi.getQueue('LOW', '2026-04-17')).resolves.toEqual([]);
+
+    const result = await api.getRuns();
+
+    expect(fetch).toHaveBeenCalledWith(
+      expect.stringContaining('/api/proxy/runs'),
+      expect.objectContaining({ method: 'GET' })
+    );
+    expect(result).toEqual(['2026-04-17', '2026-04-16']);
+  });
+
+  it('returns empty array when getRuns fails', async () => {
+    (fetch as jest.Mock).mockResolvedValueOnce({ ok: false, status: 500 });
+    const result = await api.getRuns();
+    expect(result).toEqual([]);
+  });
+
+  it('fetches a briefing successfully', async () => {
+    const mockBriefing = { run_date: '2026-04-17', content: 'Report...' };
+    (fetch as jest.Mock).mockResolvedValueOnce({
+      ok: true,
+      json: async () => mockBriefing,
+    });
+
+    const result = await api.getBriefing('2026-04-17');
+
+    expect(fetch).toHaveBeenCalledWith(
+      expect.stringContaining('/api/proxy/briefing/2026-04-17'),
+      expect.objectContaining({ method: 'GET' })
+    );
+    expect(result).toEqual(mockBriefing);
+  });
+
+  it('returns null on 404 for missing briefing', async () => {
+    (fetch as jest.Mock).mockResolvedValueOnce({ ok: false, status: 404 });
+    const result = await api.getBriefing('2026-04-17');
+    expect(result).toBeNull();
+  });
+
+  it('checks health via proxy', async () => {
+    (fetch as jest.Mock).mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ status: 'ok' }),
+    });
+
+    await api.healthCheck();
+
+    expect(fetch).toHaveBeenCalledWith(
+      expect.stringContaining('/api/proxy/health')
+    );
   });
 });
-
