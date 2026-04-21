@@ -71,7 +71,12 @@
       "Bash(echo \"exit: $?\")",
       "mcp__plugin_claude-mem_mcp-search__search",
       "mcp__plugin_claude-mem_mcp-search__get_observations",
-      "Bash(.venv/bin/python -m pytest tests/test_db_store.py -v)"
+      "Bash(.venv/bin/python -m pytest tests/test_db_store.py -v)",
+      "Bash(mkdir -p ~/.agents/skills/find-skills)",
+      "Bash(curl -s https://raw.githubusercontent.com/vercel-labs/skills/main/skills/find-skills/SKILL.md -o ~/.agents/skills/find-skills/SKILL.md)",
+      "Read(//Users/MKunta/.claude/plugins/**)",
+      "Read(//Users/MKunta/.config/claude/**)",
+      "Read(//Users/MKunta/**)"
     ]
   }
 }

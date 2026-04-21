@@ -137,11 +137,14 @@ def list_runs(
     if not OUTPUT_LOGS_DIR.exists():
         return {"run_dates": []}
 
+    _VALID_PRIORITIES = {"CRITICAL", "HIGH", "MEDIUM", "LOW"}
     dates: set[str] = set()
     for f in OUTPUT_LOGS_DIR.glob("*_????-??-??.json"):
-        # File name format: PRIORITY_YYYY-MM-DD.json — take the date portion
+        # File name format: PRIORITY_YYYY-MM-DD.json — take the date portion.
+        # Guard: only accept files whose prefix is a known priority so that
+        # quarantine_*, exception_log_* and other files are not included.
         parts = f.stem.split("_", 1)
-        if len(parts) == 2:
+        if len(parts) == 2 and parts[0] in _VALID_PRIORITIES:
             dates.add(parts[1])
 
     return {"run_dates": sorted(dates, reverse=True)}

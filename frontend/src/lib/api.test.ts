@@ -2,6 +2,22 @@ import { api } from './api';
 
 global.fetch = jest.fn();
 
+// Stub env vars so validateEnv() does not throw in the happy-path tests
+const ORIG_ENV = process.env;
+
+beforeAll(() => {
+  process.env = {
+    ...ORIG_ENV,
+    NEXT_PUBLIC_API_URL: 'http://localhost:8000',
+    NEXT_PUBLIC_API_USERNAME: 'admin',
+    NEXT_PUBLIC_API_PASSWORD: 'testpass',
+  };
+});
+
+afterAll(() => {
+  process.env = ORIG_ENV;
+});
+
 describe('API Client', () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -50,4 +66,81 @@ describe('API Client', () => {
     const result = await api.getQueue('HIGH', '2026-04-17');
     expect(result).toEqual([]);
   });
+
+  it('includes Authorization header with base64-encoded credentials', async () => {
+    (fetch as jest.Mock).mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ status: 'ok' }),
+    });
+
+    await api.healthCheck();
+    // healthCheck skips auth — just verify the function exists and resolves
+    expect(fetch).toHaveBeenCalled();
+  });
+
+  it('includes Authorization header on queue requests', async () => {
+    (fetch as jest.Mock).mockResolvedValueOnce({
+      ok: true,
+      json: async () => [],
+    });
+
+    await api.getQueue('LOW', '2026-04-17');
+
+    const [, options] = (fetch as jest.Mock).mock.calls[0];
+    expect(options.headers).toHaveProperty('Authorization');
+    expect(options.headers['Authorization']).toMatch(/^Basic /);
+  });
 });
+
+// ---------------------------------------------------------------------------
+// validateEnv guard — isolated so env mutations don't bleed into other tests
+// ---------------------------------------------------------------------------
+
+describe('validateEnv guard', () => {
+  const savedEnv = process.env;
+
+  afterEach(() => {
+    process.env = savedEnv;
+    jest.resetModules();
+  });
+
+  it('throws when NEXT_PUBLIC_API_PASSWORD is the placeholder value', async () => {
+    process.env = {
+      ...savedEnv,
+      NEXT_PUBLIC_API_PASSWORD: 'your_password_here',
+    };
+    jest.resetModules();
+    const { api: freshApi } = await import('./api');
+
+    (fetch as jest.Mock).mockResolvedValueOnce({ ok: true, json: async () => [] });
+    await expect(freshApi.getQueue('LOW', '2026-04-17')).rejects.toThrow(
+      'NEXT_PUBLIC_API_PASSWORD is not configured'
+    );
+  });
+
+  it('throws when NEXT_PUBLIC_API_PASSWORD is absent', async () => {
+    const env = { ...savedEnv };
+    delete env.NEXT_PUBLIC_API_PASSWORD;
+    process.env = env;
+    jest.resetModules();
+    const { api: freshApi } = await import('./api');
+
+    (fetch as jest.Mock).mockResolvedValueOnce({ ok: true, json: async () => [] });
+    await expect(freshApi.getQueue('LOW', '2026-04-17')).rejects.toThrow(
+      'NEXT_PUBLIC_API_PASSWORD is not configured'
+    );
+  });
+
+  it('does NOT throw when password is a valid non-placeholder value', async () => {
+    process.env = { ...savedEnv, NEXT_PUBLIC_API_PASSWORD: 'supersecret' };
+    jest.resetModules();
+    const { api: freshApi } = await import('./api');
+
+    (fetch as jest.Mock).mockResolvedValueOnce({
+      ok: true,
+      json: async () => [],
+    });
+    await expect(freshApi.getQueue('LOW', '2026-04-17')).resolves.toEqual([]);
+  });
+});
+

@@ -14,6 +14,7 @@ This document defines the specific operational skills (playbooks) available in t
 | **`grade_backtest`** | Executes `scripts/run_backtest.py` | **WHEN** you need to dynamically evaluate precision/recall after modifying the `triage_agent.py` logic. |
 | **`add_enrichment`** | Pipeline for adding new data sources | **WHEN** the user asks to integrate a new signal (e.g. Weather API). You must touch `data_loader.py`, `engine.py`, and `models.py`. |
 | **`tune_prompt`** | Modifies the AI's heuristic behavior | **WHEN** the AI priorities hallucinate. Do not edit `.py` code; you must teach via `prompts/few_shot_library.json`. |
+| **`env_setup`** | Wires `.env` + `frontend/.env.local` | **WHEN** setting up a fresh clone or after rotating API credentials. Run `bash scripts/dev.sh` which auto-syncs passwords. |
 | **`build_ui_view`** | Scaffolds Next.js/FastAPI components | **WHEN** extending the UI. You must keep Next.js contained in `/frontend/` and FastAPI in `src/api/`. |
 
 ---
@@ -64,6 +65,21 @@ cat prompts/few_shot_library.json
 .venv/bin/python scripts/run_triage.py --sample --no-alerts --verbose
 ```
 
+### `env_setup`
+```bash
+# One file for the entire stack — copy the template:
+cp .env.example .env
+
+# Edit .env — set these three vars at minimum:
+#   API_PASSWORD=yourpassword      ← backend auth + frontend auth (same value)
+#   API_USERNAME=admin             ← optional, defaults to admin
+#   ANTHROPIC_API_KEY=sk-...       ← (or OPENAI_API_KEY / GEMINI_API_KEY)
+
+# Start both services — dev.sh exports API_* into the shell so next.config.ts
+# can bridge them to NEXT_PUBLIC_* automatically. No frontend/.env.local needed.
+bash scripts/dev.sh
+```
+
 ### `build_ui_view`
 ```bash
 # Backend: add new endpoint to src/api/app.py, then verify
@@ -73,7 +89,10 @@ cat prompts/few_shot_library.json
 # Then verify
 cd frontend && npm test
 
-# Start both servers to test end-to-end
+# Start BOTH services together (recommended — handles env validation automatically):
+bash scripts/dev.sh
+
+# Or start individually:
 uvicorn src.api.app:app --reload --port 8000 &
 cd frontend && npm run dev
 ```
@@ -92,7 +111,7 @@ When transitioning into the Web UI build architecture (FastAPI + Next.js), adher
 
 ### Frontend Enhancements (Next.js) — Phase 11
 - **Monorepo Awareness:** Always scaffold Next.js tightly into a root `./frontend/` folder. All dependencies must be strictly scoped to `frontend/package.json`. Never install JS packages at the project root.
-- **Environment variables:** Frontend credentials live in `frontend/.env.local` (copy from `.env.local.example`). Use `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_API_USERNAME`, `NEXT_PUBLIC_API_PASSWORD`.
+- **Environment variables:** All credentials live in the **root `.env`** — no `frontend/.env.local` is used or needed. `next.config.ts` bridges `API_*` → `NEXT_PUBLIC_*` at build/dev time. Start the stack with `bash scripts/dev.sh` which exports the root vars into the Next.js process automatically.
 - **Styling:** Use TailwindCSS v4. Global utility classes (`.glass`, `.glass-hover`, `transition-all-smooth`) live in `frontend/src/app/globals.css` — use them before inventing new ones. Keep components modular in `frontend/src/components/`.
 - **Shadcn/UI is deferred to Phase 12+** — do not install it for Phase 11 work.
 
@@ -109,4 +128,4 @@ When an AI Agent is working on this repo, observe these epistemic constraints:
 2. **Don't Assume Dependencies:** Always check `requirements.txt` via `cat` or `grep` before importing a new library. If you need a new dependency, add it to `requirements.txt` and request user permission to pip install. Pydantic v2 patterns apply. For frontend deps, check `frontend/package.json` first.
 3. **Respect Immutability Warnings:** The Triage Agent layer uses mutable objects (`TriageResult` fields are updated by phantom webhooks and pattern analyzers). Preserve this explicit mutability pattern during refactoring.
 4. **Loguru Standards:** No raw `print()` statements. Always use `from loguru import logger` and route outputs via structured `logger.info()` or `logger.warning()`. Use lazy format: `logger.error("msg: {}", e)` — never f-strings inside logger calls.
-5. **Frontend Environment Setup:** The Next.js frontend requires `frontend/.env.local` before `npm run dev` will connect to the backend. Copy `frontend/.env.local.example` and set `NEXT_PUBLIC_API_PASSWORD` to match the backend's `API_PASSWORD` env var. Without this, all API calls will return 401.
+5. **Frontend Environment Setup:** All credentials live in the **root `.env`** (one file for the entire stack). `next.config.ts` maps `API_USERNAME`, `API_PASSWORD`, and `API_URL` to `NEXT_PUBLIC_*` so the browser client has them. Always use `bash scripts/dev.sh` to start the stack — it sources root `.env` and exports those vars before launching Next.js. Do NOT create a `frontend/.env.local`.
