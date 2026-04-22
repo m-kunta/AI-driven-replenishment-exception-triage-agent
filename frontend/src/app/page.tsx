@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { api, TriageResult, Priority, PipelineTriggerRequest } from "../lib/api";
 import ExceptionCard from "../components/ExceptionCard";
+import MarkdownBriefing from "../components/MarkdownBriefing";
 
 const PRIORITIES: Priority[] = ["CRITICAL", "HIGH", "MEDIUM", "LOW"];
 
@@ -186,9 +187,7 @@ export default function Home() {
         {briefingExpanded && (
           <div className="glass rounded-xl p-5">
             {briefing ? (
-              <pre className="text-sm text-slate-200 whitespace-pre-wrap font-sans leading-relaxed">
-                {briefing}
-              </pre>
+              <MarkdownBriefing content={briefing} />
             ) : (
               <p className="text-slate-500 text-sm italic">
                 No briefing available for {runDate}. Run the pipeline to generate one.
