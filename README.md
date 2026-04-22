@@ -13,7 +13,7 @@
 **GitHub:** [github.com/m-kunta](https://github.com/m-kunta)  
 **Domain:** Supply Chain Planning / Retail Replenishment
 
-> All four pipeline layers are now complete and tested (315+ tests passing). The full pipeline runs end-to-end via `python scripts/run_triage.py`. Phase 8 (Backtesting) is fully implemented.
+> All four pipeline layers are now complete and tested (447 tests passing: 371 Python + 76 Jest). The full pipeline runs end-to-end via `python scripts/run_triage.py`. Phase 8 (Backtesting) is fully implemented. Phase 11 (Web UI) MVP is live with a FastAPI backend, Next.js Command Center dashboard, BFF proxy for secure credential handling, and full Markdown briefing rendering.
 
 ---
 
@@ -233,8 +233,9 @@ The agent ingests raw replenishment exceptions, enriches them with 15+ contextua
 │  Phase 8: Backtesting Pipeline        ← ✅ COMPLETE                    │
 │  ✅ scripts/run_backtest.py measures accuracy against true outcomes    │
 ├──────────────────────────────────────────────────────────────────┤
-│  Phase 11: Web UI (Command Center)    ← 🚧 MVP SCAFFOLD                │
-│  ✅ FastAPI Backend  · ✅ Next.js Frontend (MVP)                       │
+│  Phase 11: Web UI (Command Center)    ← ✅ MVP COMPLETE                  │
+│  ✅ FastAPI Backend  · ✅ Next.js Dashboard (Markdown briefing)            │
+│  ✅ BFF Proxy (server-side auth) · ✅ Exception queue + pipeline trigger  │
 └──────────────────────────────────────────────────────────────────┘
 ```
 
@@ -332,6 +333,24 @@ AI-driven-replenishment-exception-triage-agent/
 │   ├── test_briefing_generator.py # Layer 4 morning briefing tests (17)
 │   ├── test_exception_logger.py   # Layer 4 exception logger tests (10)
 │   └── test_main.py               # Main orchestrator + CLI tests (7)
+├── frontend/                          # Phase 11 Web UI
+│   ├── src/
+│   │   ├── app/
+│   │   │   ├── api/proxy/[...path]/   # BFF Route Handler (server-side auth)
+│   │   │   │   └── route.ts
+│   │   │   ├── layout.tsx
+│   │   │   ├── page.tsx               # Command Center dashboard
+│   │   │   └── globals.css
+│   │   ├── components/
+│   │   │   ├── ExceptionCard.tsx      # Priority exception card
+│   │   │   └── MarkdownBriefing.tsx   # Styled Markdown renderer (GFM tables, etc.)
+│   │   └── lib/
+│   │       └── api.ts                 # Type-safe API client (calls /api/proxy/*)
+│   ├── __mocks__/                     # Jest manual mocks for ESM packages
+│   │   ├── react-markdown.tsx
+│   │   └── remark-gfm.ts
+│   ├── next.config.ts
+│   └── package.json
 ├── scripts/
 │   ├── generate_sample_data.py    # Synthetic data generator
 │   ├── run_triage.py              # CLI entry point for the full pipeline
@@ -413,17 +432,28 @@ python scripts/run_triage.py --help
 
 ### Run the Web UI (Phase 11)
 
-To run the interactive Command Center dashboard, start both the backend and frontend servers:
+Start both the backend and frontend from the project root with a single command:
 
 ```bash
-# 1. Start the FastAPI Backend
-uvicorn src.api.app:app --reload --port 8000
+# 1. Copy and configure the root .env (one-time setup)
+cp .env.example .env
+# Edit .env — set API_PASSWORD, API_USERNAME, API_URL, and your AI provider key
 
-# 2. In a new terminal, start the Next.js Frontend
-cd frontend
-npm run dev
+# 2. Start both services (backend + frontend) together
+bash scripts/dev.sh
 
-# 3. Open http://localhost:3000 in your browser
+# 3. Open http://localhost:3000
+```
+
+> **Note:** `scripts/dev.sh` exports the root `.env` into both processes. The
+> Next.js BFF proxy (`/api/proxy/*`) reads credentials server-side — they are
+> never sent to the browser bundle.
+
+Or start individually for debugging:
+
+```bash
+source .env && uvicorn src.api.app:app --reload --port 8000
+cd frontend && API_PASSWORD=yourpass API_USERNAME=admin npm run dev
 ```
 
 ### Run Backtesting Evaluation
@@ -445,7 +475,7 @@ python scripts/run_backtest.py --date 2026-04-11 --week 4 --sample
 | **Layer 4 — Output & Alerts** | ✅ Complete | Priority Router · Alert Dispatcher · Morning Briefing · Exception Logger (CSV audit log) |
 | **Main Orchestrator & CLI** | ✅ Complete | `src/main.py` wires all 4 layers; `scripts/run_triage.py` provides full CLI |
 | **Phase 8 — Backtesting** | ✅ Complete | `scripts/run_backtest.py` — outcome accuracy scoring at Week 4/8 after exception date |
-| **Phase 11 — Web UI** | 🚧 MVP Scaffold | FastAPI backend + Next.js dashboard in `/frontend`. Briefing panel and /runs endpoint added; full Active Learning and Copilot features pending |
+| **Phase 11 — Web UI** | ✅ MVP Complete | FastAPI backend + Next.js Command Center. BFF proxy keeps credentials server-side. Markdown briefing panel, exception queue tabs, pipeline trigger. 76 Jest + 371 Python tests. |
 
 ### Layer 2 — Implementation
 
@@ -493,7 +523,7 @@ This project is intentionally staged. To avoid confusion, use this guide when ev
 | CLI pipeline run | ✅ Implemented | `python scripts/run_triage.py [--sample] [--dry-run] [--no-alerts] [--verbose]` |
 | Backtesting pipeline | ✅ Implemented | `scripts/run_backtest.py` — Week 4/8 outcome scoring |
 | Web UI Backend (FastAPI) | ✅ Implemented | Exposes queues and triggers pipeline asynchronously (`src/api/app.py`) |
-| Web UI Frontend (Next.js) | 🚧 MVP Scaffold | Command Center dashboard with briefing panel, exception queue, and pipeline controls (`/frontend`) |
+| Web UI Frontend (Next.js) | ✅ Implemented | Command Center dashboard: Markdown briefing panel (react-markdown + remark-gfm), exception queue tabs by priority, pipeline trigger, BFF proxy for secure server-side auth (`/frontend`) |
 
 Run `python scripts/run_triage.py --help` to see all available options.
 

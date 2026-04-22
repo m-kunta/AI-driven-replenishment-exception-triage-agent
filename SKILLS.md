@@ -71,12 +71,12 @@ cat prompts/few_shot_library.json
 cp .env.example .env
 
 # Edit .env — set these three vars at minimum:
-#   API_PASSWORD=yourpassword      ← backend auth + frontend auth (same value)
+#   API_PASSWORD=yourpassword      ← FastAPI auth + BFF proxy auth (same value)
 #   API_USERNAME=admin             ← optional, defaults to admin
 #   ANTHROPIC_API_KEY=sk-...       ← (or OPENAI_API_KEY / GEMINI_API_KEY)
 
-# Start both services — dev.sh exports API_* into the shell so next.config.ts
-# can bridge them to NEXT_PUBLIC_* automatically. No frontend/.env.local needed.
+# Start both services — dev.sh exports API_* into the shell so the Next.js
+# BFF proxy route can read them server-side. No frontend/.env.local needed.
 bash scripts/dev.sh
 ```
 
@@ -85,15 +85,27 @@ bash scripts/dev.sh
 # Backend: add new endpoint to src/api/app.py, then verify
 .venv/bin/python3 -m pytest tests/test_api.py -v
 
-# Frontend: add component under frontend/src/components/, page under frontend/src/app/
-# Then verify
+# Frontend — component locations:
+#   Components:          frontend/src/components/<Name>.tsx
+#   Component tests:     frontend/src/components/<Name>.test.tsx
+#   Pages:               frontend/src/app/<route>/page.tsx
+#   BFF proxy extension: frontend/src/app/api/proxy/[...path]/route.ts
+#   Proxy tests:         frontend/src/app/api/proxy/[...path]/route.test.ts
+#                        (must have @jest-environment node at the top)
+#   ESM mocks:           frontend/__mocks__/<package-name>.tsx
+
+# Run frontend tests
 cd frontend && npm test
 
-# Start BOTH services together (recommended — handles env validation automatically):
+# Markdown briefing: use MarkdownBriefing component (not <pre>) to render
+# AI-generated briefings — the pipeline outputs GFM Markdown with tables,
+# headings, and blockquotes that require react-markdown + remark-gfm.
+
+# Start BOTH services together (recommended):
 bash scripts/dev.sh
 
-# Or start individually:
-uvicorn src.api.app:app --reload --port 8000 &
+# Or start individually for debugging:
+source .env && uvicorn src.api.app:app --reload --port 8000
 cd frontend && npm run dev
 ```
 
@@ -129,3 +141,4 @@ When an AI Agent is working on this repo, observe these epistemic constraints:
 3. **Respect Immutability Warnings:** The Triage Agent layer uses mutable objects (`TriageResult` fields are updated by phantom webhooks and pattern analyzers). Preserve this explicit mutability pattern during refactoring.
 4. **Loguru Standards:** No raw `print()` statements. Always use `from loguru import logger` and route outputs via structured `logger.info()` or `logger.warning()`. Use lazy format: `logger.error("msg: {}", e)` — never f-strings inside logger calls.
 5. **Frontend Environment Setup:** All credentials live in the **root `.env`** (one file for the entire stack). `API_USERNAME`, `API_PASSWORD`, and `API_URL` are read server-side only by `src/app/api/proxy/[...path]/route.ts` — they are **never** exposed to the browser bundle. Always use `bash scripts/dev.sh` to start the stack — it sources root `.env` and exports those vars into the Next.js process. Do NOT create a `frontend/.env.local`. Do NOT add credentials to `NEXT_PUBLIC_*`.
+6. **Proxy Route Test Environment:** Any test file that imports from `src/app/api/proxy/[...path]/route.ts` (or any other Next.js Route Handler) **must** start with `/** @jest-environment node */` — Route Handlers require Node.js globals (`Request`, `Headers`, `Buffer`) that jsdom does not provide. ESM-only packages (`react-markdown`, `remark-gfm`, etc.) require Jest manual mocks in `frontend/__mocks__/`.
