@@ -16,7 +16,8 @@ config/
 prompts/                       # Markdown blocks and JSON few-shot examples
 data/                          # Sample datasets and SQL schemas
 scripts/                       # CLI interaction scripts (run_triage, run_backtest)
-frontend/                      # [Phase 11] Next.js Web UI — copy frontend/.env.local.example → frontend/.env.local before running
+frontend/                      # [Phase 11] Next.js Web UI — start with `bash scripts/dev.sh` (sources root .env)
+└── src/app/api/proxy/         # BFF proxy — injects Basic Auth server-side; credentials never reach the browser
 ```
 
 ## Tech Stack & Architecture Constraints
@@ -40,6 +41,12 @@ frontend/                      # [Phase 11] Next.js Web UI — copy frontend/.en
 - Use sync `def` endpoints — the pipeline is CPU-bound/blocking; `async def` is not appropriate here.
 - Loguru lazy format only: `logger.error("msg: {}", e)` — no f-strings in any logger call.
 - New endpoints must have corresponding tests in `tests/test_api.py` using the `_api_credentials` autouse fixture.
+
+## Frontend Proxy Rules (frontend/src/app/api/proxy/)
+- `API_USERNAME`, `API_PASSWORD`, and `API_URL` are **server-side only** — read by the BFF proxy in `frontend/src/app/api/proxy/[...path]/route.ts`.
+- **Never** add these to `NEXT_PUBLIC_*` or the `env` block in `next.config.ts`. Doing so leaks credentials into the browser JS bundle.
+- All browser fetch calls must target `/api/proxy/...` — never call the FastAPI backend directly from client code.
+- No `frontend/.env.local` is needed or used; credentials come from the root `.env` via `bash scripts/dev.sh`.
 
 ## Basic Execution Paths
 - **Format Code:** Use `ruff` or standardized `.venv` wrappers.

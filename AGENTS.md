@@ -23,10 +23,10 @@ Current systems prioritize by magnitude. This agent acts as a **Virtual Planner*
    - Generates priority queues (`CRITICAL`, `HIGH`, etc.), dispatches email/webhook alerts with SLA timers, and compiles a daily Markdown Morning Briefing.
 
 ## Web UI (Agentic Copilot)
-The system is migrating from a CLI batch process to a Web UI Copilot. Phase 11 is an active MVP scaffold.
+The system has migrated from a CLI batch process to a Web UI Copilot. Phase 11 is complete and live.
 
-- **Phase 11 — MVP Command Center** 🚧 In Progress: FastAPI backend (`src/api/`) + Next.js dashboard (`frontend/`). Command Center reads priority queues and morning briefings from pipeline output files.
-- **Phase 12 — Active Learning:** Analyst overrides & "Suggested Learnings" stored in SQLite/PostgreSQL; human review gate for few-shot updates.
+- **Phase 11 — MVP Command Center** ✅ Complete: FastAPI backend (`src/api/`) + Next.js dashboard (`frontend/`). Command Center reads priority queues and morning briefings from pipeline output files. Credentials are kept server-side via a BFF proxy (`frontend/src/app/api/proxy/`) — never exposed to the browser bundle.
+- **Phase 12 — Active Learning** 🚧 In Progress: Analyst overrides DB layer and FastAPI endpoints implemented. Next.js UI modal and few-shot pipeline promotion UI pending.
 - **Phase 13 — Agentic Engagement:** Native webhook buttons syncing approved actions back to the ERP.
 
 ### Phase 11 API Surface

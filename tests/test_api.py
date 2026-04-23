@@ -481,3 +481,68 @@ class TestPipelineTriggerEndpoint:
             )
         # The HTTP response itself must still be 202 regardless of task outcome
         assert resp.status_code == 202
+
+# ===========================================================================
+# Override Endpoints
+# ===========================================================================
+
+@pytest.fixture(autouse=True)
+def mock_override_store(monkeypatch):
+    import src.api.app as api_module
+    from src.db.store import OverrideStore
+    store = OverrideStore(":memory:")
+    monkeypatch.setattr(api_module, "override_store", store)
+    return store
+
+class TestOverrideEndpoints:
+    def test_submit_override(self, client):
+        payload = {
+            "exception_id": "EXC-123",
+            "run_date": "2026-04-20",
+            "enriched_input_snapshot": {"foo": "bar"},
+            "override_priority": "CRITICAL"
+        }
+        resp = client.post("/overrides", json=payload, auth=VALID_CREDS)
+        assert resp.status_code == 201
+        assert resp.json()["status"] == "pending"
+
+    def test_list_pending_overrides(self, client):
+        payload = {
+            "exception_id": "EXC-123",
+            "run_date": "2026-04-20",
+            "enriched_input_snapshot": {"foo": "bar"},
+            "override_priority": "CRITICAL"
+        }
+        client.post("/overrides", json=payload, auth=VALID_CREDS)
+        resp = client.get("/overrides/pending", auth=VALID_CREDS)
+        assert resp.status_code == 200
+        assert len(resp.json()) == 1
+        assert resp.json()[0]["exception_id"] == "EXC-123"
+
+    def test_approve_override(self, client):
+        payload = {
+            "exception_id": "EXC-123",
+            "run_date": "2026-04-20",
+            "enriched_input_snapshot": {"foo": "bar"},
+            "override_priority": "CRITICAL"
+        }
+        resp_post = client.post("/overrides", json=payload, auth=VALID_CREDS)
+        row_id = resp_post.json()["id"]
+
+        resp_app = client.post(f"/overrides/{row_id}/approve", auth=VALID_CREDS)
+        assert resp_app.status_code == 200
+        assert resp_app.json()["status"] == "approved"
+
+    def test_reject_override(self, client):
+        payload = {
+            "exception_id": "EXC-123",
+            "run_date": "2026-04-20",
+            "enriched_input_snapshot": {"foo": "bar"},
+            "override_priority": "CRITICAL"
+        }
+        resp_post = client.post("/overrides", json=payload, auth=VALID_CREDS)
+        row_id = resp_post.json()["id"]
+
+        resp_rej = client.post(f"/overrides/{row_id}/reject", json={"reason": "nope"}, auth=VALID_CREDS)
+        assert resp_rej.status_code == 200
+        assert resp_rej.json()["status"] == "rejected"
