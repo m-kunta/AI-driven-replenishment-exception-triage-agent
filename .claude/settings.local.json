@@ -76,7 +76,11 @@
       "Bash(curl -s https://raw.githubusercontent.com/vercel-labs/skills/main/skills/find-skills/SKILL.md -o ~/.agents/skills/find-skills/SKILL.md)",
       "Read(//Users/MKunta/.claude/plugins/**)",
       "Read(//Users/MKunta/.config/claude/**)",
-      "Read(//Users/MKunta/**)"
+      "Read(//Users/MKunta/**)",
+      "Bash(sed -n '1,180p' /Users/MKunta/AGENTS/CODE/AI-driven-replenishment-exception-triage-agent/src/api/app.py)",
+      "Bash(sed -n '1,135p' /Users/MKunta/AGENTS/CODE/AI-driven-replenishment-exception-triage-agent/frontend/src/lib/api.ts)",
+      "Skill(update-config)",
+      "Skill(update-config:*)"
     ]
   }
 }

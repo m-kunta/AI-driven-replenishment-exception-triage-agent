@@ -170,6 +170,23 @@ class OverrideStore:
 
         return [self._row_to_few_shot(r) for r in rows[:limit]]
 
+    def get_pending_overrides(self) -> list[dict]:
+        cur = self._conn.execute(
+            """
+            SELECT * FROM analyst_overrides
+            WHERE approval_status = 'pending'
+            ORDER BY submitted_at ASC
+            """
+        )
+        results = []
+        for row in cur.fetchall():
+            d = dict(row)
+            d["enriched_input_snapshot"] = json.loads(d["enriched_input_snapshot"])
+            if d.get("override_compounding_risks"):
+                d["override_compounding_risks"] = json.loads(d["override_compounding_risks"])
+            results.append(d)
+        return results
+
     def _row_to_few_shot(self, row) -> dict:
         output: dict = {}
         field_map = {

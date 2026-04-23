@@ -476,6 +476,7 @@ python scripts/run_backtest.py --date 2026-04-11 --week 4 --sample
 | **Main Orchestrator & CLI** | ✅ Complete | `src/main.py` wires all 4 layers; `scripts/run_triage.py` provides full CLI |
 | **Phase 8 — Backtesting** | ✅ Complete | `scripts/run_backtest.py` — outcome accuracy scoring at Week 4/8 after exception date |
 | **Phase 11 — Web UI** | ✅ MVP Complete | FastAPI backend + Next.js Command Center. BFF proxy keeps credentials server-side. Markdown briefing panel, exception queue tabs, pipeline trigger. 76 Jest + 371 Python tests. |
+| **Phase 12 — Active Learning** | 🚧 In Progress | Analyst override DB layer and FastAPI override endpoints implemented. Next.js UI workflow pending. |
 
 ### Layer 2 — Implementation
 

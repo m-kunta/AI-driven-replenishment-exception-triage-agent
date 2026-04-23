@@ -4,7 +4,7 @@ import json
 import os
 import secrets
 from pathlib import Path
-from typing import Annotated, Any, Dict, Optional
+from typing import Annotated, Any, Dict, Optional, List
 
 from fastapi import BackgroundTasks, Depends, FastAPI, HTTPException, status
 from fastapi.responses import JSONResponse
@@ -13,6 +13,7 @@ from loguru import logger
 from pydantic import BaseModel, Field
 
 from src.main import run_triage_pipeline
+from src.db.store import OverrideStore
 
 # Configure base FastAPI app
 app = FastAPI(
@@ -26,6 +27,8 @@ security = HTTPBasic()
 # Setup paths (Assuming running from root dir)
 OUTPUT_LOGS_DIR = Path("output/logs")
 OUTPUT_BRIEFINGS_DIR = Path("output/briefings")
+
+override_store = OverrideStore()
 
 
 def get_current_username(credentials: Annotated[HTTPBasicCredentials, Depends(security)]) -> str:
@@ -58,6 +61,23 @@ class PipelineTriggerRequest(BaseModel):
     sample: bool = Field(default=True, description="Force sample CSV output")
     no_alerts: bool = Field(default=True, description="Prevent real alert dispatching")
     dry_run: bool = Field(default=False, description="Do not call the AI")
+
+
+class OverrideSubmitRequest(BaseModel):
+    exception_id: str
+    run_date: str
+    enriched_input_snapshot: dict
+    override_priority: Optional[str] = None
+    override_root_cause: Optional[str] = None
+    override_recommended_action: Optional[str] = None
+    override_financial_impact_statement: Optional[str] = None
+    override_planner_brief: Optional[str] = None
+    override_compounding_risks: Optional[List[str]] = None
+    analyst_note: Optional[str] = None
+
+
+class OverrideRejectRequest(BaseModel):
+    reason: Optional[str] = None
 
 
 @app.get("/health")
@@ -171,3 +191,73 @@ def get_briefing(
     except Exception as e:
         logger.error("Failed to read briefing file: {}", e)
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/overrides", status_code=status.HTTP_201_CREATED)
+def submit_override(
+    payload: OverrideSubmitRequest,
+    username: Annotated[str, Depends(get_current_username)],
+) -> Dict[str, Any]:
+    """Submit a new analyst override."""
+    try:
+        row_id = override_store.insert_override(
+            exception_id=payload.exception_id,
+            run_date=payload.run_date,
+            analyst_username=username,
+            enriched_input_snapshot=payload.enriched_input_snapshot,
+            override_priority=payload.override_priority,
+            override_root_cause=payload.override_root_cause,
+            override_recommended_action=payload.override_recommended_action,
+            override_financial_impact_statement=payload.override_financial_impact_statement,
+            override_planner_brief=payload.override_planner_brief,
+            override_compounding_risks=payload.override_compounding_risks,
+            analyst_note=payload.analyst_note,
+        )
+        return {"id": row_id, "status": "pending", "message": "Override submitted for review"}
+    except ValueError as e:
+        logger.error("Validation error in submit_override: {}", e)
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error("Failed to submit override: {}", e)
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
+@app.get("/overrides/pending")
+def list_pending_overrides(
+    username: Annotated[str, Depends(get_current_username)],
+) -> List[Dict[str, Any]]:
+    """List overrides awaiting lead planner approval."""
+    try:
+        return override_store.get_pending_overrides()
+    except Exception as e:
+        logger.error("Failed to list pending overrides: {}", e)
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
+@app.post("/overrides/{override_id}/approve")
+def approve_override(
+    override_id: int,
+    username: Annotated[str, Depends(get_current_username)],
+) -> Dict[str, Any]:
+    """Approve a pending override."""
+    try:
+        override_store.approve_override(override_id, approved_by=username)
+        return {"status": "approved", "override_id": override_id}
+    except Exception as e:
+        logger.error("Failed to approve override: {}", e)
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
+@app.post("/overrides/{override_id}/reject")
+def reject_override(
+    override_id: int,
+    payload: OverrideRejectRequest,
+    username: Annotated[str, Depends(get_current_username)],
+) -> Dict[str, Any]:
+    """Reject a pending override."""
+    try:
+        override_store.reject_override(override_id, rejected_by=username, reason=payload.reason)
+        return {"status": "rejected", "override_id": override_id}
+    except Exception as e:
+        logger.error("Failed to reject override: {}", e)
+        raise HTTPException(status_code=500, detail="Internal server error")
