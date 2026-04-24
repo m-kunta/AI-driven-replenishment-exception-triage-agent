@@ -7,6 +7,7 @@ from __future__ import annotations
 import json
 from datetime import date, datetime
 from pathlib import Path
+from unittest.mock import MagicMock
 
 import pytest
 
@@ -146,6 +147,55 @@ class TestComposeSystemPrompt:
         few_shot_pos = system.index("Few-Shot Examples")
         contract_pos = system.index("Output Contract")
         assert framework_pos < few_shot_pos < contract_pos
+
+    def test_uses_override_store_examples_when_present(self, prompts_dir: Path):
+        from src.agent.prompt_composer import PromptComposer
+
+        store = MagicMock()
+        store.get_approved_few_shot_examples.return_value = [
+            {
+                "input": {"exception_id": "override-001"},
+                "output": {"priority": "CRITICAL", "root_cause": "Planner corrected"},
+            }
+        ]
+
+        composer = PromptComposer(prompts_dir=prompts_dir, override_store=store)
+        system = composer.compose_system_prompt()
+
+        assert "override-001" in system
+        assert "Planner corrected" in system
+
+    def test_falls_back_to_static_few_shots_when_override_store_empty(self, prompts_dir: Path):
+        from src.agent.prompt_composer import PromptComposer
+
+        store = MagicMock()
+        store.get_approved_few_shot_examples.return_value = []
+
+        composer = PromptComposer(prompts_dir=prompts_dir, override_store=store)
+        system = composer.compose_system_prompt()
+
+        assert "Test example" in system
+
+    def test_approved_override_enters_prompt_examples(self, prompts_dir: Path):
+        from src.agent.prompt_composer import PromptComposer
+        from src.db.store import OverrideStore
+
+        store = OverrideStore(":memory:")
+        row_id = store.insert_override(
+            exception_id="EXC-001",
+            run_date="2026-04-23",
+            analyst_username="analyst1",
+            enriched_input_snapshot={"exception_id": "EXC-001"},
+            override_priority="HIGH",
+            analyst_note="Planner note",
+        )
+        store.approve_override(row_id, "planner1")
+
+        composer = PromptComposer(prompts_dir=prompts_dir, override_store=store)
+        system = composer.compose_system_prompt()
+
+        assert "EXC-001" in system
+        assert "Planner note" in system
 
     def test_system_prompt_within_token_budget(self):
         from src.agent.prompt_composer import PromptComposer

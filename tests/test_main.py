@@ -215,6 +215,32 @@ class TestFullPipelineNoAlerts:
 
         MockDispatcher.return_value.dispatch.assert_called_once_with(run_result)
 
+    def test_auto_approve_pending_called_before_triage_agent(self):
+        """Pending overrides should be auto-approved before Layer 3 starts."""
+        run_result = _make_run_result()
+        mock_store = MagicMock()
+
+        with (
+            patch("src.main.validate_required_env_vars"),
+            patch("src.main.OverrideStore", return_value=mock_store),
+            patch("src.main.TriageAgent") as MockAgent,
+            patch("src.main.AlertDispatcher"),
+            patch("src.main.BriefingGenerator") as MockBriefing,
+            patch("src.main.ExceptionLogger") as MockLogger,
+        ):
+            MockAgent.return_value.run.return_value = run_result
+            MockBriefing.return_value.generate.return_value = Path("output/briefings/b.md")
+            MockLogger.return_value.log.return_value = Path("output/logs/exception_log.csv")
+
+            from src.main import run_triage_pipeline
+            run_triage_pipeline(
+                config_path=_SAMPLE_CONFIG,
+                no_alerts=True,
+                sample=True,
+            )
+
+        mock_store.auto_approve_pending.assert_called_once()
+
 
 # ---------------------------------------------------------------------------
 # Tests: sample flag

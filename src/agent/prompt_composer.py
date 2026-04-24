@@ -16,8 +16,9 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import List
+from typing import List, Optional
 
+from src.db.store import OverrideStore
 from src.models import EnrichedExceptionSchema
 
 PROMPTS_DIR = Path("prompts")
@@ -36,10 +37,37 @@ _REQUIRED_FILES = [
 class PromptComposer:
     """Loads prompt files and composes system/user prompts for any LLM provider."""
 
-    def __init__(self, prompts_dir: Path = PROMPTS_DIR) -> None:
+    def __init__(
+        self,
+        prompts_dir: Path = PROMPTS_DIR,
+        override_store: Optional[OverrideStore] = None,
+        override_limit: int = 10,
+    ) -> None:
         self._prompts_dir = prompts_dir
+        self._override_store = override_store
+        self._override_limit = override_limit
         self._cache: dict[str, str] = {}
         self._load_all()
+
+    def _get_few_shot_examples(self) -> list[dict]:
+        """Return approved override examples when available, else static examples."""
+        if self._override_store is not None:
+            examples = self._override_store.get_approved_few_shot_examples(
+                limit=self._override_limit
+            )
+            if examples:
+                return examples
+
+        static_examples = json.loads(self._cache["few_shot_library.json"])
+        return [
+            {
+                "description": ex["description"],
+                "input": ex["exception"],
+                "output": ex["correct_output"],
+                "reasoning": ex.get("reasoning"),
+            }
+            for ex in static_examples
+        ]
 
     def _load_all(self) -> None:
         """Load and cache all required prompt files at startup."""
@@ -62,19 +90,22 @@ class PromptComposer:
 
     def _format_few_shots(self) -> str:
         """Format few-shot examples as a readable block for the system prompt."""
-        examples = json.loads(self._cache["few_shot_library.json"])
+        examples = self._get_few_shot_examples()
         lines = ["## Few-Shot Examples\n"]
-        for ex in examples:
-            lines.append(f"### Example: {ex['description']}")
+        for index, ex in enumerate(examples, start=1):
+            description = ex.get("description") or f"Approved Override {index}"
+            lines.append(f"### Example: {description}")
             lines.append(
                 f"**Input exception:**\n```json\n"
-                f"{json.dumps(ex['exception'], indent=2, default=str)}\n```"
+                f"{json.dumps(ex['input'], indent=2, default=str)}\n```"
             )
             lines.append(
                 f"**Correct output:**\n```json\n"
-                f"{json.dumps(ex['correct_output'], indent=2, default=str)}\n```"
+                f"{json.dumps(ex['output'], indent=2, default=str)}\n```"
             )
-            lines.append(f"**Reasoning:** {ex['reasoning']}\n")
+            reasoning = ex.get("reasoning")
+            if reasoning:
+                lines.append(f"**Reasoning:** {reasoning}\n")
         return "\n".join(lines)
 
     def compose_system_prompt(self) -> str:

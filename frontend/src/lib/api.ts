@@ -38,6 +38,46 @@ export interface PipelineTriggerRequest {
   dry_run?: boolean;
 }
 
+export interface OverrideSubmitRequest {
+  exception_id: string;
+  run_date: string;
+  enriched_input_snapshot: Record<string, unknown>;
+  override_priority?: Priority;
+  override_root_cause?: string;
+  override_recommended_action?: string;
+  override_financial_impact_statement?: string;
+  override_planner_brief?: string;
+  override_compounding_risks?: string[];
+  analyst_note?: string;
+}
+
+export interface OverrideSubmitResponse {
+  id: number;
+  status: "pending";
+  message?: string;
+}
+
+export interface PendingOverride {
+  id: number;
+  exception_id: string;
+  run_date: string;
+  analyst_username: string;
+  submitted_at: string;
+  enriched_input_snapshot: Record<string, unknown>;
+  override_priority?: string | null;
+  override_root_cause?: string | null;
+  override_recommended_action?: string | null;
+  override_financial_impact_statement?: string | null;
+  override_planner_brief?: string | null;
+  override_compounding_risks?: string[] | null;
+  analyst_note?: string | null;
+}
+
+export interface OverrideDecisionResponse {
+  status: "approved" | "rejected";
+  override_id: number;
+}
+
 // All requests route through the Next.js server-side proxy at /api/proxy,
 // which injects Basic Auth credentials from server-only env vars. No credential
 // is ever sent to the browser.
@@ -54,6 +94,58 @@ export const api = {
     });
     if (!res.ok) {
       throw new Error(`Failed to trigger pipeline: ${res.statusText}`);
+    }
+    return res.json();
+  },
+
+  submitOverride: async (
+    payload: OverrideSubmitRequest
+  ): Promise<OverrideSubmitResponse> => {
+    const res = await fetch(`${PROXY_BASE}/overrides`, {
+      method: "POST",
+      headers: JSON_HEADERS,
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new Error(body.detail ?? `Failed to submit override: ${res.statusText}`);
+    }
+    return res.json();
+  },
+
+  getPendingOverrides: async (): Promise<PendingOverride[]> => {
+    const res = await fetch(`${PROXY_BASE}/overrides/pending`, {
+      method: "GET",
+      headers: JSON_HEADERS,
+    });
+    if (!res.ok) {
+      throw new Error(`Failed to fetch pending overrides: ${res.statusText}`);
+    }
+    return res.json();
+  },
+
+  approveOverride: async (id: number): Promise<OverrideDecisionResponse> => {
+    const res = await fetch(`${PROXY_BASE}/overrides/${id}/approve`, {
+      method: "POST",
+      headers: JSON_HEADERS,
+    });
+    if (!res.ok) {
+      throw new Error(`Failed to approve override: ${res.statusText}`);
+    }
+    return res.json();
+  },
+
+  rejectOverride: async (
+    id: number,
+    reason?: string
+  ): Promise<OverrideDecisionResponse> => {
+    const res = await fetch(`${PROXY_BASE}/overrides/${id}/reject`, {
+      method: "POST",
+      headers: JSON_HEADERS,
+      body: JSON.stringify({ reason }),
+    });
+    if (!res.ok) {
+      throw new Error(`Failed to reject override: ${res.statusText}`);
     }
     return res.json();
   },
