@@ -18,6 +18,7 @@ from typing import List
 from loguru import logger
 
 from src.agent.batch_processor import BatchProcessor
+from src.db.store import OverrideStore
 from src.agent.pattern_analyzer import PatternAnalyzer
 from src.agent.phantom_webhook import process_phantom_inventory
 from src.models import (
@@ -38,9 +39,13 @@ class TriageAgent:
     can be replaced with mocks in tests.
     """
 
-    def __init__(self, config: AppConfig) -> None:
+    def __init__(
+        self,
+        config: AppConfig,
+        override_store: OverrideStore | None = None,
+    ) -> None:
         self.config = config
-        self._batch_processor = BatchProcessor(config)
+        self._batch_processor = BatchProcessor(config, override_store=override_store)
         self._pattern_analyzer = PatternAnalyzer(config)
 
     def run(self, enriched_exceptions: List[EnrichedExceptionSchema]) -> TriageRunResult:

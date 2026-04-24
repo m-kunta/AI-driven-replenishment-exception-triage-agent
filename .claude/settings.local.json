@@ -80,7 +80,8 @@
       "Bash(sed -n '1,180p' /Users/MKunta/AGENTS/CODE/AI-driven-replenishment-exception-triage-agent/src/api/app.py)",
       "Bash(sed -n '1,135p' /Users/MKunta/AGENTS/CODE/AI-driven-replenishment-exception-triage-agent/frontend/src/lib/api.ts)",
       "Skill(update-config)",
-      "Skill(update-config:*)"
+      "Skill(update-config:*)",
+      "Bash(git fetch *)"
     ]
   }
 }

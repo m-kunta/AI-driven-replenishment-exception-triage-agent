@@ -118,4 +118,77 @@ describe('API Client', () => {
       expect.stringContaining('/api/proxy/health')
     );
   });
+
+  it('submits an override through the proxy', async () => {
+    const payload = {
+      exception_id: 'EXC-001',
+      run_date: '2026-04-24',
+      enriched_input_snapshot: { exception_id: 'EXC-001' },
+      override_priority: 'HIGH' as const,
+    };
+    (fetch as jest.Mock).mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ id: 1, status: 'pending' }),
+    });
+
+    const result = await api.submitOverride(payload);
+
+    expect(fetch).toHaveBeenCalledWith(
+      expect.stringContaining('/api/proxy/overrides'),
+      expect.objectContaining({
+        method: 'POST',
+        body: JSON.stringify(payload),
+      })
+    );
+    expect(result).toEqual({ id: 1, status: 'pending' });
+  });
+
+  it('fetches pending overrides successfully', async () => {
+    const pending = [{ id: 11, exception_id: 'EXC-001' }];
+    (fetch as jest.Mock).mockResolvedValueOnce({
+      ok: true,
+      json: async () => pending,
+    });
+
+    const result = await api.getPendingOverrides();
+
+    expect(fetch).toHaveBeenCalledWith(
+      expect.stringContaining('/api/proxy/overrides/pending'),
+      expect.objectContaining({ method: 'GET' })
+    );
+    expect(result).toEqual(pending);
+  });
+
+  it('approves an override through the proxy', async () => {
+    (fetch as jest.Mock).mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ status: 'approved', override_id: 11 }),
+    });
+
+    const result = await api.approveOverride(11);
+
+    expect(fetch).toHaveBeenCalledWith(
+      expect.stringContaining('/api/proxy/overrides/11/approve'),
+      expect.objectContaining({ method: 'POST' })
+    );
+    expect(result).toEqual({ status: 'approved', override_id: 11 });
+  });
+
+  it('rejects an override with an optional reason', async () => {
+    (fetch as jest.Mock).mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ status: 'rejected', override_id: 11 }),
+    });
+
+    const result = await api.rejectOverride(11, 'Needs more evidence');
+
+    expect(fetch).toHaveBeenCalledWith(
+      expect.stringContaining('/api/proxy/overrides/11/reject'),
+      expect.objectContaining({
+        method: 'POST',
+        body: JSON.stringify({ reason: 'Needs more evidence' }),
+      })
+    );
+    expect(result).toEqual({ status: 'rejected', override_id: 11 });
+  });
 });

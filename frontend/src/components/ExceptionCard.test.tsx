@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import ExceptionCard from './ExceptionCard';
 import { TriageResult } from '../lib/api';
@@ -198,7 +198,15 @@ describe('ExceptionCard — minimal exception (no optional fields)', () => {
   });
 
   it('still renders priority badge for minimal exception', () => {
-    render(<ExceptionCard exception={minimal} />);
+    render(<ExceptionCard exception={minimal} runDate="2026-04-23" />);
     expect(screen.getByText('LOW')).toBeInTheDocument();
+  });
+});
+
+describe('ExceptionCard — override flow', () => {
+  it('opens the override modal from the card action', () => {
+    render(<ExceptionCard exception={base} runDate="2026-04-23" />);
+    fireEvent.click(screen.getByRole('button', { name: /override/i }));
+    expect(screen.getByRole('dialog', { name: /submit override/i })).toBeInTheDocument();
   });
 });
