@@ -285,3 +285,42 @@ class TriageRunResult(BaseModel):
     pattern_report: MacroPatternReport = Field(default_factory=MacroPatternReport)
     statistics: RunStatistics = Field(default_factory=RunStatistics)
     run_timestamp: datetime
+
+
+# --- Layer 4: Actions ---
+
+class ActionType(str, enum.Enum):
+    CREATE_REVIEW = "CREATE_REVIEW"
+    REQUEST_VERIFICATION = "REQUEST_VERIFICATION"
+    VENDOR_FOLLOW_UP = "VENDOR_FOLLOW_UP"
+    STORE_CHECK = "STORE_CHECK"
+    DEFER = "DEFER"
+
+class ActionStatus(str, enum.Enum):
+    QUEUED = "queued"
+    SENT = "sent"
+    FAILED = "failed"
+    COMPLETED = "completed"
+
+class ActionRequest(BaseModel):
+    request_id: str
+    exception_id: str
+    run_date: date
+    action_type: ActionType
+    requested_by: str
+    requested_by_role: str
+    payload: dict = Field(default_factory=dict)
+
+class ActionRecord(BaseModel):
+    request_id: str
+    exception_id: str
+    run_date: date
+    action_type: ActionType
+    requested_by: str
+    requested_by_role: str
+    payload: dict
+    status: ActionStatus
+    created_at: datetime
+    updated_at: datetime
+    failure_reason: Optional[str] = None
+    downstream_response: Optional[dict] = None

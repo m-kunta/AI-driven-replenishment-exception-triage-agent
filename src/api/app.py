@@ -14,6 +14,9 @@ from pydantic import BaseModel, Field
 
 from src.main import run_triage_pipeline
 from src.db.store import OverrideStore
+from src.db.action_store import ActionStore
+from src.actions.service import ActionService
+from src.models import ActionRequest
 
 # Configure base FastAPI app
 app = FastAPI(
@@ -29,6 +32,8 @@ OUTPUT_LOGS_DIR = Path("output/logs")
 OUTPUT_BRIEFINGS_DIR = Path("output/briefings")
 
 override_store = OverrideStore()
+action_store = ActionStore()
+action_service = ActionService(action_store)
 
 
 def get_current_username(credentials: Annotated[HTTPBasicCredentials, Depends(security)]) -> str:
@@ -261,3 +266,49 @@ def reject_override(
     except Exception as e:
         logger.error("Failed to reject override: {}", e)
         raise HTTPException(status_code=500, detail="Internal server error")
+
+
+@app.post("/actions", status_code=status.HTTP_201_CREATED)
+async def submit_action(
+    payload: ActionRequest,
+    username: Annotated[str, Depends(get_current_username)],
+) -> Dict[str, Any]:
+    """Submit a downstream action for an exception."""
+    try:
+        # Enforce the user submitting is the authenticated user
+        payload.requested_by = username
+        return await action_service.submit_action(payload)
+    except Exception as e:
+        logger.error("Failed to submit action: {}", e)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/actions/{exception_id}")
+def get_actions(
+    exception_id: str,
+    username: Annotated[str, Depends(get_current_username)],
+) -> List[Dict[str, Any]]:
+    """Get all actions for a specific exception."""
+    try:
+        return action_service.get_actions_for_exception(exception_id)
+    except Exception as e:
+        logger.error("Failed to get actions: {}", e)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/actions/{request_id}/retry", status_code=status.HTTP_200_OK)
+async def retry_action(
+    request_id: str,
+    username: Annotated[str, Depends(get_current_username)],
+) -> Dict[str, Any]:
+    """Retry a failed downstream action."""
+    try:
+        result = await action_service.retry_action(request_id)
+        if not result:
+            raise HTTPException(status_code=404, detail="Action not found")
+        return result
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("Failed to retry action: {}", e)
+        raise HTTPException(status_code=500, detail=str(e))

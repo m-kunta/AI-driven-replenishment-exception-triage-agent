@@ -26,8 +26,8 @@ Current systems prioritize by magnitude. This agent acts as a **Virtual Planner*
 The system has migrated from a CLI batch process to a Web UI Copilot. Phase 11 is complete and live.
 
 - **Phase 11 — MVP Command Center** ✅ Complete: FastAPI backend (`src/api/`) + Next.js dashboard (`frontend/`). Command Center reads priority queues and morning briefings from pipeline output files. Credentials are kept server-side via a BFF proxy (`frontend/src/app/api/proxy/`) — never exposed to the browser bundle.
-- **Phase 12 — Active Learning** 🚧 In Progress: Analyst overrides DB layer and FastAPI endpoints implemented. Next.js UI modal and few-shot pipeline promotion UI pending.
-- **Phase 13 — Agentic Engagement:** Native webhook buttons syncing approved actions back to the ERP.
+- **Phase 12 — Active Learning** ✅ Complete: Analyst override DB layer, FastAPI override endpoints, inline analyst submission UI, separate planner review screen, and approved-override prompt injection are all live. Pending overrides can also auto-promote at pipeline startup through the one-day TTL rule.
+- **Phase 13 — Agentic Engagement** 🎯 Next: Typed planner/analyst action buttons, backend execution services, outbound ERP/webhook adapters, idempotent action requests, inline execution status, and audit-safe action delivery.
 
 ### Phase 11 API Surface
 | Endpoint | Auth | Description |

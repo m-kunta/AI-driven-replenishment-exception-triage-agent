@@ -36,3 +36,22 @@ CREATE INDEX IF NOT EXISTS idx_overrides_run_date
 
 CREATE INDEX IF NOT EXISTS idx_overrides_approval_status_submitted
     ON analyst_overrides (approval_status, submitted_at);
+
+CREATE TABLE IF NOT EXISTS action_records (
+    request_id                          TEXT PRIMARY KEY,
+    exception_id                        TEXT NOT NULL,
+    run_date                            TEXT NOT NULL,
+    action_type                         TEXT NOT NULL,
+    requested_by                        TEXT NOT NULL,
+    requested_by_role                   TEXT NOT NULL,
+    payload                             TEXT NOT NULL,
+    status                              TEXT NOT NULL DEFAULT 'queued'
+                                        CHECK (status IN ('queued','sent','failed','completed')),
+    created_at                          TEXT NOT NULL,
+    updated_at                          TEXT NOT NULL,
+    failure_reason                      TEXT,
+    downstream_response                 TEXT
+);
+
+CREATE INDEX IF NOT EXISTS idx_actions_exception_id
+    ON action_records (exception_id);
