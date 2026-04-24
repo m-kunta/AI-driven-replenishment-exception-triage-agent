@@ -78,6 +78,34 @@ export interface OverrideDecisionResponse {
   override_id: number;
 }
 
+export type ActionType = "CREATE_REVIEW" | "REQUEST_VERIFICATION" | "VENDOR_FOLLOW_UP" | "STORE_CHECK" | "DEFER";
+
+export type ActionStatus = "queued" | "sent" | "failed" | "completed";
+
+export interface ActionRequest {
+  request_id: string;
+  exception_id: string;
+  run_date: string;
+  action_type: ActionType;
+  requested_by_role: string;
+  payload: Record<string, unknown>;
+}
+
+export interface ActionRecord {
+  request_id: string;
+  exception_id: string;
+  run_date: string;
+  action_type: ActionType;
+  requested_by: string;
+  requested_by_role: string;
+  payload: Record<string, unknown>;
+  status: ActionStatus;
+  created_at: string;
+  updated_at: string;
+  failure_reason?: string | null;
+  downstream_response?: Record<string, unknown> | null;
+}
+
 // All requests route through the Next.js server-side proxy at /api/proxy,
 // which injects Basic Auth credentials from server-only env vars. No credential
 // is ever sent to the browser.
@@ -187,6 +215,42 @@ export const api = {
   healthCheck: async () => {
     const res = await fetch(`${PROXY_BASE}/health`);
     if (!res.ok) throw new Error("Backend not healthy");
+    return res.json();
+  },
+
+  submitAction: async (payload: ActionRequest): Promise<ActionRecord> => {
+    const res = await fetch(`${PROXY_BASE}/actions`, {
+      method: "POST",
+      headers: JSON_HEADERS,
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new Error(body.detail ?? `Failed to submit action: ${res.statusText}`);
+    }
+    return res.json();
+  },
+
+  getActions: async (exceptionId: string): Promise<ActionRecord[]> => {
+    const res = await fetch(`${PROXY_BASE}/actions/${exceptionId}`, {
+      method: "GET",
+      headers: JSON_HEADERS,
+    });
+    if (!res.ok) {
+      throw new Error(`Failed to fetch actions: ${res.statusText}`);
+    }
+    return res.json();
+  },
+
+  retryAction: async (requestId: string): Promise<ActionRecord> => {
+    const res = await fetch(`${PROXY_BASE}/actions/${requestId}/retry`, {
+      method: "POST",
+      headers: JSON_HEADERS,
+    });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new Error(body.detail ?? `Failed to retry action: ${res.statusText}`);
+    }
     return res.json();
   },
 };

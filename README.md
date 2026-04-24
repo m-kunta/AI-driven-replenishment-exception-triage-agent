@@ -13,7 +13,7 @@
 **GitHub:** [github.com/m-kunta](https://github.com/m-kunta)  
 **Domain:** Supply Chain Planning / Retail Replenishment
 
-> All four pipeline layers are now complete and tested (447 tests passing: 371 Python + 76 Jest). The full pipeline runs end-to-end via `python scripts/run_triage.py`. Phase 8 (Backtesting) is fully implemented. Phase 11 (Web UI) MVP is live with a FastAPI backend, Next.js Command Center dashboard, BFF proxy for secure credential handling, and full Markdown briefing rendering.
+> All four pipeline layers are complete and tested. The full pipeline runs end-to-end via `python scripts/run_triage.py`. Phase 8 (Backtesting) is fully implemented. Phase 11 (Web UI) MVP is live with a FastAPI backend, Next.js Command Center dashboard, BFF proxy for secure credential handling, and full Markdown briefing rendering. Phase 12 (Active Learning) is now complete with analyst override submission, planner approval, and approved-override prompt injection.
 
 ---
 
@@ -236,6 +236,10 @@ The agent ingests raw replenishment exceptions, enriches them with 15+ contextua
 │  Phase 11: Web UI (Command Center)    ← ✅ MVP COMPLETE                  │
 │  ✅ FastAPI Backend  · ✅ Next.js Dashboard (Markdown briefing)            │
 │  ✅ BFF Proxy (server-side auth) · ✅ Exception queue + pipeline trigger  │
+├──────────────────────────────────────────────────────────────────┤
+│  Phase 12: Active Learning            ← ✅ COMPLETE                       │
+│  ✅ Analyst override DB + API · ✅ Inline override submission             │
+│  ✅ Planner review screen · ✅ Prompt learning loop + auto-approval       │
 └──────────────────────────────────────────────────────────────────┘
 ```
 
@@ -333,19 +337,20 @@ AI-driven-replenishment-exception-triage-agent/
 │   ├── test_briefing_generator.py # Layer 4 morning briefing tests (17)
 │   ├── test_exception_logger.py   # Layer 4 exception logger tests (10)
 │   └── test_main.py               # Main orchestrator + CLI tests (7)
-├── frontend/                          # Phase 11 Web UI
+├── frontend/                          # Phase 11-12 Web UI
 │   ├── src/
 │   │   ├── app/
 │   │   │   ├── api/proxy/[...path]/   # BFF Route Handler (server-side auth)
 │   │   │   │   └── route.ts
 │   │   │   ├── layout.tsx
 │   │   │   ├── page.tsx               # Command Center dashboard
+│   │   │   ├── planner-review/        # Phase 12 planner approval screen
 │   │   │   └── globals.css
 │   │   ├── components/
-│   │   │   ├── ExceptionCard.tsx      # Priority exception card
+│   │   │   ├── ExceptionCard.tsx      # Priority exception card + override entry point
 │   │   │   └── MarkdownBriefing.tsx   # Styled Markdown renderer (GFM tables, etc.)
 │   │   └── lib/
-│   │       └── api.ts                 # Type-safe API client (calls /api/proxy/*)
+│   │       └── api.ts                 # Type-safe API client (queues, briefing, overrides)
 │   ├── __mocks__/                     # Jest manual mocks for ESM packages
 │   │   ├── react-markdown.tsx
 │   │   └── remark-gfm.ts
@@ -411,7 +416,7 @@ python scripts/generate_sample_data.py
 
 ```bash
 ./.venv/bin/python -m pytest tests/ -v
-# 312 tests — all passing
+# Targeted backend and frontend suites are expected to pass
 ```
 
 ### Run the Full Pipeline (CLI)
@@ -475,8 +480,9 @@ python scripts/run_backtest.py --date 2026-04-11 --week 4 --sample
 | **Layer 4 — Output & Alerts** | ✅ Complete | Priority Router · Alert Dispatcher · Morning Briefing · Exception Logger (CSV audit log) |
 | **Main Orchestrator & CLI** | ✅ Complete | `src/main.py` wires all 4 layers; `scripts/run_triage.py` provides full CLI |
 | **Phase 8 — Backtesting** | ✅ Complete | `scripts/run_backtest.py` — outcome accuracy scoring at Week 4/8 after exception date |
-| **Phase 11 — Web UI** | ✅ MVP Complete | FastAPI backend + Next.js Command Center. BFF proxy keeps credentials server-side. Markdown briefing panel, exception queue tabs, pipeline trigger. 76 Jest + 371 Python tests. |
-| **Phase 12 — Active Learning** | 🚧 In Progress | Analyst override DB layer and FastAPI override endpoints implemented. Next.js UI workflow pending. |
+| **Phase 11 — Web UI** | ✅ MVP Complete | FastAPI backend + Next.js Command Center. BFF proxy keeps credentials server-side. Markdown briefing panel, exception queue tabs, and pipeline trigger are live. |
+| **Phase 12 — Active Learning** | ✅ Complete | Analyst override DB layer, FastAPI override endpoints, analyst inline override modal, planner review screen, approved-override prompt injection, and startup auto-approval are live. |
+| **Phase 13 — Agentic Engagement** | 🎯 Next | Manual user-triggered action buttons, backend execution services, outbound ERP/webhook adapters, inline execution state, and audit logging. |
 
 ### Layer 2 — Implementation
 
@@ -525,6 +531,8 @@ This project is intentionally staged. To avoid confusion, use this guide when ev
 | Backtesting pipeline | ✅ Implemented | `scripts/run_backtest.py` — Week 4/8 outcome scoring |
 | Web UI Backend (FastAPI) | ✅ Implemented | Exposes queues and triggers pipeline asynchronously (`src/api/app.py`) |
 | Web UI Frontend (Next.js) | ✅ Implemented | Command Center dashboard: Markdown briefing panel (react-markdown + remark-gfm), exception queue tabs by priority, pipeline trigger, BFF proxy for secure server-side auth (`/frontend`) |
+| Active Learning Override Workflow | ✅ Implemented | Analyst inline override submission, planner review screen, approval/rejection endpoints, and approved override feedback loop into prompt composition |
+| Phase 13 Action Execution | 🟡 Planned | Typed execution actions from the UI into ERP/webhook integrations with idempotency, role-aware intent, inline status, and audit logging |
 
 Run `python scripts/run_triage.py --help` to see all available options.
 
@@ -555,7 +563,7 @@ Run `python scripts/run_triage.py --help` to see all available options.
 
 ## Contributing
 
-Contributions are welcome while the project moves through Layers 2–4.
+Contributions are welcome as the project moves from completed pipeline and Active Learning work into Phase 13 execution workflows.
 
 1. Open an issue describing the scope (bug, enhancement, or missing task from the spec).
 2. Keep changes focused to a single layer/task where possible.

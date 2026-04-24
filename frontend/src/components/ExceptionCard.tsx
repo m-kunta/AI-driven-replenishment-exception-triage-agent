@@ -1,6 +1,7 @@
-import React, { useState } from "react";
-import { TriageResult, Priority } from "../lib/api";
+import React, { useState, useEffect } from "react";
+import { TriageResult, Priority, ActionRecord, api } from "../lib/api";
 import OverrideModal from "./OverrideModal";
+import ActionModal from "./ActionModal";
 
 interface ExceptionCardProps {
   exception: TriageResult;
@@ -18,8 +19,32 @@ export default function ExceptionCard({ exception, runDate }: ExceptionCardProps
   const isPhantom = exception.phantom_flag;
   const priorityColor = PriorityColors[exception.priority];
   const [overrideOpen, setOverrideOpen] = useState(false);
+  const [actionModalOpen, setActionModalOpen] = useState(false);
+  const [actions, setActions] = useState<ActionRecord[]>([]);
   const [submissionMessage, setSubmissionMessage] = useState<string | null>(null);
   const effectiveRunDate = runDate || exception.exception_date || new Date().toISOString().split("T")[0];
+
+  useEffect(() => {
+    // Load initial actions
+    api.getActions(exception.exception_id)
+       .then(setActions)
+       .catch(console.error);
+  }, [exception.exception_id]);
+
+  const handleActionSubmitted = (record: ActionRecord) => {
+    setActions(prev => [record, ...prev.filter(a => a.request_id !== record.request_id)]);
+    setSubmissionMessage(`Action '${record.action_type}' queued successfully`);
+    setTimeout(() => setSubmissionMessage(null), 5000);
+  };
+
+  const handleRetryAction = async (requestId: string) => {
+    try {
+      const record = await api.retryAction(requestId);
+      setActions(prev => prev.map(a => a.request_id === requestId ? record : a));
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   return (
     <div className="glass glass-hover transition-all-smooth rounded-xl p-5 flex flex-col gap-4 relative overflow-hidden group">
@@ -48,13 +73,22 @@ export default function ExceptionCard({ exception, runDate }: ExceptionCardProps
             Store: {exception.store_name || exception.store_id}
             {exception.store_tier && ` (Tier ${exception.store_tier})`}
           </p>
-          <button
-            type="button"
-            onClick={() => setOverrideOpen(true)}
-            className="mt-3 rounded-md border border-slate-600 px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-slate-200 transition-colors hover:border-blue-400 hover:text-blue-300"
-          >
-            Override
-          </button>
+          <div className="mt-3 flex gap-2">
+            <button
+              type="button"
+              onClick={() => setOverrideOpen(true)}
+              className="rounded-md border border-slate-600 px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-slate-200 transition-colors hover:border-blue-400 hover:text-blue-300"
+            >
+              Override
+            </button>
+            <button
+              type="button"
+              onClick={() => setActionModalOpen(true)}
+              className="rounded-md border border-emerald-600/50 bg-emerald-600/10 px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-emerald-300 transition-colors hover:border-emerald-500 hover:text-emerald-200"
+            >
+              Take Action
+            </button>
+          </div>
         </div>
         
         {/* Financial Impact */}
@@ -81,6 +115,35 @@ export default function ExceptionCard({ exception, runDate }: ExceptionCardProps
         </h4>
         <p className="text-sm text-blue-200 font-medium">{exception.recommended_action}</p>
       </div>
+
+      {/* Action History Section */}
+      {actions.length > 0 && (
+        <div className="bg-slate-800/30 rounded-lg p-3 border border-slate-700/30">
+          <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Action History</h4>
+          <div className="flex flex-col gap-2">
+            {actions.map(action => (
+              <div key={action.request_id} className="flex justify-between items-center bg-slate-800/80 p-2 rounded text-xs">
+                <div>
+                  <span className="text-slate-300 font-medium">{action.action_type}</span>
+                  <span className="text-slate-500 ml-2">by {action.requested_by}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className={`px-2 py-0.5 rounded uppercase tracking-wider text-[10px] ${
+                    action.status === 'completed' ? 'bg-emerald-500/20 text-emerald-400' :
+                    action.status === 'failed' ? 'bg-red-500/20 text-red-400' :
+                    'bg-blue-500/20 text-blue-400'
+                  }`}>
+                    {action.status}
+                  </span>
+                  {action.status === 'failed' && (
+                    <button onClick={() => handleRetryAction(action.request_id)} className="text-slate-400 hover:text-white underline transition-colors">Retry</button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Footer Meta */}
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mt-auto pt-2 text-xs text-slate-500">
@@ -111,6 +174,14 @@ export default function ExceptionCard({ exception, runDate }: ExceptionCardProps
         runDate={effectiveRunDate}
         onClose={() => setOverrideOpen(false)}
         onSubmitted={(message) => setSubmissionMessage(message)}
+      />
+
+      <ActionModal
+        isOpen={actionModalOpen}
+        exceptionId={exception.exception_id}
+        runDate={effectiveRunDate}
+        onClose={() => setActionModalOpen(false)}
+        onSubmitted={handleActionSubmitted}
       />
     </div>
   );
