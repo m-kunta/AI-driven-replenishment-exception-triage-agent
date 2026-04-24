@@ -1,8 +1,10 @@
-import React from "react";
+import React, { useState } from "react";
 import { TriageResult, Priority } from "../lib/api";
+import OverrideModal from "./OverrideModal";
 
 interface ExceptionCardProps {
   exception: TriageResult;
+  runDate?: string;
 }
 
 const PriorityColors: Record<Priority, string> = {
@@ -12,9 +14,12 @@ const PriorityColors: Record<Priority, string> = {
   LOW: "text-slate-400 bg-slate-400/10 border-slate-400/20",
 };
 
-export default function ExceptionCard({ exception }: ExceptionCardProps) {
+export default function ExceptionCard({ exception, runDate }: ExceptionCardProps) {
   const isPhantom = exception.phantom_flag;
   const priorityColor = PriorityColors[exception.priority];
+  const [overrideOpen, setOverrideOpen] = useState(false);
+  const [submissionMessage, setSubmissionMessage] = useState<string | null>(null);
+  const effectiveRunDate = runDate || exception.exception_date || new Date().toISOString().split("T")[0];
 
   return (
     <div className="glass glass-hover transition-all-smooth rounded-xl p-5 flex flex-col gap-4 relative overflow-hidden group">
@@ -43,6 +48,13 @@ export default function ExceptionCard({ exception }: ExceptionCardProps) {
             Store: {exception.store_name || exception.store_id}
             {exception.store_tier && ` (Tier ${exception.store_tier})`}
           </p>
+          <button
+            type="button"
+            onClick={() => setOverrideOpen(true)}
+            className="mt-3 rounded-md border border-slate-600 px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-slate-200 transition-colors hover:border-blue-400 hover:text-blue-300"
+          >
+            Override
+          </button>
         </div>
         
         {/* Financial Impact */}
@@ -86,6 +98,20 @@ export default function ExceptionCard({ exception }: ExceptionCardProps) {
         )}
         <span className="ml-auto">ID: {exception.exception_id.split("-")[0]}</span>
       </div>
+
+      {submissionMessage && (
+        <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-300">
+          {submissionMessage}
+        </div>
+      )}
+
+      <OverrideModal
+        isOpen={overrideOpen}
+        exception={exception}
+        runDate={effectiveRunDate}
+        onClose={() => setOverrideOpen(false)}
+        onSubmitted={(message) => setSubmissionMessage(message)}
+      />
     </div>
   );
 }
