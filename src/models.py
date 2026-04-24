@@ -307,7 +307,7 @@ class ActionRequest(BaseModel):
     exception_id: str
     run_date: date
     action_type: ActionType
-    requested_by: str
+    requested_by: Optional[str] = None
     requested_by_role: str
     payload: dict = Field(default_factory=dict)
 

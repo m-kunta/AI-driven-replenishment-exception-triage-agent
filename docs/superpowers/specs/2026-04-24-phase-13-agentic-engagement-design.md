@@ -2,20 +2,30 @@
 
 **Date:** 2026-04-24  
 **Phase:** 13 — Agentic Engagement  
-**Status:** Proposed  
+**Status:** Partially Implemented  
 **Scope:** Add manual user-triggered execution actions to the Command Center so planners and analysts can move from triage to operational follow-through through typed backend actions and outbound ERP/webhook adapters.
 
 ## Summary
 
 Phase 12 completed the active learning loop: analysts can submit overrides, planners can approve or reject them, and approved examples now feed prompt composition. Phase 13 builds on that foundation by letting users take explicit downstream actions on an exception without leaving the Command Center.
 
-The first Phase 13 slice is intentionally narrow:
+The first Phase 13 slice is intentionally narrow, and the initial implementation is now present in the repo:
 
 - actions are always user-triggered, never autonomous,
 - only a small catalog of action types is supported,
 - execution happens through typed backend services rather than direct LLM output,
 - inline execution state is visible on the exception card,
 - full cross-run action history is deferred to a later phase.
+
+Implemented in the current codebase:
+
+- `frontend/src/components/ActionModal.tsx` for action confirmation,
+- action entry points and inline history on `frontend/src/components/ExceptionCard.tsx`,
+- typed client methods in `frontend/src/lib/api.ts`,
+- `src/db/action_store.py` plus `action_records` DDL in `src/db/schema.sql`,
+- `src/actions/service.py` and `src/actions/adapters.py`,
+- FastAPI endpoints in `src/api/app.py`,
+- targeted backend tests for API, service, and store behavior.
 
 ## Goals
 
@@ -63,6 +73,8 @@ Add new action endpoints under the FastAPI app for:
 - retrying a failed action.
 
 The API is the only layer allowed to accept execution requests from the UI.
+
+The current implementation also injects the authenticated username at the API boundary, rather than trusting the browser to provide `requested_by`.
 
 ### Application Service Layer
 
@@ -133,6 +145,8 @@ The action catalog should also define the intended actor type for each action so
 - planners may be the only role allowed to escalate or trigger execution-heavy actions.
 
 The backend validation seam should exist now so role enforcement can be tightened later without changing the data contract.
+
+Current implementation note: `requested_by_role` is persisted on the action record, but stricter backend validation of allowed roles per action type is still future work.
 
 ## UI Flow
 

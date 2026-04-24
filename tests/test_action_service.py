@@ -1,3 +1,4 @@
+import asyncio
 import pytest
 from datetime import date
 from typing import Tuple, Dict, Any
@@ -16,8 +17,7 @@ class MockAdapter(BaseActionAdapter):
             return True, "", {"remote": "ok"}
         return False, "Failed downstream", {"err": "1"}
 
-@pytest.mark.asyncio
-async def test_action_service_success():
+def test_action_service_success():
     store = ActionStore(db_path=":memory:")
     service = ActionService(store, adapter=MockAdapter(succeed=True))
     
@@ -25,12 +25,11 @@ async def test_action_service_success():
         request_id="req-1", exception_id="e-1", run_date=date.today(),
         action_type=ActionType.DEFER, requested_by="u1", requested_by_role="r1", payload={}
     )
-    result = await service.submit_action(req)
+    result = asyncio.run(service.submit_action(req))
     assert result["status"] == "completed"
     assert result["downstream_response"]["remote"] == "ok"
 
-@pytest.mark.asyncio
-async def test_action_service_failure_and_retry():
+def test_action_service_failure_and_retry():
     store = ActionStore(db_path=":memory:")
     adapter = MockAdapter(succeed=False)
     service = ActionService(store, adapter=adapter)
@@ -39,11 +38,11 @@ async def test_action_service_failure_and_retry():
         request_id="req-2", exception_id="e-2", run_date=date.today(),
         action_type=ActionType.STORE_CHECK, requested_by="u1", requested_by_role="r1", payload={}
     )
-    result = await service.submit_action(req)
+    result = asyncio.run(service.submit_action(req))
     assert result["status"] == "failed"
     assert result["failure_reason"] == "Failed downstream"
     
     # Now retry with successful adapter
     adapter.succeed = True
-    retry_res = await service.retry_action("req-2")
+    retry_res = asyncio.run(service.retry_action("req-2"))
     assert retry_res["status"] == "completed"

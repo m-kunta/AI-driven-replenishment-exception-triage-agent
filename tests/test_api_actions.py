@@ -24,6 +24,7 @@ def test_submit_action():
     data = response.json()
     assert data["status"] in ("completed", "failed", "sent")
     assert data["request_id"] == "api-req-1"
+    assert data["requested_by"] == "admin"
 
 def test_get_actions():
     response = client.get("/actions/api-exc-1", auth=auth)

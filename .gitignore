@@ -36,6 +36,9 @@ output/backtest/*
 output/overrides.db
 output/overrides.db-wal
 output/overrides.db-shm
+output/actions.db
+output/actions.db-wal
+output/actions.db-shm
 
 # OS
 .DS_Store
