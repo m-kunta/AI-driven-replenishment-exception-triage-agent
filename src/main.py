@@ -28,6 +28,7 @@ from typing import Optional
 from loguru import logger
 
 from src.agent.triage_agent import TriageAgent
+from src.db.store import OverrideStore
 from src.enrichment.data_loader import DataLoader
 from src.enrichment.engine import EnrichmentEngine
 from src.ingestion.csv_adapter import CsvIngestionAdapter
@@ -134,7 +135,10 @@ def run_triage_pipeline(
     # Layer 3 — AI Triage (reasoning engine)
     # ------------------------------------------------------------------
     logger.info("=== Layer 3: AI Triage ===")
-    triage_agent = TriageAgent(config)
+    override_store = OverrideStore()
+    promoted = override_store.auto_approve_pending()
+    logger.info("Auto-approved %d pending overrides at startup", promoted)
+    triage_agent = TriageAgent(config, override_store=override_store)
     run_result: TriageRunResult = triage_agent.run(enriched_exceptions)
 
     logger.info(

@@ -134,6 +134,23 @@ class TestBatchProcessorInit:
         mock_instance.compose_system_prompt.assert_called_once()
         assert processor._system_prompt == "precomputed sys"
 
+    @patch("src.agent.batch_processor.PromptComposer")
+    @patch("src.agent.batch_processor.get_provider")
+    def test_init_passes_override_store_when_provided(self, mock_get_provider, mock_composer_cls):
+        mock_get_provider.return_value = MagicMock()
+        mock_instance = MagicMock()
+        mock_composer_cls.return_value = mock_instance
+        mock_instance.compose_system_prompt.return_value = "sys"
+        override_store = MagicMock()
+
+        from src.agent.batch_processor import BatchProcessor, _PROMPTS_DIR
+        BatchProcessor(_make_config(), override_store=override_store)
+
+        mock_composer_cls.assert_called_once_with(
+            prompts_dir=_PROMPTS_DIR,
+            override_store=override_store,
+        )
+
     def test_batch_processor_result_defaults(self):
         from src.agent.batch_processor import BatchProcessorResult
         result = BatchProcessorResult()

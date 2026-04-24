@@ -18,6 +18,7 @@ from loguru import logger
 
 from src.agent.llm_provider import LLMProvider, get_provider
 from src.agent.prompt_composer import PromptComposer
+from src.db.store import OverrideStore
 from src.models import EnrichedExceptionSchema, TriageResult
 from src.utils.config_loader import AppConfig
 
@@ -54,10 +55,17 @@ class BatchProcessor:
         result = processor.process(enriched_exceptions)
     """
 
-    def __init__(self, config: AppConfig) -> None:
+    def __init__(
+        self,
+        config: AppConfig,
+        override_store: Optional[OverrideStore] = None,
+    ) -> None:
         self._config = config
         self._provider: LLMProvider = get_provider(config.agent)
-        self._composer = PromptComposer(prompts_dir=_PROMPTS_DIR)
+        composer_kwargs = {"prompts_dir": _PROMPTS_DIR}
+        if override_store is not None:
+            composer_kwargs["override_store"] = override_store
+        self._composer = PromptComposer(**composer_kwargs)
         self._system_prompt = self._composer.compose_system_prompt()
 
     def process(self, exceptions: List[EnrichedExceptionSchema]) -> BatchProcessorResult:

@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState, useEffect, useCallback } from "react";
 import { api, TriageResult, Priority, PipelineTriggerRequest } from "../lib/api";
 import ExceptionCard from "../components/ExceptionCard";
@@ -99,6 +100,12 @@ export default function Home() {
             Exception Copilot
           </h1>
           <p className="text-slate-400 mt-1">AI-Driven Triage Command Center</p>
+          <Link
+            href="/planner-review"
+            className="mt-3 inline-flex rounded-md border border-slate-700 px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-slate-300 transition-colors hover:border-blue-400 hover:text-blue-300"
+          >
+            Planner Review
+          </Link>
         </div>
         <div className="flex items-center gap-4 glass px-4 py-2 rounded-lg">
           <span className="text-xs text-slate-500 uppercase tracking-wider">Run</span>
@@ -287,7 +294,7 @@ export default function Home() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-4">
           {activeQueue.map((item) => (
-            <ExceptionCard key={item.exception_id} exception={item} />
+            <ExceptionCard key={item.exception_id} exception={item} runDate={runDate} />
           ))}
         </div>
       )}
