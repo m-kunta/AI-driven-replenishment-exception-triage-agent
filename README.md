@@ -13,7 +13,7 @@
 **GitHub:** [github.com/m-kunta](https://github.com/m-kunta)  
 **Domain:** Supply Chain Planning / Retail Replenishment
 
-> All four pipeline layers are complete and tested. The full pipeline runs end-to-end via `python scripts/run_triage.py`. Phase 8 (Backtesting) is fully implemented. Phase 11 (Web UI) MVP is live with a FastAPI backend, Next.js Command Center dashboard, BFF proxy for secure credential handling, and full Markdown briefing rendering. Phase 12 (Active Learning) is now complete with analyst override submission, planner approval, and approved-override prompt injection.
+> All four pipeline layers are complete and tested. The full pipeline runs end-to-end via `python scripts/run_triage.py`. Phase 8 (Backtesting) is fully implemented. Phase 11 (Web UI) MVP is live with a FastAPI backend, Next.js Command Center dashboard, BFF proxy for secure credential handling, and full Markdown briefing rendering. Phase 12 (Active Learning) is complete with analyst override submission, planner approval, and approved-override prompt injection. Phase 13 (Agentic Engagement) is now underway with manual action execution from the Command Center, typed backend action handling, adapter-driven delivery, and audit-tracked retry support.
 
 ---
 
@@ -240,6 +240,10 @@ The agent ingests raw replenishment exceptions, enriches them with 15+ contextua
 │  Phase 12: Active Learning            ← ✅ COMPLETE                       │
 │  ✅ Analyst override DB + API · ✅ Inline override submission             │
 │  ✅ Planner review screen · ✅ Prompt learning loop + auto-approval       │
+├──────────────────────────────────────────────────────────────────┤
+│  Phase 13: Agentic Engagement        ← 🚧 IN PROGRESS                    │
+│  ✅ Action modal + card history · ✅ FastAPI action endpoints             │
+│  ✅ ActionStore + service + adapter · ✅ Retry + audit trail              │
 └──────────────────────────────────────────────────────────────────┘
 ```
 
@@ -337,7 +341,7 @@ AI-driven-replenishment-exception-triage-agent/
 │   ├── test_briefing_generator.py # Layer 4 morning briefing tests (17)
 │   ├── test_exception_logger.py   # Layer 4 exception logger tests (10)
 │   └── test_main.py               # Main orchestrator + CLI tests (7)
-├── frontend/                          # Phase 11-12 Web UI
+├── frontend/                          # Phase 11-13 Web UI
 │   ├── src/
 │   │   ├── app/
 │   │   │   ├── api/proxy/[...path]/   # BFF Route Handler (server-side auth)
@@ -347,10 +351,11 @@ AI-driven-replenishment-exception-triage-agent/
 │   │   │   ├── planner-review/        # Phase 12 planner approval screen
 │   │   │   └── globals.css
 │   │   ├── components/
-│   │   │   ├── ExceptionCard.tsx      # Priority exception card + override entry point
+│   │   │   ├── ActionModal.tsx        # Phase 13 action confirmation modal
+│   │   │   ├── ExceptionCard.tsx      # Priority exception card + override/action entry points
 │   │   │   └── MarkdownBriefing.tsx   # Styled Markdown renderer (GFM tables, etc.)
 │   │   └── lib/
-│   │       └── api.ts                 # Type-safe API client (queues, briefing, overrides)
+│   │       └── api.ts                 # Type-safe API client (queues, briefing, overrides, actions)
 │   ├── __mocks__/                     # Jest manual mocks for ESM packages
 │   │   ├── react-markdown.tsx
 │   │   └── remark-gfm.ts
@@ -482,7 +487,7 @@ python scripts/run_backtest.py --date 2026-04-11 --week 4 --sample
 | **Phase 8 — Backtesting** | ✅ Complete | `scripts/run_backtest.py` — outcome accuracy scoring at Week 4/8 after exception date |
 | **Phase 11 — Web UI** | ✅ MVP Complete | FastAPI backend + Next.js Command Center. BFF proxy keeps credentials server-side. Markdown briefing panel, exception queue tabs, and pipeline trigger are live. |
 | **Phase 12 — Active Learning** | ✅ Complete | Analyst override DB layer, FastAPI override endpoints, analyst inline override modal, planner review screen, approved-override prompt injection, and startup auto-approval are live. |
-| **Phase 13 — Agentic Engagement** | 🎯 Next | Manual user-triggered action buttons, backend execution services, outbound ERP/webhook adapters, inline execution state, and audit logging. |
+| **Phase 13 — Agentic Engagement** | 🚧 In Progress | The first execution slice is live: action modal, exception-card action history, FastAPI action endpoints, `ActionStore`, action service/adapter, retry, and audit logging. Strict role enforcement and broader ERP-specific integrations remain ahead. |
 
 ### Layer 2 — Implementation
 
@@ -532,7 +537,7 @@ This project is intentionally staged. To avoid confusion, use this guide when ev
 | Web UI Backend (FastAPI) | ✅ Implemented | Exposes queues and triggers pipeline asynchronously (`src/api/app.py`) |
 | Web UI Frontend (Next.js) | ✅ Implemented | Command Center dashboard: Markdown briefing panel (react-markdown + remark-gfm), exception queue tabs by priority, pipeline trigger, BFF proxy for secure server-side auth (`/frontend`) |
 | Active Learning Override Workflow | ✅ Implemented | Analyst inline override submission, planner review screen, approval/rejection endpoints, and approved override feedback loop into prompt composition |
-| Phase 13 Action Execution | 🟡 Planned | Typed execution actions from the UI into ERP/webhook integrations with idempotency, role-aware intent, inline status, and audit logging |
+| Phase 13 Action Execution | 🚧 In Progress | Typed execution actions from the UI into backend action services with idempotent request IDs, authenticated requester injection, inline status/history, retry, and webhook-style adapter delivery |
 
 Run `python scripts/run_triage.py --help` to see all available options.
 
@@ -563,7 +568,7 @@ Run `python scripts/run_triage.py --help` to see all available options.
 
 ## Contributing
 
-Contributions are welcome as the project moves from completed pipeline and Active Learning work into Phase 13 execution workflows.
+Contributions are welcome as the project moves from completed pipeline and Active Learning work into deeper Phase 13 execution workflows and downstream system integrations.
 
 1. Open an issue describing the scope (bug, enhancement, or missing task from the spec).
 2. Keep changes focused to a single layer/task where possible.

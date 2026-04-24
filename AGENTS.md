@@ -27,7 +27,7 @@ The system has migrated from a CLI batch process to a Web UI Copilot. Phase 11 i
 
 - **Phase 11 — MVP Command Center** ✅ Complete: FastAPI backend (`src/api/`) + Next.js dashboard (`frontend/`). Command Center reads priority queues and morning briefings from pipeline output files. Credentials are kept server-side via a BFF proxy (`frontend/src/app/api/proxy/`) — never exposed to the browser bundle.
 - **Phase 12 — Active Learning** ✅ Complete: Analyst override DB layer, FastAPI override endpoints, inline analyst submission UI, separate planner review screen, and approved-override prompt injection are all live. Pending overrides can also auto-promote at pipeline startup through the one-day TTL rule.
-- **Phase 13 — Agentic Engagement** 🎯 Next: Typed planner/analyst action buttons, backend execution services, outbound ERP/webhook adapters, idempotent action requests, inline execution status, and audit-safe action delivery.
+- **Phase 13 — Agentic Engagement** 🚧 In Progress: The first execution slice is now live with exception-card action entry points, a confirmation modal, typed FastAPI action endpoints, SQLite-backed action audit records, adapter-driven execution, inline action history/status, and retry for failed actions. Full role enforcement and broader ERP-specific adapters remain future expansion work.
 
 ### Phase 11 API Surface
 | Endpoint | Auth | Description |
@@ -37,6 +37,13 @@ The system has migrated from a CLI batch process to a Web UI Copilot. Phase 11 i
 | `GET /exceptions/queue/{priority}/{run_date}` | Basic | Returns priority queue JSON for a given date |
 | `GET /briefing/{run_date}` | Basic | Returns morning briefing markdown for a given date |
 | `POST /pipeline/trigger` | Basic | Triggers full pipeline run asynchronously via `BackgroundTasks` |
+
+### Phase 13 API Surface
+| Endpoint | Auth | Description |
+|---|---|---|
+| `POST /actions` | Basic | Creates an execution request, injects the authenticated username, persists the action record, and attempts adapter execution |
+| `GET /actions/{exception_id}` | Basic | Returns action records for a specific exception card, newest first |
+| `POST /actions/{request_id}/retry` | Basic | Retries a previously failed action request using the stored payload and metadata |
 
 ## Typical Data Scenarios
 The agent must correctly handle these edge cases:
