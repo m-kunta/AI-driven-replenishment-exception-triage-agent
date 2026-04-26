@@ -6,16 +6,33 @@ from src.actions.adapters import BaseActionAdapter, GenericWebhookAdapter
 
 logger = logging.getLogger(__name__)
 
+PLANNER_ONLY_ACTIONS = {
+    ActionType.STORE_CHECK,
+    ActionType.VENDOR_FOLLOW_UP,
+}
+
 class ActionService:
     def __init__(self, store: ActionStore, adapter: Optional[BaseActionAdapter] = None):
         self.store = store
         self.adapter = adapter or GenericWebhookAdapter()
+
+    def validate_action_permissions(self, request: ActionRequest) -> None:
+        """Reject action types that the current role is not allowed to execute."""
+        role = (request.requested_by_role or "").strip().lower()
+        if role not in {"analyst", "planner"}:
+            raise ValueError("Action request is missing a valid requested_by_role")
+        if request.action_type in PLANNER_ONLY_ACTIONS and role != "planner":
+            raise PermissionError(
+                f"Action type {request.action_type.value} requires planner role"
+            )
 
     async def submit_action(self, request: ActionRequest) -> dict:
         """
         Validates request, inserts into DB (or retrieves if idempotent retry),
         and attempts to execute via adapter.
         """
+        self.validate_action_permissions(request)
+
         # 1. Store action (handles idempotency returning existing)
         record_dict = self.store.insert_action(
             request_id=request.request_id,

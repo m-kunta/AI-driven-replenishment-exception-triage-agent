@@ -23,7 +23,7 @@ def test_action_service_success():
     
     req = ActionRequest(
         request_id="req-1", exception_id="e-1", run_date=date.today(),
-        action_type=ActionType.DEFER, requested_by="u1", requested_by_role="r1", payload={}
+        action_type=ActionType.DEFER, requested_by="u1", requested_by_role="analyst", payload={}
     )
     result = asyncio.run(service.submit_action(req))
     assert result["status"] == "completed"
@@ -36,7 +36,7 @@ def test_action_service_failure_and_retry():
     
     req = ActionRequest(
         request_id="req-2", exception_id="e-2", run_date=date.today(),
-        action_type=ActionType.STORE_CHECK, requested_by="u1", requested_by_role="r1", payload={}
+        action_type=ActionType.STORE_CHECK, requested_by="u1", requested_by_role="planner", payload={}
     )
     result = asyncio.run(service.submit_action(req))
     assert result["status"] == "failed"
@@ -46,3 +46,18 @@ def test_action_service_failure_and_retry():
     adapter.succeed = True
     retry_res = asyncio.run(service.retry_action("req-2"))
     assert retry_res["status"] == "completed"
+
+
+def test_action_service_rejects_planner_only_action_for_analyst():
+    store = ActionStore(db_path=":memory:")
+    service = ActionService(store, adapter=MockAdapter(succeed=True))
+
+    req = ActionRequest(
+        request_id="req-3", exception_id="e-3", run_date=date.today(),
+        action_type=ActionType.STORE_CHECK, requested_by="u1", requested_by_role="analyst", payload={}
+    )
+
+    with pytest.raises(PermissionError, match="requires planner role"):
+        asyncio.run(service.submit_action(req))
+
+    assert store.get_action("req-3") is None

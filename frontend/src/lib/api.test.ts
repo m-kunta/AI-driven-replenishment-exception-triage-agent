@@ -191,4 +191,37 @@ describe('API Client', () => {
     );
     expect(result).toEqual({ status: 'rejected', override_id: 11 });
   });
+
+  it('submits an action without client-supplied role metadata', async () => {
+    const payload = {
+      request_id: 'req-123',
+      exception_id: 'EXC-123',
+      run_date: '2026-04-24',
+      action_type: 'CREATE_REVIEW' as const,
+      payload: { notes: 'Investigate discrepancy' },
+    };
+    (fetch as jest.Mock).mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        ...payload,
+        requested_by: 'admin',
+        requested_by_role: 'analyst',
+        status: 'completed',
+        created_at: '2026-04-24T12:00:00Z',
+        updated_at: '2026-04-24T12:00:00Z',
+      }),
+    });
+
+    const result = await api.submitAction(payload);
+
+    expect(fetch).toHaveBeenCalledWith(
+      expect.stringContaining('/api/proxy/actions'),
+      expect.objectContaining({
+        method: 'POST',
+        body: JSON.stringify(payload),
+      })
+    );
+    expect(JSON.parse((fetch as jest.Mock).mock.calls[0][1].body)).not.toHaveProperty('requested_by_role');
+    expect(result.requested_by_role).toBe('analyst');
+  });
 });

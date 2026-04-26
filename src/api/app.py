@@ -60,6 +60,14 @@ def get_current_username(credentials: Annotated[HTTPBasicCredentials, Depends(se
     return credentials.username
 
 
+def get_current_user_role() -> str:
+    """Resolve the authenticated user's role from server-side configuration."""
+    role = os.environ.get("API_USER_ROLE", "analyst").strip().lower()
+    if role not in {"analyst", "planner"}:
+        raise RuntimeError("API_USER_ROLE must be either 'analyst' or 'planner'")
+    return role
+
+
 class PipelineTriggerRequest(BaseModel):
     """Payload to trigger the pipeline."""
     run_date: Optional[str] = Field(default=None, description="ISO Date string (YYYY-MM-DD)")
@@ -275,9 +283,14 @@ async def submit_action(
 ) -> Dict[str, Any]:
     """Submit a downstream action for an exception."""
     try:
-        # Enforce the user submitting is the authenticated user
+        # Enforce authenticated actor metadata at the API boundary.
         payload.requested_by = username
+        payload.requested_by_role = get_current_user_role()
         return await action_service.submit_action(payload)
+    except PermissionError as e:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     except Exception as e:
         logger.error("Failed to submit action: {}", e)
         raise HTTPException(status_code=500, detail=str(e))
@@ -307,6 +320,10 @@ async def retry_action(
         if not result:
             raise HTTPException(status_code=404, detail="Action not found")
         return result
+    except PermissionError as e:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     except HTTPException:
         raise
     except Exception as e:

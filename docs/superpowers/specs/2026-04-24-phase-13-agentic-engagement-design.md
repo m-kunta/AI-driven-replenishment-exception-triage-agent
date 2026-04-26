@@ -146,7 +146,7 @@ The action catalog should also define the intended actor type for each action so
 
 The backend validation seam should exist now so role enforcement can be tightened later without changing the data contract.
 
-Current implementation note: `requested_by_role` is persisted on the action record, but stricter backend validation of allowed roles per action type is still future work.
+Current implementation note: `requested_by_role` is now derived at the API boundary, and the backend enforces planner-only execution for `STORE_CHECK` and `VENDOR_FOLLOW_UP`. Broader role matrices and deeper RBAC are still future work.
 
 ## UI Flow
 

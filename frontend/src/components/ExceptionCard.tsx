@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from "react";
-import { TriageResult, Priority, ActionRecord, api } from "../lib/api";
+import { TriageResult, Priority, ActionRecord, ActorRole, api } from "../lib/api";
 import OverrideModal from "./OverrideModal";
 import ActionModal from "./ActionModal";
 
 interface ExceptionCardProps {
   exception: TriageResult;
   runDate?: string;
+  actorRole?: ActorRole;
 }
 
 const PriorityColors: Record<Priority, string> = {
@@ -15,7 +16,7 @@ const PriorityColors: Record<Priority, string> = {
   LOW: "text-slate-400 bg-slate-400/10 border-slate-400/20",
 };
 
-export default function ExceptionCard({ exception, runDate }: ExceptionCardProps) {
+export default function ExceptionCard({ exception, runDate, actorRole = "analyst" }: ExceptionCardProps) {
   const isPhantom = exception.phantom_flag;
   const priorityColor = PriorityColors[exception.priority];
   const [overrideOpen, setOverrideOpen] = useState(false);
@@ -180,6 +181,7 @@ export default function ExceptionCard({ exception, runDate }: ExceptionCardProps
         isOpen={actionModalOpen}
         exceptionId={exception.exception_id}
         runDate={effectiveRunDate}
+        actorRole={actorRole}
         onClose={() => setActionModalOpen(false)}
         onSubmitted={handleActionSubmitted}
       />

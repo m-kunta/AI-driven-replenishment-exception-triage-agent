@@ -79,6 +79,25 @@ export interface OverrideDecisionResponse {
 }
 
 export type ActionType = "CREATE_REVIEW" | "REQUEST_VERIFICATION" | "VENDOR_FOLLOW_UP" | "STORE_CHECK" | "DEFER";
+export type ActorRole = "analyst" | "planner";
+
+export const ANALYST_ACTION_TYPES: ActionType[] = [
+  "CREATE_REVIEW",
+  "REQUEST_VERIFICATION",
+  "DEFER",
+];
+
+export const PLANNER_ACTION_TYPES: ActionType[] = [
+  "CREATE_REVIEW",
+  "REQUEST_VERIFICATION",
+  "VENDOR_FOLLOW_UP",
+  "STORE_CHECK",
+  "DEFER",
+];
+
+export function getAllowedActionTypes(role: ActorRole): ActionType[] {
+  return role === "planner" ? PLANNER_ACTION_TYPES : ANALYST_ACTION_TYPES;
+}
 
 export type ActionStatus = "queued" | "sent" | "failed" | "completed";
 
@@ -87,7 +106,6 @@ export interface ActionRequest {
   exception_id: string;
   run_date: string;
   action_type: ActionType;
-  requested_by_role: string;
   payload: Record<string, unknown>;
 }
 

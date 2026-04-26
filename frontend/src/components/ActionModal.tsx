@@ -1,16 +1,40 @@
 import React, { useState } from "react";
-import { ActionType, api, ActionRequest, ActionRecord } from "../lib/api";
+import {
+  ActionType,
+  ActorRole,
+  api,
+  ActionRequest,
+  ActionRecord,
+  getAllowedActionTypes,
+} from "../lib/api";
 
 interface ActionModalProps {
   isOpen: boolean;
   exceptionId: string;
   runDate: string;
+  actorRole?: ActorRole;
   onClose: () => void;
   onSubmitted: (record: ActionRecord) => void;
 }
 
-export default function ActionModal({ isOpen, exceptionId, runDate, onClose, onSubmitted }: ActionModalProps) {
-  const [actionType, setActionType] = useState<ActionType>("CREATE_REVIEW");
+const ACTION_LABELS: Record<ActionType, string> = {
+  CREATE_REVIEW: "Create Review",
+  REQUEST_VERIFICATION: "Request Verification",
+  VENDOR_FOLLOW_UP: "Vendor Follow-up",
+  STORE_CHECK: "Store Check",
+  DEFER: "Defer",
+};
+
+export default function ActionModal({
+  isOpen,
+  exceptionId,
+  runDate,
+  actorRole = "analyst",
+  onClose,
+  onSubmitted,
+}: ActionModalProps) {
+  const allowedActionTypes = getAllowedActionTypes(actorRole);
+  const [actionType, setActionType] = useState<ActionType>(allowedActionTypes[0] ?? "CREATE_REVIEW");
   const [notes, setNotes] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -27,7 +51,6 @@ export default function ActionModal({ isOpen, exceptionId, runDate, onClose, onS
         exception_id: exceptionId,
         run_date: runDate,
         action_type: actionType,
-        requested_by_role: "analyst", // or planner
         payload: { notes },
       };
       const record = await api.submitAction(payload);
@@ -57,11 +80,11 @@ export default function ActionModal({ isOpen, exceptionId, runDate, onClose, onS
               onChange={(e) => setActionType(e.target.value as ActionType)}
               className="w-full bg-slate-800 border border-slate-700 rounded-md p-2 text-sm text-slate-200"
             >
-              <option value="CREATE_REVIEW">Create Review</option>
-              <option value="REQUEST_VERIFICATION">Request Verification</option>
-              <option value="VENDOR_FOLLOW_UP">Vendor Follow-up</option>
-              <option value="STORE_CHECK">Store Check</option>
-              <option value="DEFER">Defer</option>
+              {allowedActionTypes.map((type) => (
+                <option key={type} value={type}>
+                  {ACTION_LABELS[type]}
+                </option>
+              ))}
             </select>
           </div>
           
