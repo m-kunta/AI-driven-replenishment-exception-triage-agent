@@ -16,6 +16,10 @@ ENV/
 # Environment variables
 .env
 
+# Local AI assistant configuration
+.claude/settings.local.json
+.claude-octopus/
+
 # IDE
 .idea/
 .vscode/
