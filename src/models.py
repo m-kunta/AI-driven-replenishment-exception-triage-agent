@@ -308,7 +308,7 @@ class ActionRequest(BaseModel):
     run_date: date
     action_type: ActionType
     requested_by: Optional[str] = None
-    requested_by_role: str
+    requested_by_role: Optional[str] = None
     payload: dict = Field(default_factory=dict)
 
 class ActionRecord(BaseModel):
