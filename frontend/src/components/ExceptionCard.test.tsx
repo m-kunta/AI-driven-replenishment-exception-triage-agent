@@ -1,8 +1,44 @@
 import React from 'react';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import ExceptionCard from './ExceptionCard';
-import { TriageResult } from '../lib/api';
+import { TriageResult, ActionRecord, api } from '../lib/api';
+
+jest.mock('../lib/api', () => {
+  const actual = jest.requireActual('../lib/api');
+  return {
+    ...actual,
+    api: {
+      ...actual.api,
+      getActions: jest.fn(),
+      retryAction: jest.fn(),
+      submitAction: jest.fn(),
+    },
+  };
+});
+
+const mockGetActions = api.getActions as jest.MockedFunction<typeof api.getActions>;
+const mockRetryAction = api.retryAction as jest.MockedFunction<typeof api.retryAction>;
+const mockSubmitAction = api.submitAction as jest.MockedFunction<typeof api.submitAction>;
+
+// Default: no existing actions — keeps all non-action tests clean.
+beforeEach(() => {
+  mockGetActions.mockResolvedValue([]);
+});
+
+const makeActionRecord = (overrides: Partial<ActionRecord> = {}): ActionRecord => ({
+  request_id: 'req-1',
+  exception_id: 'EXC-12345-abcd',
+  run_date: '2026-04-25',
+  action_type: 'CREATE_REVIEW',
+  requested_by: 'admin',
+  requested_by_role: 'analyst',
+  payload: {},
+  status: 'completed',
+  created_at: '2026-04-25T00:00:00Z',
+  updated_at: '2026-04-25T00:00:00Z',
+  ...overrides,
+});
 
 // ---------------------------------------------------------------------------
 // Fixtures
@@ -208,5 +244,113 @@ describe('ExceptionCard — override flow', () => {
     render(<ExceptionCard exception={base} runDate="2026-04-23" />);
     fireEvent.click(screen.getByRole('button', { name: /override/i }));
     expect(screen.getByRole('dialog', { name: /submit override/i })).toBeInTheDocument();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Action flow
+// ---------------------------------------------------------------------------
+
+describe('ExceptionCard — action flow', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockGetActions.mockResolvedValue([]);
+  });
+
+  it('renders the Take Action button', () => {
+    render(<ExceptionCard exception={base} runDate="2026-04-25" />);
+    expect(screen.getByRole('button', { name: /take action/i })).toBeInTheDocument();
+  });
+
+  it('opens the action modal when Take Action is clicked', () => {
+    render(<ExceptionCard exception={base} runDate="2026-04-25" />);
+    fireEvent.click(screen.getByRole('button', { name: /take action/i }));
+    expect(screen.getByRole('button', { name: /confirm action/i })).toBeInTheDocument();
+  });
+
+  it('loads and renders existing actions on mount', async () => {
+    const record = makeActionRecord({ status: 'completed' });
+    mockGetActions.mockResolvedValue([record]);
+
+    render(<ExceptionCard exception={base} runDate="2026-04-25" />);
+
+    expect(await screen.findByText('CREATE_REVIEW')).toBeInTheDocument();
+    expect(screen.getByText('by admin')).toBeInTheDocument();
+    expect(screen.getByText('completed')).toBeInTheDocument();
+  });
+
+  it('shows no action history section when there are no actions', async () => {
+    mockGetActions.mockResolvedValue([]);
+    render(<ExceptionCard exception={base} runDate="2026-04-25" />);
+
+    await waitFor(() => expect(mockGetActions).toHaveBeenCalled());
+    expect(screen.queryByText('Action History')).not.toBeInTheDocument();
+  });
+
+  it('renders queued status badge without a Retry button', async () => {
+    mockGetActions.mockResolvedValue([
+      makeActionRecord({ request_id: 'req-q', status: 'queued' }),
+    ]);
+
+    render(<ExceptionCard exception={base} runDate="2026-04-25" />);
+
+    expect(await screen.findByText('queued')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /retry/i })).not.toBeInTheDocument();
+  });
+
+  it('shows Retry button only for failed actions', async () => {
+    mockGetActions.mockResolvedValue([
+      makeActionRecord({ request_id: 'req-ok', status: 'completed' }),
+      makeActionRecord({ request_id: 'req-fail', status: 'failed' }),
+    ]);
+
+    render(<ExceptionCard exception={base} runDate="2026-04-25" />);
+
+    await screen.findByText('completed');
+    const retryButtons = screen.getAllByRole('button', { name: /retry/i });
+    expect(retryButtons).toHaveLength(1);
+  });
+
+  it('calls retryAction and updates the record in-place on retry', async () => {
+    const failed = makeActionRecord({ request_id: 'req-fail', status: 'failed' });
+    const retried = makeActionRecord({ request_id: 'req-fail', status: 'completed' });
+    mockGetActions.mockResolvedValue([failed]);
+    mockRetryAction.mockResolvedValue(retried);
+
+    render(<ExceptionCard exception={base} runDate="2026-04-25" />);
+
+    fireEvent.click(await screen.findByRole('button', { name: /retry/i }));
+
+    await waitFor(() => {
+      expect(mockRetryAction).toHaveBeenCalledWith('req-fail');
+      expect(screen.queryByText('failed')).not.toBeInTheDocument();
+      expect(screen.getByText('completed')).toBeInTheDocument();
+    });
+  });
+
+  it('passes actorRole=planner through to the action modal, exposing planner-only options', () => {
+    render(<ExceptionCard exception={base} runDate="2026-04-25" actorRole="planner" />);
+    fireEvent.click(screen.getByRole('button', { name: /take action/i }));
+
+    expect(screen.getByRole('option', { name: /store check/i })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: /vendor follow-up/i })).toBeInTheDocument();
+  });
+
+  it('prepends submitted action to history and shows success message', async () => {
+    mockGetActions.mockResolvedValue([]);
+    const newRecord = makeActionRecord({ request_id: 'req-new', action_type: 'DEFER', status: 'completed' });
+    mockSubmitAction.mockResolvedValue(newRecord);
+
+    render(<ExceptionCard exception={base} runDate="2026-04-25" />);
+    fireEvent.click(screen.getByRole('button', { name: /take action/i }));
+
+    const select = screen.getByRole('combobox');
+    fireEvent.change(select, { target: { value: 'DEFER' } });
+    fireEvent.click(screen.getByRole('button', { name: /confirm action/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText(/DEFER.*queued successfully/i)).toBeInTheDocument();
+      expect(screen.getByText('DEFER')).toBeInTheDocument();
+    });
   });
 });
