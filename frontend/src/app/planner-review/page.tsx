@@ -111,7 +111,7 @@ export default function PlannerReviewPage({
   };
 
   return (
-    <main className="min-h-screen max-w-6xl mx-auto p-8">
+    <main className="min-h-screen max-w-7xl mx-auto p-8">
       <header className="mb-8">
         <Link
           href="/"
@@ -122,7 +122,7 @@ export default function PlannerReviewPage({
           </svg>
           Command Center
         </Link>
-        <p className="text-xs uppercase tracking-[0.3em] text-slate-500">Planner Review</p>
+        <p className="text-xs uppercase tracking-wider text-slate-500">Planner Review</p>
         <h1 className="mt-2 text-3xl font-bold text-slate-100">Pending Override Decisions</h1>
         <p className="mt-2 text-sm text-slate-400">
           Review analyst-submitted corrections and promote only the overrides that should
@@ -130,7 +130,25 @@ export default function PlannerReviewPage({
         </p>
       </header>
 
-      {loading && <p className="text-slate-400">Loading pending overrides...</p>}
+      {loading && (
+        <div className="grid gap-4">
+          {[1, 2].map((i) => (
+            <div key={i} className="rounded-2xl border border-slate-700 bg-slate-900/80 p-5 animate-pulse">
+              <div className="flex justify-between mb-4">
+                <div className="space-y-2">
+                  <div className="h-5 w-32 rounded bg-slate-700/60" />
+                  <div className="h-4 w-48 rounded bg-slate-800/80" />
+                </div>
+                <div className="h-6 w-24 rounded-full bg-slate-800/80" />
+              </div>
+              <div className="grid gap-4 lg:grid-cols-2">
+                <div className="h-24 rounded-xl bg-slate-800/60" />
+                <div className="h-24 rounded-xl bg-slate-800/60" />
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
       {error && (
         <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
           <p className="font-medium text-red-200">Planner review is unavailable</p>
@@ -138,8 +156,14 @@ export default function PlannerReviewPage({
         </div>
       )}
       {!loading && !error && items.length === 0 && (
-        <div className="rounded-xl border border-slate-700 bg-slate-900/70 px-6 py-8 text-slate-300">
-          No pending overrides to review.
+        <div className="rounded-xl border border-slate-700/50 bg-slate-900/50 px-6 py-12 text-center flex flex-col items-center justify-center">
+          <div className="w-12 h-12 rounded-full bg-slate-800 flex items-center justify-center mb-3">
+            <svg className="w-6 h-6 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <p className="text-slate-300 font-medium">No pending overrides to review.</p>
+          <p className="text-slate-500 text-sm mt-1">All submissions have been processed.</p>
         </div>
       )}
 
@@ -209,7 +233,7 @@ export default function PlannerReviewPage({
                     id={`reject-${item.id}`}
                     value={state.rejectionReason}
                     onChange={(e) => handleReasonChange(item.id, e.target.value)}
-                    className="rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-slate-100"
+                    className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-slate-200"
                   />
                 </label>
 
@@ -224,7 +248,7 @@ export default function PlannerReviewPage({
                     type="button"
                     disabled={state.busy}
                     onClick={() => handleApprove(item.id)}
-                    className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white disabled:cursor-not-allowed disabled:bg-slate-700"
+                    className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-emerald-500 disabled:cursor-not-allowed disabled:bg-slate-700"
                   >
                     Approve
                   </button>
@@ -232,7 +256,7 @@ export default function PlannerReviewPage({
                     type="button"
                     disabled={state.busy}
                     onClick={() => handleReject(item.id)}
-                    className="rounded-lg bg-rose-600 px-4 py-2 text-sm font-medium text-white disabled:cursor-not-allowed disabled:bg-slate-700"
+                    className="rounded-lg bg-rose-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-rose-500 disabled:cursor-not-allowed disabled:bg-slate-700"
                   >
                     Reject
                   </button>

@@ -136,7 +136,7 @@ export default function Home() {
           <p className="text-slate-400 mt-1">AI-Driven Triage Command Center</p>
           <Link
             href="/planner-review"
-            className="mt-3 inline-flex rounded-md border border-slate-700 px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-slate-300 transition-colors hover:border-blue-400 hover:text-blue-300"
+            className="mt-3 inline-flex rounded-lg border border-slate-700 px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-slate-300 transition-colors hover:border-blue-400 hover:text-blue-300"
           >
             Planner Review
           </Link>
@@ -246,7 +246,7 @@ export default function Home() {
         </div>
       )}
       {queueError && (
-        <div className="p-4 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 mb-6 text-sm">
+        <div className="mb-6 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
           {queueError}
         </div>
       )}

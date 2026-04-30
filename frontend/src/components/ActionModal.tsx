@@ -77,13 +77,24 @@ export default function ActionModal({
             <h2 id="action-modal-title" className="text-lg font-semibold text-slate-100">
               Take Action
             </h2>
-            <button onClick={onClose} className="text-slate-400 hover:text-white">
-              &times;
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label="Close"
+              className="rounded-md p-1.5 text-slate-400 transition-colors hover:bg-slate-800 hover:text-white"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
             </button>
           </div>
           <form onSubmit={handleSubmit} className="flex max-h-[85vh] flex-col">
             <div className="flex flex-col gap-4 overflow-y-auto px-5 py-5">
-              {error && <div className="rounded text-sm text-red-400 bg-red-400/10 p-2">{error}</div>}
+              {error && (
+                <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-300">
+                  {error}
+                </div>
+              )}
 
               <div>
                 <label className="mb-2 block text-xs font-semibold uppercase tracking-wider text-slate-400">
@@ -92,7 +103,7 @@ export default function ActionModal({
                 <select
                   value={actionType}
                   onChange={(e) => setActionType(e.target.value as ActionType)}
-                  className="w-full rounded-md border border-slate-700 bg-slate-800 p-2 text-sm text-slate-200"
+                  className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-slate-200"
                 >
                   {allowedActionTypes.map((type) => (
                     <option key={type} value={type}>
@@ -110,14 +121,24 @@ export default function ActionModal({
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
                   placeholder="Add details for this action..."
-                  className="h-32 w-full rounded-md border border-slate-700 bg-slate-800 p-2 text-sm text-slate-200"
+                  className="h-32 w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-slate-200"
                 />
               </div>
             </div>
 
             <div className="flex justify-end gap-3 border-t border-slate-800 px-5 py-4">
-              <button type="button" onClick={onClose} className="px-4 py-2 text-sm text-slate-400 hover:text-white transition-colors">Cancel</button>
-              <button type="submit" disabled={isSubmitting} className="rounded-md bg-emerald-600/90 px-4 py-2 text-sm text-white transition-colors hover:bg-emerald-500 disabled:opacity-50">
+              <button
+                type="button"
+                onClick={onClose}
+                className="rounded-lg border border-slate-700 px-4 py-2 text-sm text-slate-300 transition-colors hover:bg-slate-800 hover:text-slate-100"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-emerald-500 disabled:cursor-not-allowed disabled:bg-slate-700"
+              >
                 {isSubmitting ? "Sending..." : "Confirm Action"}
               </button>
             </div>

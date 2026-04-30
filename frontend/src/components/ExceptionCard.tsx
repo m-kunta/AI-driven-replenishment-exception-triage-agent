@@ -86,7 +86,7 @@ export default function ExceptionCard({ exception, runDate, actorRole = null }: 
             <button
               type="button"
               onClick={() => setOverrideOpen(true)}
-              className="rounded-md border border-slate-600 px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-slate-200 transition-colors hover:border-blue-400 hover:text-blue-300"
+              className="rounded-lg border border-slate-600 px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-slate-200 transition-colors hover:border-blue-400 hover:text-blue-300"
             >
               Override
             </button>
@@ -95,7 +95,7 @@ export default function ExceptionCard({ exception, runDate, actorRole = null }: 
               onClick={() => setActionModalOpen(true)}
               disabled={actorRole === null}
               title={actorRole === null ? "Loading role…" : undefined}
-              className="rounded-md border border-emerald-600/50 bg-emerald-600/10 px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-emerald-300 transition-colors hover:border-emerald-500 hover:text-emerald-200 disabled:opacity-40 disabled:cursor-not-allowed"
+              className="rounded-lg border border-emerald-600/50 bg-emerald-600/10 px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-emerald-300 transition-colors hover:border-emerald-500 hover:text-emerald-200 disabled:opacity-40 disabled:cursor-not-allowed"
             >
               Take Action
             </button>

@@ -111,94 +111,97 @@ export default function OverrideModal({
             <button
               type="button"
               onClick={onClose}
-              className="rounded-md px-3 py-1 text-sm text-slate-400 hover:bg-slate-800 hover:text-slate-200"
+              aria-label="Close"
+              className="rounded-md p-1.5 text-slate-400 transition-colors hover:bg-slate-800 hover:text-white"
             >
-              Close
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
             </button>
           </div>
 
           <form className="flex max-h-[90vh] flex-col" onSubmit={handleSubmit}>
             <div className="grid gap-4 overflow-y-auto px-6 py-5">
               <label className="grid gap-1 text-sm text-slate-300" htmlFor="override-priority">
-            Priority
-            <select
-              id="override-priority"
-              value={priority}
-              onChange={(e) => setPriority(e.target.value as Priority)}
-              className="rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-slate-100"
-            >
-              {PRIORITIES.map((option) => (
-                <option key={option} value={option}>
-                  {option}
-                </option>
-              ))}
-            </select>
+                Priority
+                <select
+                  id="override-priority"
+                  value={priority}
+                  onChange={(e) => setPriority(e.target.value as Priority)}
+                  className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-slate-200"
+                >
+                  {PRIORITIES.map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
+                </select>
               </label>
 
               <label className="grid gap-1 text-sm text-slate-300" htmlFor="override-root-cause">
-            Root Cause
-            <textarea
-              id="override-root-cause"
-              value={rootCause}
-              onChange={(e) => setRootCause(e.target.value)}
-              className="min-h-20 rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-slate-100"
-            />
+                Root Cause
+                <textarea
+                  id="override-root-cause"
+                  value={rootCause}
+                  onChange={(e) => setRootCause(e.target.value)}
+                  className="min-h-20 w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-slate-200"
+                />
               </label>
 
               <label className="grid gap-1 text-sm text-slate-300" htmlFor="override-recommended-action">
-            Recommended Action
-            <textarea
-              id="override-recommended-action"
-              value={recommendedAction}
-              onChange={(e) => setRecommendedAction(e.target.value)}
-              className="min-h-20 rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-slate-100"
-            />
+                Recommended Action
+                <textarea
+                  id="override-recommended-action"
+                  value={recommendedAction}
+                  onChange={(e) => setRecommendedAction(e.target.value)}
+                  className="min-h-20 w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-slate-200"
+                />
               </label>
 
               <label className="grid gap-1 text-sm text-slate-300" htmlFor="override-financial-impact">
-            Financial Impact
-            <textarea
-              id="override-financial-impact"
-              value={financialImpact}
-              onChange={(e) => setFinancialImpact(e.target.value)}
-              className="min-h-20 rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-slate-100"
-            />
+                Financial Impact
+                <textarea
+                  id="override-financial-impact"
+                  value={financialImpact}
+                  onChange={(e) => setFinancialImpact(e.target.value)}
+                  className="min-h-20 w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-slate-200"
+                />
               </label>
 
               <label className="grid gap-1 text-sm text-slate-300" htmlFor="override-planner-brief">
-            Planner Brief
-            <textarea
-              id="override-planner-brief"
-              value={plannerBrief}
-              onChange={(e) => setPlannerBrief(e.target.value)}
-              className="min-h-20 rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-slate-100"
-            />
+                Planner Brief
+                <textarea
+                  id="override-planner-brief"
+                  value={plannerBrief}
+                  onChange={(e) => setPlannerBrief(e.target.value)}
+                  className="min-h-20 w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-slate-200"
+                />
               </label>
 
               <label className="grid gap-1 text-sm text-slate-300" htmlFor="override-compounding-risks">
-            Compounding Risks
-            <input
-              id="override-compounding-risks"
-              value={compoundingRisks}
-              onChange={(e) => setCompoundingRisks(e.target.value)}
-              className="rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-slate-100"
-            />
+                Compounding Risks
+                <input
+                  id="override-compounding-risks"
+                  value={compoundingRisks}
+                  onChange={(e) => setCompoundingRisks(e.target.value)}
+                  className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-slate-200"
+                />
               </label>
 
               <label className="grid gap-1 text-sm text-slate-300" htmlFor="override-analyst-note">
-            Analyst Note
-            <textarea
-              id="override-analyst-note"
-              value={analystNote}
-              onChange={(e) => setAnalystNote(e.target.value)}
-              className="min-h-20 rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-slate-100"
-            />
+                Analyst Note
+                <textarea
+                  id="override-analyst-note"
+                  value={analystNote}
+                  onChange={(e) => setAnalystNote(e.target.value)}
+                  className="min-h-20 w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-slate-200"
+                />
               </label>
 
               {error && (
-                <p className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-300">
+                <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-300">
                   {error}
-                </p>
+                </div>
               )}
             </div>
 
@@ -206,14 +209,14 @@ export default function OverrideModal({
               <button
                 type="button"
                 onClick={onClose}
-                className="rounded-lg border border-slate-700 px-4 py-2 text-sm text-slate-300 hover:bg-slate-800"
+                className="rounded-lg border border-slate-700 px-4 py-2 text-sm text-slate-300 transition-colors hover:bg-slate-800 hover:text-slate-100"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={submitting}
-                className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-500 disabled:cursor-not-allowed disabled:bg-slate-700"
+                className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-500 disabled:cursor-not-allowed disabled:bg-slate-700"
               >
                 {submitting ? "Submitting..." : "Submit Override"}
               </button>
