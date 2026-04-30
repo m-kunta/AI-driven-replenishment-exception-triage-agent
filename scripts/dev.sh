@@ -141,10 +141,14 @@ echo "  Press Ctrl-C to stop all services."
 echo ""
 
 if [[ "$START_BACKEND" == true && "$START_FRONTEND" == true ]]; then
-  if wait -n "$BACKEND_PID" "$FRONTEND_PID"; then
-    EXIT_REASON="One dev service exited. Stopping the rest of the stack so frontend and backend stay in sync."
+  # Wait for frontend only — if Next.js crashes/restarts, the backend keeps running.
+  # The backend is the stable process; frontend hot-reload can exit and recover on its own.
+  wait "$FRONTEND_PID"
+  FRONTEND_EXIT=$?
+  if kill -0 "$BACKEND_PID" 2>/dev/null; then
+    EXIT_REASON="Frontend exited (code ${FRONTEND_EXIT}). Backend is still running on port ${BACKEND_PORT}. Rerun \`bash scripts/dev.sh --no-backend\` to restart just the frontend."
   else
-    EXIT_REASON="A dev service exited unexpectedly. Check the logs above, fix the issue, then rerun \`bash scripts/dev.sh\`."
+    EXIT_REASON="Both services exited. Rerun \`bash scripts/dev.sh\` to restart."
   fi
 elif [[ "$START_BACKEND" == true ]]; then
   wait "$BACKEND_PID"
