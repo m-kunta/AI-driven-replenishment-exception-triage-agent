@@ -148,7 +148,9 @@ def get_queue(
         raise HTTPException(status_code=400, detail="Invalid priority level")
 
     file_name = f"{priority}_{run_date}.json"
-    file_path = OUTPUT_LOGS_DIR / file_name
+    file_path = (OUTPUT_LOGS_DIR / file_name).resolve()
+    if not str(file_path).startswith(str(OUTPUT_LOGS_DIR.resolve())):
+        raise HTTPException(status_code=400, detail="Invalid run_date")
 
     if not file_path.exists():
         raise HTTPException(
@@ -226,7 +228,9 @@ def get_briefing(
     username: Annotated[str, Depends(get_current_username)],
 ) -> Dict[str, Any]:
     """Return the morning briefing markdown for a given run date."""
-    file_path = OUTPUT_BRIEFINGS_DIR / f"briefing_{run_date}.md"
+    file_path = (OUTPUT_BRIEFINGS_DIR / f"briefing_{run_date}.md").resolve()
+    if not str(file_path).startswith(str(OUTPUT_BRIEFINGS_DIR.resolve())):
+        raise HTTPException(status_code=400, detail="Invalid run_date")
 
     if not file_path.exists():
         raise HTTPException(
