@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { createPortal } from "react-dom";
 import {
   ActionType,
   ActorRole,
@@ -63,49 +64,67 @@ export default function ActionModal({
     }
   };
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-      <div className="bg-slate-900 border border-slate-700 rounded-xl shadow-2xl w-full max-w-md overflow-hidden">
-        <div className="p-5 border-b border-slate-800 flex justify-between items-center">
-          <h2 className="text-lg font-semibold text-slate-100">Take Action</h2>
-          <button onClick={onClose} className="text-slate-400 hover:text-white">&times;</button>
-        </div>
-        <form onSubmit={handleSubmit} className="p-5 flex flex-col gap-4">
-          {error && <div className="text-red-400 text-sm bg-red-400/10 p-2 rounded">{error}</div>}
-          
-          <div>
-            <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Action Type</label>
-            <select
-              value={actionType}
-              onChange={(e) => setActionType(e.target.value as ActionType)}
-              className="w-full bg-slate-800 border border-slate-700 rounded-md p-2 text-sm text-slate-200"
-            >
-              {allowedActionTypes.map((type) => (
-                <option key={type} value={type}>
-                  {ACTION_LABELS[type]}
-                </option>
-              ))}
-            </select>
-          </div>
-          
-          <div>
-            <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Notes / Payload</label>
-            <textarea
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              placeholder="Add details for this action..."
-              className="w-full bg-slate-800 border border-slate-700 rounded-md p-2 text-sm text-slate-200 h-24"
-            />
-          </div>
-          
-          <div className="flex justify-end gap-3 mt-2">
-            <button type="button" onClick={onClose} className="px-4 py-2 text-sm text-slate-400 hover:text-white transition-colors">Cancel</button>
-            <button type="submit" disabled={isSubmitting} className="px-4 py-2 text-sm bg-emerald-600/90 hover:bg-emerald-500 rounded-md text-white disabled:opacity-50 transition-colors">
-              {isSubmitting ? "Sending..." : "Confirm Action"}
+  return createPortal(
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/85 p-4 sm:p-6">
+      <div className="flex min-h-full items-center justify-center">
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="action-modal-title"
+          className="w-full max-w-lg overflow-hidden rounded-2xl border border-slate-700/70 bg-slate-900 shadow-2xl"
+        >
+          <div className="flex items-center justify-between border-b border-slate-800 px-5 py-4">
+            <h2 id="action-modal-title" className="text-lg font-semibold text-slate-100">
+              Take Action
+            </h2>
+            <button onClick={onClose} className="text-slate-400 hover:text-white">
+              &times;
             </button>
           </div>
-        </form>
+          <form onSubmit={handleSubmit} className="flex max-h-[85vh] flex-col">
+            <div className="flex flex-col gap-4 overflow-y-auto px-5 py-5">
+              {error && <div className="rounded text-sm text-red-400 bg-red-400/10 p-2">{error}</div>}
+
+              <div>
+                <label className="mb-2 block text-xs font-semibold uppercase tracking-wider text-slate-400">
+                  Action Type
+                </label>
+                <select
+                  value={actionType}
+                  onChange={(e) => setActionType(e.target.value as ActionType)}
+                  className="w-full rounded-md border border-slate-700 bg-slate-800 p-2 text-sm text-slate-200"
+                >
+                  {allowedActionTypes.map((type) => (
+                    <option key={type} value={type}>
+                      {ACTION_LABELS[type]}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="mb-2 block text-xs font-semibold uppercase tracking-wider text-slate-400">
+                  Notes / Payload
+                </label>
+                <textarea
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  placeholder="Add details for this action..."
+                  className="h-32 w-full rounded-md border border-slate-700 bg-slate-800 p-2 text-sm text-slate-200"
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-3 border-t border-slate-800 px-5 py-4">
+              <button type="button" onClick={onClose} className="px-4 py-2 text-sm text-slate-400 hover:text-white transition-colors">Cancel</button>
+              <button type="submit" disabled={isSubmitting} className="rounded-md bg-emerald-600/90 px-4 py-2 text-sm text-white transition-colors hover:bg-emerald-500 disabled:opacity-50">
+                {isSubmitting ? "Sending..." : "Confirm Action"}
+              </button>
+            </div>
+          </form>
+        </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

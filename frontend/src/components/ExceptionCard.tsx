@@ -24,13 +24,20 @@ export default function ExceptionCard({ exception, runDate, actorRole = null }: 
   const [actionModalOpen, setActionModalOpen] = useState(false);
   const [actions, setActions] = useState<ActionRecord[]>([]);
   const [submissionMessage, setSubmissionMessage] = useState<string | null>(null);
+  const [actionHistoryWarning, setActionHistoryWarning] = useState<string | null>(null);
   const effectiveRunDate = runDate || exception.exception_date || new Date().toISOString().split("T")[0];
 
   useEffect(() => {
     // Load initial actions
     api.getActions(exception.exception_id)
-       .then(setActions)
-       .catch(console.error);
+       .then((records) => {
+         setActions(records);
+         setActionHistoryWarning(null);
+       })
+       .catch(() => {
+         setActions([]);
+         setActionHistoryWarning("Action history is unavailable until the backend is running.");
+       });
   }, [exception.exception_id]);
 
   const handleActionSubmitted = (record: ActionRecord) => {
@@ -146,6 +153,12 @@ export default function ExceptionCard({ exception, runDate, actorRole = null }: 
               </div>
             ))}
           </div>
+        </div>
+      )}
+
+      {actionHistoryWarning && (
+        <div className="rounded-lg border border-amber-500/20 bg-amber-500/10 px-3 py-2 text-sm text-amber-200">
+          {actionHistoryWarning}
         </div>
       )}
 

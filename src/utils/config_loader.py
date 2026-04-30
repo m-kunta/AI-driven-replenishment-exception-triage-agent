@@ -131,6 +131,39 @@ class AppConfig(BaseModel):
 
 ENV_VAR_PATTERN = re.compile(r"\$\{([^}]+)\}")
 _SUPPORTED_PROVIDERS = ("claude", "openai", "gemini", "ollama")
+_DEFAULT_MODELS = {
+    "claude": "claude-sonnet-4-20250514",
+    "openai": "gpt-4.1",
+    "gemini": "gemini-1.5-pro",
+    "ollama": "llama3.1",
+}
+
+
+def _apply_agent_env_overrides(resolved_config: Dict[str, Any]) -> Dict[str, Any]:
+    """Apply optional env-driven agent overrides without requiring YAML edits."""
+    agent_cfg = resolved_config.setdefault("agent", {})
+
+    provider_override = os.environ.get("AGENT_PROVIDER", "").strip().lower()
+    model_override = os.environ.get("AGENT_MODEL", "").strip()
+
+    if provider_override:
+        if provider_override not in _SUPPORTED_PROVIDERS:
+            raise ConfigurationError(
+                f"Invalid AGENT_PROVIDER: {provider_override!r}. "
+                f"Must be one of: {', '.join(_SUPPORTED_PROVIDERS)}"
+            )
+        previous_provider = str(agent_cfg.get("provider", "")).strip().lower()
+        previous_model = str(agent_cfg.get("model", "")).strip()
+        agent_cfg["provider"] = provider_override
+
+        if model_override:
+            agent_cfg["model"] = model_override
+        elif previous_provider != provider_override or not previous_model:
+            agent_cfg["model"] = _DEFAULT_MODELS[provider_override]
+    elif model_override:
+        agent_cfg["model"] = model_override
+
+    return resolved_config
 
 
 def _resolve_env_vars(value: Any) -> Any:
@@ -179,6 +212,8 @@ def load_config(config_path: str = "config/config.yaml") -> AppConfig:
         raise ConfigurationError(f"Configuration file is empty: {config_path}")
 
     resolved_config = _resolve_env_vars(raw_config)
+
+    resolved_config = _apply_agent_env_overrides(resolved_config)
 
     try:
         config = AppConfig.model_validate(resolved_config)

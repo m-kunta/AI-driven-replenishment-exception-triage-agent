@@ -12,6 +12,8 @@ jest.mock("../../lib/api", () => {
     ...actual,
     api: {
       ...actual.api,
+      getCurrentUser: jest.fn(),
+      getPendingOverrides: jest.fn(),
       getRuns: jest.fn(),
       getQueue: jest.fn(),
       getBriefing: jest.fn(),
@@ -42,6 +44,8 @@ const pendingOverride = {
 describe("PlannerReviewPage", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    (api.getCurrentUser as jest.Mock).mockResolvedValue({ username: "admin", role: "analyst" });
+    (api.getPendingOverrides as jest.Mock).mockResolvedValue([]);
     (api.getRuns as jest.Mock).mockResolvedValue([]);
     (api.getQueue as jest.Mock).mockResolvedValue([]);
     (api.getBriefing as jest.Mock).mockResolvedValue(null);
@@ -127,6 +131,32 @@ describe("PlannerReviewPage", () => {
     expect(await screen.findByRole("link", { name: /planner review/i })).toBeInTheDocument();
   });
 
+  it("re-fetches queues when the window regains focus", async () => {
+    (api.getRuns as jest.Mock).mockResolvedValue(["2026-04-29"]);
+    (api.getQueue as jest.Mock).mockResolvedValue([]);
+
+    render(<Home />);
+    await screen.findByRole("link", { name: /planner review/i });
+
+    const initialCalls = (api.getQueue as jest.Mock).mock.calls.length;
+    fireEvent.focus(window);
+
+    await waitFor(() =>
+      expect((api.getQueue as jest.Mock).mock.calls.length).toBeGreaterThan(initialCalls)
+    );
+  });
+
+  it("shows a backend recovery banner on the dashboard when the actor profile cannot load", async () => {
+    (api.getCurrentUser as jest.Mock).mockRejectedValue(
+      new Error("Backend is not running. Start it with `bash scripts/dev.sh` after setting API_PASSWORD in .env.")
+    );
+
+    render(<Home />);
+
+    expect(await screen.findByText(/backend is not running/i)).toBeInTheDocument();
+    expect(screen.getByText(/bash scripts\/dev\.sh/i)).toBeInTheDocument();
+  });
+
   it("shows a back link to the Command Center", async () => {
     const getPendingOverrides = jest.fn().mockResolvedValue([]);
     render(<PlannerReviewPage getPendingOverrides={getPendingOverrides} />);
@@ -134,5 +164,16 @@ describe("PlannerReviewPage", () => {
     const backLink = await screen.findByRole("link", { name: /command center/i });
     expect(backLink).toBeInTheDocument();
     expect(backLink).toHaveAttribute("href", "/");
+  });
+
+  it("shows a backend recovery banner on planner review when pending overrides cannot load", async () => {
+    const getPendingOverrides = jest.fn().mockRejectedValue(
+      new Error("Backend is not running. Start it with `bash scripts/dev.sh` after setting API_PASSWORD in .env.")
+    );
+
+    render(<PlannerReviewPage getPendingOverrides={getPendingOverrides} />);
+
+    expect(await screen.findByText(/backend is not running/i)).toBeInTheDocument();
+    expect(screen.getByText(/bash scripts\/dev\.sh/i)).toBeInTheDocument();
   });
 });

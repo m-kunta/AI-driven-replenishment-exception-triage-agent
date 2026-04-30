@@ -297,6 +297,18 @@ describe('ExceptionCard — action flow', () => {
     expect(screen.queryByText('Action History')).not.toBeInTheDocument();
   });
 
+  it('shows a soft backend warning instead of crashing when action history fails to load', async () => {
+    mockGetActions.mockRejectedValue(
+      new Error("Backend is not running. Start it with `bash scripts/dev.sh` after setting API_PASSWORD in .env.")
+    );
+
+    render(<ExceptionCard exception={base} runDate="2026-04-25" actorRole="analyst" />);
+
+    expect(
+      await screen.findByText(/action history is unavailable until the backend is running/i)
+    ).toBeInTheDocument();
+  });
+
   it('renders queued status badge without a Retry button', async () => {
     mockGetActions.mockResolvedValue([
       makeActionRecord({ request_id: 'req-q', status: 'queued' }),

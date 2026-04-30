@@ -31,6 +31,7 @@ export default function Home() {
   const [pipelineStatus, setPipelineStatus] = useState<PipelineStatus>({ kind: "idle" });
   const [adminExpanded, setAdminExpanded] = useState(false);
   const [actorRole, setActorRole] = useState<ActorRole | null>(null);
+  const [backendError, setBackendError] = useState<string | null>(null);
 
   const fetchQueues = useCallback(async () => {
     setLoading(true);
@@ -63,14 +64,43 @@ export default function Home() {
         setAvailableRuns(dates);
         setRunDate(dates[0]); // already sorted newest-first by the backend
       }
+    }).catch((err: unknown) => {
+      const message = err instanceof Error ? err.message : "Unknown error";
+      setBackendError(message);
     });
     api.getCurrentUser()
-      .then((user) => setActorRole(user.role))
-      .catch(() => setActorRole("analyst"));
+      .then((user) => {
+        setActorRole(user.role);
+        setBackendError(null);
+      })
+      .catch((err: unknown) => {
+        const message = err instanceof Error ? err.message : "Unknown error";
+        setActorRole(null);
+        setBackendError(message);
+      });
   }, []);
 
   useEffect(() => {
     fetchQueues();
+  }, [fetchQueues]);
+
+  useEffect(() => {
+    const handleFocus = () => {
+      fetchQueues();
+    };
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        fetchQueues();
+      }
+    };
+
+    window.addEventListener("focus", handleFocus);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      window.removeEventListener("focus", handleFocus);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
   }, [fetchQueues]);
 
   const handleTrigger = async (triggerPayload: PipelineTriggerRequest) => {
@@ -209,6 +239,12 @@ export default function Home() {
       </section>
 
       {/* Queue Error */}
+      {backendError && (
+        <div className="mb-6 rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
+          <p className="font-medium text-amber-100">Backend unavailable</p>
+          <p className="mt-1 whitespace-pre-wrap">{backendError}</p>
+        </div>
+      )}
       {queueError && (
         <div className="p-4 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 mb-6 text-sm">
           {queueError}

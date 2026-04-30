@@ -133,7 +133,8 @@ export default function PlannerReviewPage({
       {loading && <p className="text-slate-400">Loading pending overrides...</p>}
       {error && (
         <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
-          {error}
+          <p className="font-medium text-red-200">Planner review is unavailable</p>
+          <p className="mt-1 whitespace-pre-wrap">{error}</p>
         </div>
       )}
       {!loading && !error && items.length === 0 && (

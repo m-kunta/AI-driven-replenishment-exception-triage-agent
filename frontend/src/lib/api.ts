@@ -136,6 +136,26 @@ const PROXY_BASE = "/api/proxy";
 
 const JSON_HEADERS = { "Content-Type": "application/json" };
 
+export const BACKEND_UNAVAILABLE_MESSAGE =
+  "Backend is not running. Start it with `bash scripts/dev.sh` after setting API_PASSWORD in .env.";
+
+async function toApiError(
+  res: Response,
+  fallback: string
+): Promise<Error> {
+  const body = await res.json().catch(() => ({}));
+  const detail =
+    typeof body?.detail === "string" && body.detail.length > 0
+      ? body.detail
+      : null;
+
+  if (res.status === 502 || detail?.includes("Backend unreachable")) {
+    return new Error(BACKEND_UNAVAILABLE_MESSAGE);
+  }
+
+  return new Error(detail ?? fallback);
+}
+
 export const api = {
   triggerPipeline: async (payload: PipelineTriggerRequest) => {
     const res = await fetch(`${PROXY_BASE}/pipeline/trigger`, {
@@ -144,7 +164,7 @@ export const api = {
       body: JSON.stringify(payload),
     });
     if (!res.ok) {
-      throw new Error(`Failed to trigger pipeline: ${res.statusText}`);
+      throw await toApiError(res, `Failed to trigger pipeline: ${res.statusText}`);
     }
     return res.json();
   },
@@ -158,8 +178,7 @@ export const api = {
       body: JSON.stringify(payload),
     });
     if (!res.ok) {
-      const body = await res.json().catch(() => ({}));
-      throw new Error(body.detail ?? `Failed to submit override: ${res.statusText}`);
+      throw await toApiError(res, `Failed to submit override: ${res.statusText}`);
     }
     return res.json();
   },
@@ -170,7 +189,7 @@ export const api = {
       headers: JSON_HEADERS,
     });
     if (!res.ok) {
-      throw new Error(`Failed to fetch pending overrides: ${res.statusText}`);
+      throw await toApiError(res, `Failed to fetch pending overrides: ${res.statusText}`);
     }
     return res.json();
   },
@@ -181,7 +200,7 @@ export const api = {
       headers: JSON_HEADERS,
     });
     if (!res.ok) {
-      throw new Error(`Failed to approve override: ${res.statusText}`);
+      throw await toApiError(res, `Failed to approve override: ${res.statusText}`);
     }
     return res.json();
   },
@@ -196,7 +215,7 @@ export const api = {
       body: JSON.stringify({ reason }),
     });
     if (!res.ok) {
-      throw new Error(`Failed to reject override: ${res.statusText}`);
+      throw await toApiError(res, `Failed to reject override: ${res.statusText}`);
     }
     return res.json();
   },
@@ -208,7 +227,7 @@ export const api = {
     });
     if (!res.ok) {
       if (res.status === 404) return [];
-      throw new Error(`Failed to fetch queue: ${res.statusText}`);
+      throw await toApiError(res, `Failed to fetch queue: ${res.statusText}`);
     }
     return res.json();
   },
@@ -218,7 +237,12 @@ export const api = {
       method: "GET",
       headers: JSON_HEADERS,
     });
-    if (!res.ok) return [];
+    if (!res.ok) {
+      if (res.status === 502) {
+        throw await toApiError(res, `Failed to fetch runs: ${res.statusText}`);
+      }
+      return [];
+    }
     const data = await res.json();
     return data.run_dates ?? [];
   },
@@ -230,14 +254,14 @@ export const api = {
     });
     if (!res.ok) {
       if (res.status === 404) return null;
-      throw new Error(`Failed to fetch briefing: ${res.statusText}`);
+      throw await toApiError(res, `Failed to fetch briefing: ${res.statusText}`);
     }
     return res.json();
   },
 
   healthCheck: async () => {
     const res = await fetch(`${PROXY_BASE}/health`);
-    if (!res.ok) throw new Error("Backend not healthy");
+    if (!res.ok) throw await toApiError(res, "Backend not healthy");
     return res.json();
   },
 
@@ -247,7 +271,7 @@ export const api = {
       headers: JSON_HEADERS,
     });
     if (!res.ok) {
-      throw new Error(`Failed to fetch current user: ${res.statusText}`);
+      throw await toApiError(res, `Failed to fetch current user: ${res.statusText}`);
     }
     return res.json();
   },
@@ -259,8 +283,7 @@ export const api = {
       body: JSON.stringify(payload),
     });
     if (!res.ok) {
-      const body = await res.json().catch(() => ({}));
-      throw new Error(body.detail ?? `Failed to submit action: ${res.statusText}`);
+      throw await toApiError(res, `Failed to submit action: ${res.statusText}`);
     }
     return res.json();
   },
@@ -271,7 +294,7 @@ export const api = {
       headers: JSON_HEADERS,
     });
     if (!res.ok) {
-      throw new Error(`Failed to fetch actions: ${res.statusText}`);
+      throw await toApiError(res, `Failed to fetch actions: ${res.statusText}`);
     }
     return res.json();
   },
@@ -282,8 +305,7 @@ export const api = {
       headers: JSON_HEADERS,
     });
     if (!res.ok) {
-      const body = await res.json().catch(() => ({}));
-      throw new Error(body.detail ?? `Failed to retry action: ${res.statusText}`);
+      throw await toApiError(res, `Failed to retry action: ${res.statusText}`);
     }
     return res.json();
   },

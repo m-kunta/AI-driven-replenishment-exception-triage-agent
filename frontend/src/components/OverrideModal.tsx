@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 
 import {
   api,
@@ -89,34 +90,36 @@ export default function OverrideModal({
     }
   };
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 p-4">
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="override-modal-title"
-        className="w-full max-w-2xl rounded-2xl border border-slate-700/70 bg-slate-900 p-6 shadow-2xl"
-      >
-        <div className="mb-5 flex items-start justify-between gap-4">
-          <div>
-            <h2 id="override-modal-title" className="text-xl font-semibold text-slate-100">
-              Submit Override
-            </h2>
-            <p className="mt-1 text-sm text-slate-400">
-              Capture analyst corrections for {exception.item_name || exception.item_id}.
-            </p>
+  return createPortal(
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/85 p-4 sm:p-6">
+      <div className="flex min-h-full items-center justify-center">
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="override-modal-title"
+          className="w-full max-w-3xl overflow-hidden rounded-2xl border border-slate-700/70 bg-slate-900 shadow-2xl"
+        >
+          <div className="flex items-start justify-between gap-4 border-b border-slate-800 px-6 py-5">
+            <div>
+              <h2 id="override-modal-title" className="text-xl font-semibold text-slate-100">
+                Submit Override
+              </h2>
+              <p className="mt-1 text-sm text-slate-400">
+                Capture analyst corrections for {exception.item_name || exception.item_id}.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={onClose}
+              className="rounded-md px-3 py-1 text-sm text-slate-400 hover:bg-slate-800 hover:text-slate-200"
+            >
+              Close
+            </button>
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-md px-3 py-1 text-sm text-slate-400 hover:bg-slate-800 hover:text-slate-200"
-          >
-            Close
-          </button>
-        </div>
 
-        <form className="grid gap-4" onSubmit={handleSubmit}>
-          <label className="grid gap-1 text-sm text-slate-300" htmlFor="override-priority">
+          <form className="flex max-h-[90vh] flex-col" onSubmit={handleSubmit}>
+            <div className="grid gap-4 overflow-y-auto px-6 py-5">
+              <label className="grid gap-1 text-sm text-slate-300" htmlFor="override-priority">
             Priority
             <select
               id="override-priority"
@@ -130,9 +133,9 @@ export default function OverrideModal({
                 </option>
               ))}
             </select>
-          </label>
+              </label>
 
-          <label className="grid gap-1 text-sm text-slate-300" htmlFor="override-root-cause">
+              <label className="grid gap-1 text-sm text-slate-300" htmlFor="override-root-cause">
             Root Cause
             <textarea
               id="override-root-cause"
@@ -140,9 +143,9 @@ export default function OverrideModal({
               onChange={(e) => setRootCause(e.target.value)}
               className="min-h-20 rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-slate-100"
             />
-          </label>
+              </label>
 
-          <label className="grid gap-1 text-sm text-slate-300" htmlFor="override-recommended-action">
+              <label className="grid gap-1 text-sm text-slate-300" htmlFor="override-recommended-action">
             Recommended Action
             <textarea
               id="override-recommended-action"
@@ -150,9 +153,9 @@ export default function OverrideModal({
               onChange={(e) => setRecommendedAction(e.target.value)}
               className="min-h-20 rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-slate-100"
             />
-          </label>
+              </label>
 
-          <label className="grid gap-1 text-sm text-slate-300" htmlFor="override-financial-impact">
+              <label className="grid gap-1 text-sm text-slate-300" htmlFor="override-financial-impact">
             Financial Impact
             <textarea
               id="override-financial-impact"
@@ -160,9 +163,9 @@ export default function OverrideModal({
               onChange={(e) => setFinancialImpact(e.target.value)}
               className="min-h-20 rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-slate-100"
             />
-          </label>
+              </label>
 
-          <label className="grid gap-1 text-sm text-slate-300" htmlFor="override-planner-brief">
+              <label className="grid gap-1 text-sm text-slate-300" htmlFor="override-planner-brief">
             Planner Brief
             <textarea
               id="override-planner-brief"
@@ -170,9 +173,9 @@ export default function OverrideModal({
               onChange={(e) => setPlannerBrief(e.target.value)}
               className="min-h-20 rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-slate-100"
             />
-          </label>
+              </label>
 
-          <label className="grid gap-1 text-sm text-slate-300" htmlFor="override-compounding-risks">
+              <label className="grid gap-1 text-sm text-slate-300" htmlFor="override-compounding-risks">
             Compounding Risks
             <input
               id="override-compounding-risks"
@@ -180,9 +183,9 @@ export default function OverrideModal({
               onChange={(e) => setCompoundingRisks(e.target.value)}
               className="rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-slate-100"
             />
-          </label>
+              </label>
 
-          <label className="grid gap-1 text-sm text-slate-300" htmlFor="override-analyst-note">
+              <label className="grid gap-1 text-sm text-slate-300" htmlFor="override-analyst-note">
             Analyst Note
             <textarea
               id="override-analyst-note"
@@ -190,32 +193,35 @@ export default function OverrideModal({
               onChange={(e) => setAnalystNote(e.target.value)}
               className="min-h-20 rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-slate-100"
             />
-          </label>
+              </label>
 
-          {error && (
-            <p className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-300">
-              {error}
-            </p>
-          )}
+              {error && (
+                <p className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-300">
+                  {error}
+                </p>
+              )}
+            </div>
 
-          <div className="flex justify-end gap-3 pt-2">
-            <button
-              type="button"
-              onClick={onClose}
-              className="rounded-lg border border-slate-700 px-4 py-2 text-sm text-slate-300 hover:bg-slate-800"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={submitting}
-              className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-500 disabled:cursor-not-allowed disabled:bg-slate-700"
-            >
-              {submitting ? "Submitting..." : "Submit Override"}
-            </button>
-          </div>
-        </form>
+            <div className="flex justify-end gap-3 border-t border-slate-800 px-6 py-4">
+              <button
+                type="button"
+                onClick={onClose}
+                className="rounded-lg border border-slate-700 px-4 py-2 text-sm text-slate-300 hover:bg-slate-800"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={submitting}
+                className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-500 disabled:cursor-not-allowed disabled:bg-slate-700"
+              >
+                {submitting ? "Submitting..." : "Submit Override"}
+              </button>
+            </div>
+          </form>
+        </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
