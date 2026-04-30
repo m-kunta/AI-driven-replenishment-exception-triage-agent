@@ -81,6 +81,11 @@ export interface OverrideDecisionResponse {
 export type ActionType = "CREATE_REVIEW" | "REQUEST_VERIFICATION" | "VENDOR_FOLLOW_UP" | "STORE_CHECK" | "DEFER";
 export type ActorRole = "analyst" | "planner";
 
+export interface CurrentUser {
+  username: string;
+  role: ActorRole;
+}
+
 export const ANALYST_ACTION_TYPES: ActionType[] = [
   "CREATE_REVIEW",
   "REQUEST_VERIFICATION",
@@ -233,6 +238,17 @@ export const api = {
   healthCheck: async () => {
     const res = await fetch(`${PROXY_BASE}/health`);
     if (!res.ok) throw new Error("Backend not healthy");
+    return res.json();
+  },
+
+  getCurrentUser: async (): Promise<CurrentUser> => {
+    const res = await fetch(`${PROXY_BASE}/me`, {
+      method: "GET",
+      headers: JSON_HEADERS,
+    });
+    if (!res.ok) {
+      throw new Error(`Failed to fetch current user: ${res.statusText}`);
+    }
     return res.json();
   },
 

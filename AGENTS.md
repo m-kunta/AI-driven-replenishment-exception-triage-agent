@@ -27,7 +27,7 @@ The system has migrated from a CLI batch process to a Web UI Copilot. Phase 11 i
 
 - **Phase 11 — MVP Command Center** ✅ Complete: FastAPI backend (`src/api/`) + Next.js dashboard (`frontend/`). Command Center reads priority queues and morning briefings from pipeline output files. Credentials are kept server-side via a BFF proxy (`frontend/src/app/api/proxy/`) — never exposed to the browser bundle.
 - **Phase 12 — Active Learning** ✅ Complete: Analyst override DB layer, FastAPI override endpoints, inline analyst submission UI, separate planner review screen, and approved-override prompt injection are all live. Pending overrides can also auto-promote at pipeline startup through the one-day TTL rule.
-- **Phase 13 — Agentic Engagement** 🚧 In Progress: The first execution slice is now live with exception-card action entry points, a confirmation modal, typed FastAPI action endpoints, SQLite-backed action audit records, adapter-driven execution, inline action history/status, retry for failed actions, and planner-only gating for the execution-heavier `STORE_CHECK` / `VENDOR_FOLLOW_UP` actions. Broader ERP-specific adapters and deeper RBAC remain future expansion work.
+- **Phase 13 — Agentic Engagement** 🚧 In Progress: The first execution slice is now live with exception-card action entry points, a confirmation modal, typed FastAPI action endpoints, SQLite-backed action audit records, adapter-driven execution, inline action history/status, retry for failed actions, and planner-only gating for the execution-heavier `STORE_CHECK` / `VENDOR_FOLLOW_UP` actions. Authenticated actor metadata is now resolved server-side per user through Basic Auth username mapping, and the UI reads the current actor profile from the backend rather than build-time role flags. Broader ERP-specific adapters and deeper RBAC remain future expansion work.
 
 ### Phase 11 API Surface
 | Endpoint | Auth | Description |
@@ -41,6 +41,7 @@ The system has migrated from a CLI batch process to a Web UI Copilot. Phase 11 i
 ### Phase 13 API Surface
 | Endpoint | Auth | Description |
 |---|---|---|
+| `GET /me` | Basic | Returns the authenticated username and resolved actor role for the current session |
 | `POST /actions` | Basic | Creates an execution request, injects the authenticated username, persists the action record, and attempts adapter execution |
 | `GET /actions/{exception_id}` | Basic | Returns action records for a specific exception card, newest first |
 | `POST /actions/{request_id}/retry` | Basic | Retries a previously failed action request using the stored payload and metadata |

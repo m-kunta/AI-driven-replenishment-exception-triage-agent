@@ -224,4 +224,19 @@ describe('API Client', () => {
     expect(JSON.parse((fetch as jest.Mock).mock.calls[0][1].body)).not.toHaveProperty('requested_by_role');
     expect(result.requested_by_role).toBe('analyst');
   });
+
+  it('fetches the current authenticated actor profile', async () => {
+    (fetch as jest.Mock).mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ username: 'planner1', role: 'planner' }),
+    });
+
+    const result = await api.getCurrentUser();
+
+    expect(fetch).toHaveBeenCalledWith(
+      expect.stringContaining('/api/proxy/me'),
+      expect.objectContaining({ method: 'GET' })
+    );
+    expect(result).toEqual({ username: 'planner1', role: 'planner' });
+  });
 });

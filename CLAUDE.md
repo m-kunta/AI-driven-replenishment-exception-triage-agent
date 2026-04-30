@@ -10,7 +10,9 @@ src/
 ├── enrichment/                # Layer 2: data_loader.py + engine.py
 ├── agent/                     # Layer 3: Reasoning Engine (llm_provider, prompt_composer, triage_agent)
 ├── output/                    # Layer 4: router, dispatcher, logger, briefing
-└── api/                       # [Phase 11] FastAPI interface layer for the Web UI
+├── actions/                   # [Phase 13] Action service + adapter boundary
+├── db/action_store.py         # [Phase 13] SQLite-backed action audit persistence
+└── api/                       # [Phase 11+] FastAPI interface layer for the Web UI and action APIs
 config/
 └── config.yaml                # Core config w/ env variable injection
 prompts/                       # Markdown blocks and JSON few-shot examples
@@ -19,6 +21,11 @@ scripts/                       # CLI interaction scripts (run_triage, run_backte
 frontend/                      # [Phase 11] Next.js Web UI — start with `bash scripts/dev.sh` (sources root .env)
 └── src/app/api/proxy/         # BFF proxy — injects Basic Auth server-side; credentials never reach the browser
 ```
+
+## Current Delivery Status
+- **Phase 11 — MVP Command Center:** Complete.
+- **Phase 12 — Active Learning:** Complete.
+- **Phase 13 — Agentic Engagement:** In progress. The first execution slice is live with action modal submission, inline action history/status, FastAPI action endpoints, retry support, planner-only gating for `STORE_CHECK` / `VENDOR_FOLLOW_UP`, and per-user role resolution through backend-authenticated actor profiles.
 
 ## Tech Stack & Architecture Constraints
 - **Language:** Python 3.9+ (`from __future__ import annotations` required).
@@ -38,9 +45,11 @@ frontend/                      # [Phase 11] Next.js Web UI — start with `bash 
 ## API Layer Rules (src/api/)
 - All endpoints must use `Depends(get_current_username)` for auth — no unauthenticated write endpoints.
 - `API_PASSWORD` must raise `RuntimeError` if unset — no silent fallback defaults permitted.
-- Use sync `def` endpoints — the pipeline is CPU-bound/blocking; `async def` is not appropriate here.
+- Pipeline/file endpoints may remain sync `def`, but action execution endpoints may use `async def` because they call adapter-driven async service methods.
 - Loguru lazy format only: `logger.error("msg: {}", e)` — no f-strings in any logger call.
-- New endpoints must have corresponding tests in `tests/test_api.py` using the `_api_credentials` autouse fixture.
+- Phase 13 auth rules: `POST /actions` must inject `requested_by` and resolve `requested_by_role` server-side from the authenticated username. Never trust browser-supplied actor metadata.
+- `GET /me` is the source of truth for the frontend's current actor profile. Do not reintroduce build-time role flags as the active UI permission source.
+- New general API endpoints belong in `tests/test_api.py`; Phase 13 action endpoints and role-gating coverage live in `tests/test_api_actions.py`.
 
 ## Frontend Proxy Rules (frontend/src/app/api/proxy/)
 - `API_USERNAME`, `API_PASSWORD`, and `API_URL` are **server-side only** — read by the BFF proxy in `frontend/src/app/api/proxy/[...path]/route.ts`.

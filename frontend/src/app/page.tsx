@@ -7,8 +7,6 @@ import ExceptionCard from "../components/ExceptionCard";
 import MarkdownBriefing from "../components/MarkdownBriefing";
 
 const PRIORITIES: Priority[] = ["CRITICAL", "HIGH", "MEDIUM", "LOW"];
-const ACTOR_ROLE: ActorRole =
-  process.env.NEXT_PUBLIC_ACTION_USER_ROLE === "planner" ? "planner" : "analyst";
 
 type PipelineStatus =
   | { kind: "idle" }
@@ -32,6 +30,7 @@ export default function Home() {
   const [queueError, setQueueError] = useState<string | null>(null);
   const [pipelineStatus, setPipelineStatus] = useState<PipelineStatus>({ kind: "idle" });
   const [adminExpanded, setAdminExpanded] = useState(false);
+  const [actorRole, setActorRole] = useState<ActorRole>("analyst");
 
   const fetchQueues = useCallback(async () => {
     setLoading(true);
@@ -65,6 +64,9 @@ export default function Home() {
         setRunDate(dates[0]); // already sorted newest-first by the backend
       }
     });
+    api.getCurrentUser()
+      .then((user) => setActorRole(user.role))
+      .catch(() => setActorRole("analyst"));
   }, []);
 
   useEffect(() => {
@@ -296,12 +298,12 @@ export default function Home() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-4">
           {activeQueue.map((item) => (
-                <ExceptionCard
-                  key={item.exception_id}
-                  exception={item}
-                  runDate={runDate}
-                  actorRole={ACTOR_ROLE}
-                />
+            <ExceptionCard
+              key={item.exception_id}
+              exception={item}
+              runDate={runDate}
+              actorRole={actorRole}
+            />
           ))}
         </div>
       )}

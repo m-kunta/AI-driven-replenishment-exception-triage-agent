@@ -74,7 +74,7 @@ Add new action endpoints under the FastAPI app for:
 
 The API is the only layer allowed to accept execution requests from the UI.
 
-The current implementation also injects the authenticated username at the API boundary, rather than trusting the browser to provide `requested_by`.
+The current implementation also injects the authenticated username at the API boundary, rather than trusting the browser to provide `requested_by`, and exposes a lightweight authenticated `/me` profile endpoint so the UI can read the resolved actor role from the backend.
 
 ### Application Service Layer
 
@@ -146,7 +146,7 @@ The action catalog should also define the intended actor type for each action so
 
 The backend validation seam should exist now so role enforcement can be tightened later without changing the data contract.
 
-Current implementation note: `requested_by_role` is now derived at the API boundary, and the backend enforces planner-only execution for `STORE_CHECK` and `VENDOR_FOLLOW_UP`. Broader role matrices and deeper RBAC are still future work.
+Current implementation note: `requested_by_role` is now derived at the API boundary from a server-side username-to-role mapping, the UI reads the current actor role from the backend, and the backend enforces planner-only execution for `STORE_CHECK` and `VENDOR_FOLLOW_UP`. Broader role matrices and deeper RBAC are still future work.
 
 ## UI Flow
 

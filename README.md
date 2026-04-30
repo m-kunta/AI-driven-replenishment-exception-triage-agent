@@ -13,7 +13,7 @@
 **GitHub:** [github.com/m-kunta](https://github.com/m-kunta)  
 **Domain:** Supply Chain Planning / Retail Replenishment
 
-> All four pipeline layers are complete and tested. The full pipeline runs end-to-end via `python scripts/run_triage.py`. Phase 8 (Backtesting) is fully implemented. Phase 11 (Web UI) MVP is live with a FastAPI backend, Next.js Command Center dashboard, BFF proxy for secure credential handling, and full Markdown briefing rendering. Phase 12 (Active Learning) is complete with analyst override submission, planner approval, and approved-override prompt injection. Phase 13 (Agentic Engagement) is complete: action modal, exception-card action history, FastAPI action endpoints, ActionStore, adapter-driven delivery, audit-tracked retry, planner-only gating, and full frontend + backend test coverage (389 Python tests, 110 frontend tests).
+> All four pipeline layers are complete and tested. The full pipeline runs end-to-end via `python scripts/run_triage.py`. Phase 8 (Backtesting) is fully implemented. Phase 11 (Web UI) MVP is live with a FastAPI backend, Next.js Command Center dashboard, BFF proxy for secure credential handling, and full Markdown briefing rendering. Phase 12 (Active Learning) is complete with analyst override submission, planner approval, and approved-override prompt injection. Phase 13 (Agentic Engagement) is in progress: the first execution slice is live with an action modal, exception-card action history, FastAPI action endpoints, `ActionStore`, adapter-driven delivery, audit-tracked retry, planner-only gating, and per-user role resolution via backend-authenticated actor profiles.
 
 ---
 
@@ -241,7 +241,7 @@ The agent ingests raw replenishment exceptions, enriches them with 15+ contextua
 │  ✅ Analyst override DB + API · ✅ Inline override submission             │
 │  ✅ Planner review screen · ✅ Prompt learning loop + auto-approval       │
 ├──────────────────────────────────────────────────────────────────┤
-│  Phase 13: Agentic Engagement        ← ✅ COMPLETE                        │
+│  Phase 13: Agentic Engagement        ← 🚧 IN PROGRESS                     │
 │  ✅ Action modal + card history · ✅ FastAPI action endpoints             │
 │  ✅ ActionStore + service + adapter · ✅ Retry + audit trail              │
 │  ✅ Planner-only gating · ✅ Full frontend + backend test coverage        │
@@ -488,7 +488,7 @@ python scripts/run_backtest.py --date 2026-04-11 --week 4 --sample
 | **Phase 8 — Backtesting** | ✅ Complete | `scripts/run_backtest.py` — outcome accuracy scoring at Week 4/8 after exception date |
 | **Phase 11 — Web UI** | ✅ MVP Complete | FastAPI backend + Next.js Command Center. BFF proxy keeps credentials server-side. Markdown briefing panel, exception queue tabs, and pipeline trigger are live. |
 | **Phase 12 — Active Learning** | ✅ Complete | Analyst override DB layer, FastAPI override endpoints, analyst inline override modal, planner review screen, approved-override prompt injection, and startup auto-approval are live. |
-| **Phase 13 — Agentic Engagement** | ✅ Complete | Action modal, exception-card action history, FastAPI action endpoints, `ActionStore`, action service/adapter, retry, audit logging, planner-only gating for `STORE_CHECK` / `VENDOR_FOLLOW_UP`, and full frontend + backend test coverage (389 Python tests, 110 frontend tests). Broader ERP integrations and RBAC expansion are deferred to Phase 14. |
+| **Phase 13 — Agentic Engagement** | 🚧 In Progress | The first execution slice is live with an action modal, exception-card action history, FastAPI action endpoints, `ActionStore`, action service/adapter, retry, audit logging, planner-only gating for `STORE_CHECK` / `VENDOR_FOLLOW_UP`, and per-user role resolution through backend-authenticated actor profiles. Broader ERP integrations and deeper RBAC remain future work. |
 
 ### Layer 2 — Implementation
 
@@ -538,7 +538,7 @@ This project is intentionally staged. To avoid confusion, use this guide when ev
 | Web UI Backend (FastAPI) | ✅ Implemented | Exposes queues and triggers pipeline asynchronously (`src/api/app.py`) |
 | Web UI Frontend (Next.js) | ✅ Implemented | Command Center dashboard: Markdown briefing panel (react-markdown + remark-gfm), exception queue tabs by priority, pipeline trigger, BFF proxy for secure server-side auth (`/frontend`) |
 | Active Learning Override Workflow | ✅ Implemented | Analyst inline override submission, planner review screen, approval/rejection endpoints, and approved override feedback loop into prompt composition |
-| Phase 13 Action Execution | 🚧 In Progress | Typed execution actions from the UI into backend action services with idempotent request IDs, authenticated requester injection, inline status/history, retry, and webhook-style adapter delivery |
+| Phase 13 Action Execution | 🚧 In Progress | Typed execution actions from the UI into backend action services with idempotent request IDs, authenticated requester injection, per-user role resolution, inline status/history, retry, and webhook-style adapter delivery |
 
 Run `python scripts/run_triage.py --help` to see all available options.
 
@@ -569,7 +569,7 @@ Run `python scripts/run_triage.py --help` to see all available options.
 
 ## Contributing
 
-Contributions are welcome as the project moves from completed pipeline and Active Learning work into deeper Phase 13 execution workflows and downstream system integrations.
+Contributions are welcome as the project moves from completed pipeline and Active Learning work into the remaining Phase 13 execution hardening and downstream system integrations.
 
 1. Open an issue describing the scope (bug, enhancement, or missing task from the spec).
 2. Keep changes focused to a single layer/task where possible.

@@ -36,6 +36,29 @@ action_store = ActionStore()
 action_service = ActionService(action_store)
 
 
+def parse_user_roles() -> Dict[str, str]:
+    """Parse username-to-role mappings from server-side configuration."""
+    raw = os.environ.get("API_USER_ROLES", "").strip()
+    mappings: Dict[str, str] = {}
+    if not raw:
+        return mappings
+
+    for entry in raw.split(","):
+        item = entry.strip()
+        if not item:
+            continue
+        if ":" not in item:
+            raise RuntimeError("API_USER_ROLES entries must use username:role format")
+        username, role = (part.strip() for part in item.split(":", 1))
+        role = role.lower()
+        if not username:
+            raise RuntimeError("API_USER_ROLES entries must include a username")
+        if role not in {"analyst", "planner"}:
+            raise RuntimeError("API_USER_ROLES roles must be either 'analyst' or 'planner'")
+        mappings[username] = role
+    return mappings
+
+
 def get_current_username(credentials: Annotated[HTTPBasicCredentials, Depends(security)]) -> str:
     """Verifies HTTP Basic Auth credentials from environment variables."""
     # Pull secrets from environment — both vars are required at runtime
@@ -43,9 +66,11 @@ def get_current_username(credentials: Annotated[HTTPBasicCredentials, Depends(se
     expected_password = os.environ.get("API_PASSWORD")
     if expected_password is None:
         raise RuntimeError("API_PASSWORD environment variable is not set")
+    allowed_usernames = {expected_username, *parse_user_roles().keys()}
 
-    is_correct_username = secrets.compare_digest(
-        credentials.username.encode("utf8"), expected_username.encode("utf8")
+    is_correct_username = any(
+        secrets.compare_digest(credentials.username.encode("utf8"), allowed.encode("utf8"))
+        for allowed in allowed_usernames
     )
     is_correct_password = secrets.compare_digest(
         credentials.password.encode("utf8"), expected_password.encode("utf8")
@@ -60,8 +85,12 @@ def get_current_username(credentials: Annotated[HTTPBasicCredentials, Depends(se
     return credentials.username
 
 
-def get_current_user_role() -> str:
+def get_current_user_role(username: str) -> str:
     """Resolve the authenticated user's role from server-side configuration."""
+    role = parse_user_roles().get(username)
+    if role:
+        return role
+
     role = os.environ.get("API_USER_ROLE", "analyst").strip().lower()
     if role not in {"analyst", "planner"}:
         raise RuntimeError("API_USER_ROLE must be either 'analyst' or 'planner'")
@@ -97,6 +126,14 @@ class OverrideRejectRequest(BaseModel):
 def health_check() -> Dict[str, str]:
     """Basic healthcheck endpoint. No auth required."""
     return {"status": "ok", "service": "triage_api"}
+
+
+@app.get("/me")
+def get_current_user_profile(
+    username: Annotated[str, Depends(get_current_username)],
+) -> Dict[str, str]:
+    """Return the authenticated username and resolved role."""
+    return {"username": username, "role": get_current_user_role(username)}
 
 
 @app.get("/exceptions/queue/{priority}/{run_date}")
@@ -285,7 +322,7 @@ async def submit_action(
     try:
         # Enforce authenticated actor metadata at the API boundary.
         payload.requested_by = username
-        payload.requested_by_role = get_current_user_role()
+        payload.requested_by_role = get_current_user_role(username)
         return await action_service.submit_action(payload)
     except PermissionError as e:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))

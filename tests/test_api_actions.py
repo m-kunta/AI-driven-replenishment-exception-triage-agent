@@ -13,6 +13,7 @@ def override_env(monkeypatch, tmp_path):
     monkeypatch.setenv("API_PASSWORD", "password123")
     monkeypatch.setenv("API_USERNAME", "admin")
     monkeypatch.setenv("API_USER_ROLE", "analyst")
+    monkeypatch.setenv("API_USER_ROLES", "admin:analyst,planner1:planner")
     store = ActionStore(db_path=str(tmp_path / "actions-test.db"))
     api_app_module.action_store = store
     api_app_module.action_service = ActionService(store)
@@ -35,7 +36,7 @@ def test_submit_action():
 
 
 def test_submit_action_ignores_client_role(monkeypatch):
-    monkeypatch.setenv("API_USER_ROLE", "planner")
+    monkeypatch.setenv("API_USER_ROLES", "admin:planner,planner1:planner")
     payload = {
         "request_id": "api-req-role-1",
         "exception_id": "api-exc-role-1",
@@ -86,14 +87,56 @@ def test_retry_action():
     assert res2.json()["status"] == "failed"
 
 
-def test_submit_action_rejects_planner_only_action_for_analyst():
+@pytest.mark.parametrize(
+    ("request_id", "action_type"),
+    [
+        ("api-req-forbidden-store-check", "STORE_CHECK"),
+        ("api-req-forbidden-vendor-follow-up", "VENDOR_FOLLOW_UP"),
+    ],
+)
+def test_submit_action_rejects_planner_only_action_for_analyst(request_id, action_type):
     payload = {
-        "request_id": "api-req-forbidden-1",
-        "exception_id": "api-exc-forbidden-1",
+        "request_id": request_id,
+        "exception_id": f"{request_id}-exc",
         "run_date": "2026-04-24",
-        "action_type": "STORE_CHECK",
-        "payload": {"notes": "Needs store visit"}
+        "action_type": action_type,
+        "payload": {"notes": "Planner-only follow-up"},
     }
     response = client.post("/actions", json=payload, auth=auth)
     assert response.status_code == 403
     assert "requires planner role" in response.json()["detail"]
+
+
+@pytest.mark.parametrize(
+    ("request_id", "action_type"),
+    [
+        ("api-req-planner-store-check", "STORE_CHECK"),
+        ("api-req-planner-vendor-follow-up", "VENDOR_FOLLOW_UP"),
+    ],
+)
+def test_submit_action_resolves_role_from_authenticated_username(request_id, action_type):
+    planner_auth = ("planner1", "password123")
+    payload = {
+        "request_id": request_id,
+        "exception_id": f"{request_id}-exc",
+        "run_date": "2026-04-24",
+        "action_type": action_type,
+        "payload": {"notes": "Planner-only follow-up"},
+    }
+
+    response = client.post("/actions", json=payload, auth=planner_auth)
+
+    assert response.status_code == 201
+    data = response.json()
+    assert data["requested_by"] == "planner1"
+    assert data["requested_by_role"] == "planner"
+
+
+def test_get_current_user_profile_returns_resolved_role():
+    response = client.get("/me", auth=("planner1", "password123"))
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "username": "planner1",
+        "role": "planner",
+    }
