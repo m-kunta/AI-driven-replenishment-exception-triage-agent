@@ -241,6 +241,34 @@ class TestFullPipelineNoAlerts:
 
         mock_store.auto_approve_pending.assert_called_once()
 
+    def test_requested_run_date_forwarded_to_triage_agent(self):
+        """The selected run_date should drive Layer 3 output timestamps/files."""
+        run_result = _make_run_result()
+        requested_date = "2026-04-29"
+
+        with (
+            patch("src.main.validate_required_env_vars"),
+            patch("src.main.TriageAgent") as MockAgent,
+            patch("src.main.AlertDispatcher"),
+            patch("src.main.BriefingGenerator") as MockBriefing,
+            patch("src.main.ExceptionLogger") as MockLogger,
+        ):
+            MockAgent.return_value.run.return_value = run_result
+            MockBriefing.return_value.generate.return_value = Path("output/briefings/b.md")
+            MockLogger.return_value.log.return_value = Path("output/logs/exception_log.csv")
+
+            from src.main import run_triage_pipeline
+            run_triage_pipeline(
+                config_path=_SAMPLE_CONFIG,
+                run_date=requested_date,
+                no_alerts=True,
+                sample=True,
+            )
+
+        call_args = MockAgent.return_value.run.call_args
+        assert call_args is not None
+        assert call_args.kwargs["run_date"] == date.fromisoformat(requested_date)
+
 
 # ---------------------------------------------------------------------------
 # Tests: sample flag

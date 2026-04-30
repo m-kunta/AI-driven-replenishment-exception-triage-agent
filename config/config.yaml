@@ -40,8 +40,8 @@ enrichment:
 agent:
   provider: claude                     # claude | openai | gemini | ollama
   model: claude-sonnet-4-20250514      # model name for the selected provider
-  max_tokens: 4000
-  batch_size: 30
+  max_tokens: 8000
+  batch_size: 10
   retry_attempts: 3
   retry_backoff_seconds: 5
   reasoning_trace_enabled: false       # set true to include chain-of-thought in output

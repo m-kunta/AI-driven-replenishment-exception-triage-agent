@@ -139,7 +139,10 @@ def run_triage_pipeline(
     promoted = override_store.auto_approve_pending()
     logger.info("Auto-approved %d pending overrides at startup", promoted)
     triage_agent = TriageAgent(config, override_store=override_store)
-    run_result: TriageRunResult = triage_agent.run(enriched_exceptions)
+    run_result: TriageRunResult = triage_agent.run(
+        enriched_exceptions,
+        run_date=reference_date,
+    )
 
     logger.info(
         "Triage complete: CRITICAL=%d HIGH=%d MEDIUM=%d LOW=%d | "

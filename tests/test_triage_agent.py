@@ -142,10 +142,17 @@ def test_run_id_format():
     )
 
 
-def test_run_date_is_today():
+def test_run_date_defaults_to_today():
     agent, _, _ = _make_agent_with_mocks()
     result = agent.run([_make_enriched_exception()])
     assert result.run_date == date.today()
+
+
+def test_run_date_uses_explicit_requested_date():
+    agent, _, _ = _make_agent_with_mocks()
+    requested_date = date(2026, 4, 29)
+    result = agent.run([_make_enriched_exception()], run_date=requested_date)
+    assert result.run_date == requested_date
 
 
 def test_run_timestamp_is_set():

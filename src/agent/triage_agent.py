@@ -48,12 +48,18 @@ class TriageAgent:
         self._batch_processor = BatchProcessor(config, override_store=override_store)
         self._pattern_analyzer = PatternAnalyzer(config)
 
-    def run(self, enriched_exceptions: List[EnrichedExceptionSchema]) -> TriageRunResult:
+    def run(
+        self,
+        enriched_exceptions: List[EnrichedExceptionSchema],
+        run_date: date | None = None,
+    ) -> TriageRunResult:
         """Execute the full triage pipeline and return a TriageRunResult.
 
         Args:
             enriched_exceptions: All enriched records for this run, produced
                 by the Layer 2 enrichment engine.
+            run_date: Requested logical run date for downstream output files.
+                Defaults to today when omitted.
 
         Returns:
             TriageRunResult with all triage decisions, pattern report, and
@@ -61,7 +67,7 @@ class TriageAgent:
         """
         run_id = f"RUN-{uuid.uuid4().hex[:8].upper()}"
         run_timestamp = datetime.now(timezone.utc)
-        run_date = date.today()
+        run_date = run_date or date.today()
 
         logger.info(
             f"[{run_id}] Starting triage run: {len(enriched_exceptions)} exceptions"
