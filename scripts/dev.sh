@@ -86,13 +86,15 @@ cleanup() {
 }
 trap cleanup INT TERM EXIT
 
+BACKEND_PORT="${BACKEND_PORT:-8000}"
+
 if [[ "$START_BACKEND" == true ]]; then
-  info "Starting FastAPI backend  →  http://localhost:8000"
+  info "Starting FastAPI backend  →  http://localhost:${BACKEND_PORT}"
   (
     cd "$ROOT_DIR"
     export API_USERNAME="${API_USERNAME:-admin}"
     export API_PASSWORD="$API_PASSWORD"
-    "$PYTHON" -m uvicorn src.api.app:app --reload --port 8000 --host 0.0.0.0
+    "$PYTHON" -m uvicorn src.api.app:app --reload --port "${BACKEND_PORT}" --host 0.0.0.0
   ) &
   BACKEND_PID=$!
 fi
@@ -113,10 +115,10 @@ echo -e "${GREEN}┌────────────────────
 echo -e "${GREEN}│  Exception Copilot — dev stack running           │${RESET}"
 echo -e "${GREEN}├─────────────────────────────────────────────────┤${RESET}"
 [[ "$START_BACKEND" == true ]]  && \
-  echo -e "${GREEN}│  Backend   →  http://localhost:8000              │${RESET}"
+  echo -e "${GREEN}│  Backend   →  http://localhost:${BACKEND_PORT}              │${RESET}"
 [[ "$START_FRONTEND" == true ]] && \
   echo -e "${GREEN}│  Frontend  →  http://localhost:3000              │${RESET}"
-echo -e "${GREEN}│  API Docs  →  http://localhost:8000/docs         │${RESET}"
+echo -e "${GREEN}│  API Docs  →  http://localhost:${BACKEND_PORT}/docs         │${RESET}"
 echo -e "${GREEN}└─────────────────────────────────────────────────┘${RESET}"
 echo ""
 echo "  Press Ctrl-C to stop all services."
