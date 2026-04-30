@@ -6,7 +6,8 @@ import ActionModal from "./ActionModal";
 interface ExceptionCardProps {
   exception: TriageResult;
   runDate?: string;
-  actorRole?: ActorRole;
+  /** null while the /me fetch is in flight — disables Take Action until resolved. */
+  actorRole?: ActorRole | null;
 }
 
 const PriorityColors: Record<Priority, string> = {
@@ -16,7 +17,7 @@ const PriorityColors: Record<Priority, string> = {
   LOW: "text-slate-400 bg-slate-400/10 border-slate-400/20",
 };
 
-export default function ExceptionCard({ exception, runDate, actorRole = "analyst" }: ExceptionCardProps) {
+export default function ExceptionCard({ exception, runDate, actorRole = null }: ExceptionCardProps) {
   const isPhantom = exception.phantom_flag;
   const priorityColor = PriorityColors[exception.priority];
   const [overrideOpen, setOverrideOpen] = useState(false);
@@ -85,7 +86,9 @@ export default function ExceptionCard({ exception, runDate, actorRole = "analyst
             <button
               type="button"
               onClick={() => setActionModalOpen(true)}
-              className="rounded-md border border-emerald-600/50 bg-emerald-600/10 px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-emerald-300 transition-colors hover:border-emerald-500 hover:text-emerald-200"
+              disabled={actorRole === null}
+              title={actorRole === null ? "Loading role…" : undefined}
+              className="rounded-md border border-emerald-600/50 bg-emerald-600/10 px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-emerald-300 transition-colors hover:border-emerald-500 hover:text-emerald-200 disabled:opacity-40 disabled:cursor-not-allowed"
             >
               Take Action
             </button>
@@ -181,7 +184,7 @@ export default function ExceptionCard({ exception, runDate, actorRole = "analyst
         isOpen={actionModalOpen}
         exceptionId={exception.exception_id}
         runDate={effectiveRunDate}
-        actorRole={actorRole}
+        actorRole={actorRole ?? "analyst"}
         onClose={() => setActionModalOpen(false)}
         onSubmitted={handleActionSubmitted}
       />

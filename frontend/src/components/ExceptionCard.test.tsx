@@ -258,12 +258,22 @@ describe('ExceptionCard — action flow', () => {
   });
 
   it('renders the Take Action button', () => {
-    render(<ExceptionCard exception={base} runDate="2026-04-25" />);
+    render(<ExceptionCard exception={base} runDate="2026-04-25" actorRole="analyst" />);
     expect(screen.getByRole('button', { name: /take action/i })).toBeInTheDocument();
   });
 
+  it('Take Action button is disabled while actorRole is null (role fetch in flight)', () => {
+    render(<ExceptionCard exception={base} runDate="2026-04-25" actorRole={null} />);
+    expect(screen.getByRole('button', { name: /take action/i })).toBeDisabled();
+  });
+
+  it('Take Action button is enabled once actorRole resolves', () => {
+    render(<ExceptionCard exception={base} runDate="2026-04-25" actorRole="analyst" />);
+    expect(screen.getByRole('button', { name: /take action/i })).not.toBeDisabled();
+  });
+
   it('opens the action modal when Take Action is clicked', () => {
-    render(<ExceptionCard exception={base} runDate="2026-04-25" />);
+    render(<ExceptionCard exception={base} runDate="2026-04-25" actorRole="analyst" />);
     fireEvent.click(screen.getByRole('button', { name: /take action/i }));
     expect(screen.getByRole('button', { name: /confirm action/i })).toBeInTheDocument();
   });
@@ -341,7 +351,7 @@ describe('ExceptionCard — action flow', () => {
     const newRecord = makeActionRecord({ request_id: 'req-new', action_type: 'DEFER', status: 'completed' });
     mockSubmitAction.mockResolvedValue(newRecord);
 
-    render(<ExceptionCard exception={base} runDate="2026-04-25" />);
+    render(<ExceptionCard exception={base} runDate="2026-04-25" actorRole="analyst" />);
     fireEvent.click(screen.getByRole('button', { name: /take action/i }));
 
     const select = screen.getByRole('combobox');

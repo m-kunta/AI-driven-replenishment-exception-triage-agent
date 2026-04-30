@@ -30,7 +30,7 @@ export default function Home() {
   const [queueError, setQueueError] = useState<string | null>(null);
   const [pipelineStatus, setPipelineStatus] = useState<PipelineStatus>({ kind: "idle" });
   const [adminExpanded, setAdminExpanded] = useState(false);
-  const [actorRole, setActorRole] = useState<ActorRole>("analyst");
+  const [actorRole, setActorRole] = useState<ActorRole | null>(null);
 
   const fetchQueues = useCallback(async () => {
     setLoading(true);
