@@ -23,7 +23,9 @@ export default function Home() {
   });
   const [activeTab, setActiveTab] = useState<Priority>("CRITICAL");
   const [loading, setLoading] = useState(false);
-  const [runDate, setRunDate] = useState(new Date().toISOString().split("T")[0]);
+  // Start empty — wait for getRuns to select the most recent run before fetching queues.
+  // This prevents an immediate 404 burst against today's date when no run exists yet.
+  const [runDate, setRunDate] = useState("");
   const [availableRuns, setAvailableRuns] = useState<string[]>([]);
   const [briefing, setBriefing] = useState<string | null>(null);
   const [briefingExpanded, setBriefingExpanded] = useState(true);
@@ -34,6 +36,7 @@ export default function Home() {
   const [backendError, setBackendError] = useState<string | null>(null);
 
   const fetchQueues = useCallback(async () => {
+    if (!runDate) return; // wait until a run date is selected
     setLoading(true);
     setQueueError(null);
     try {
@@ -57,28 +60,36 @@ export default function Home() {
     }
   }, [runDate]);
 
+  const fetchUser = useCallback(async () => {
+    try {
+      const user = await api.getCurrentUser();
+      setActorRole(user.role);
+      setBackendError(null);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Unknown error";
+      setActorRole(null);
+      setBackendError(message);
+    }
+  }, []);
+
   // Fetch available run dates on mount and pre-select the most recent
   useEffect(() => {
     api.getRuns().then((dates) => {
       if (dates.length > 0) {
         setAvailableRuns(dates);
         setRunDate(dates[0]); // already sorted newest-first by the backend
+      } else {
+        // No runs yet — fall back to today so the date picker is usable
+        setRunDate(new Date().toISOString().split("T")[0]);
       }
     }).catch((err: unknown) => {
       const message = err instanceof Error ? err.message : "Unknown error";
       setBackendError(message);
+      // Fall back to today so the UI isn't stuck with an empty date
+      setRunDate(new Date().toISOString().split("T")[0]);
     });
-    api.getCurrentUser()
-      .then((user) => {
-        setActorRole(user.role);
-        setBackendError(null);
-      })
-      .catch((err: unknown) => {
-        const message = err instanceof Error ? err.message : "Unknown error";
-        setActorRole(null);
-        setBackendError(message);
-      });
-  }, []);
+    fetchUser();
+  }, [fetchUser]);
 
   useEffect(() => {
     fetchQueues();
@@ -87,10 +98,12 @@ export default function Home() {
   useEffect(() => {
     const handleFocus = () => {
       fetchQueues();
+      fetchUser();
     };
     const handleVisibilityChange = () => {
       if (document.visibilityState === "visible") {
         fetchQueues();
+        fetchUser();
       }
     };
 
@@ -101,7 +114,7 @@ export default function Home() {
       window.removeEventListener("focus", handleFocus);
       document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
-  }, [fetchQueues]);
+  }, [fetchQueues, fetchUser]);
 
   const handleTrigger = async (triggerPayload: PipelineTriggerRequest) => {
     setPipelineStatus({ kind: "running" });
