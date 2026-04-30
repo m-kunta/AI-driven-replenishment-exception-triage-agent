@@ -126,4 +126,13 @@ describe("PlannerReviewPage", () => {
     render(<Home />);
     expect(await screen.findByRole("link", { name: /planner review/i })).toBeInTheDocument();
   });
+
+  it("shows a back link to the Command Center", async () => {
+    const getPendingOverrides = jest.fn().mockResolvedValue([]);
+    render(<PlannerReviewPage getPendingOverrides={getPendingOverrides} />);
+
+    const backLink = await screen.findByRole("link", { name: /command center/i });
+    expect(backLink).toBeInTheDocument();
+    expect(backLink).toHaveAttribute("href", "/");
+  });
 });

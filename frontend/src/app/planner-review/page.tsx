@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 
 import {
   api,
@@ -112,6 +113,15 @@ export default function PlannerReviewPage({
   return (
     <main className="min-h-screen max-w-6xl mx-auto p-8">
       <header className="mb-8">
+        <Link
+          href="/"
+          className="inline-flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-300 transition-colors mb-4"
+        >
+          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
+          </svg>
+          Command Center
+        </Link>
         <p className="text-xs uppercase tracking-[0.3em] text-slate-500">Planner Review</p>
         <h1 className="mt-2 text-3xl font-bold text-slate-100">Pending Override Decisions</h1>
         <p className="mt-2 text-sm text-slate-400">
