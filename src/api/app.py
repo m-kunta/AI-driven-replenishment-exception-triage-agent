@@ -368,7 +368,12 @@ def approve_override(
     override_id: int,
     username: Annotated[str, Depends(get_current_username)],
 ) -> Dict[str, Any]:
-    """Approve a pending override."""
+    """Approve a pending override. Requires planner role."""
+    if get_current_user_role(username) != "planner":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only planners can approve overrides.",
+        )
     try:
         override_store.approve_override(override_id, approved_by=username)
         return {"status": "approved", "override_id": override_id}
@@ -383,7 +388,12 @@ def reject_override(
     payload: OverrideRejectRequest,
     username: Annotated[str, Depends(get_current_username)],
 ) -> Dict[str, Any]:
-    """Reject a pending override."""
+    """Reject a pending override. Requires planner role."""
+    if get_current_user_role(username) != "planner":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only planners can reject overrides.",
+        )
     try:
         override_store.reject_override(override_id, rejected_by=username, reason=payload.reason)
         return {"status": "rejected", "override_id": override_id}

@@ -633,7 +633,8 @@ class TestOverrideEndpoints:
         assert len(resp.json()) == 1
         assert resp.json()[0]["exception_id"] == "EXC-123"
 
-    def test_approve_override(self, client):
+    def test_approve_override(self, client, monkeypatch):
+        monkeypatch.setenv("API_USER_ROLE", "planner")
         payload = {
             "exception_id": "EXC-123",
             "run_date": "2026-04-20",
@@ -647,7 +648,22 @@ class TestOverrideEndpoints:
         assert resp_app.status_code == 200
         assert resp_app.json()["status"] == "approved"
 
-    def test_reject_override(self, client):
+    def test_approve_override_analyst_forbidden(self, client, monkeypatch):
+        monkeypatch.setenv("API_USER_ROLE", "analyst")
+        payload = {
+            "exception_id": "EXC-123",
+            "run_date": "2026-04-20",
+            "enriched_input_snapshot": {"foo": "bar"},
+            "override_priority": "HIGH",
+        }
+        resp_post = client.post("/overrides", json=payload, auth=VALID_CREDS)
+        row_id = resp_post.json()["id"]
+
+        resp = client.post(f"/overrides/{row_id}/approve", auth=VALID_CREDS)
+        assert resp.status_code == 403
+
+    def test_reject_override(self, client, monkeypatch):
+        monkeypatch.setenv("API_USER_ROLE", "planner")
         payload = {
             "exception_id": "EXC-123",
             "run_date": "2026-04-20",
@@ -660,3 +676,17 @@ class TestOverrideEndpoints:
         resp_rej = client.post(f"/overrides/{row_id}/reject", json={"reason": "nope"}, auth=VALID_CREDS)
         assert resp_rej.status_code == 200
         assert resp_rej.json()["status"] == "rejected"
+
+    def test_reject_override_analyst_forbidden(self, client, monkeypatch):
+        monkeypatch.setenv("API_USER_ROLE", "analyst")
+        payload = {
+            "exception_id": "EXC-123",
+            "run_date": "2026-04-20",
+            "enriched_input_snapshot": {"foo": "bar"},
+            "override_priority": "HIGH",
+        }
+        resp_post = client.post("/overrides", json=payload, auth=VALID_CREDS)
+        row_id = resp_post.json()["id"]
+
+        resp = client.post(f"/overrides/{row_id}/reject", json={"reason": "nope"}, auth=VALID_CREDS)
+        assert resp.status_code == 403

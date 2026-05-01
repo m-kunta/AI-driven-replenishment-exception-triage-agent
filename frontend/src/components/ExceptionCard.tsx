@@ -50,8 +50,10 @@ export default function ExceptionCard({ exception, runDate, actorRole = null }: 
     try {
       const record = await api.retryAction(requestId);
       setActions(prev => prev.map(a => a.request_id === requestId ? record : a));
-    } catch (err) {
-      console.error(err);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Retry failed";
+      setSubmissionMessage(`⚠ ${message}`);
+      setTimeout(() => setSubmissionMessage(null), 6000);
     }
   };
 

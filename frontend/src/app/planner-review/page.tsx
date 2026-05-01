@@ -6,7 +6,19 @@ import Link from "next/link";
 import {
   api,
   PendingOverride,
+  CurrentUser,
 } from "../../lib/api";
+
+function formatTimestamp(raw: string): string {
+  try {
+    return new Date(raw).toLocaleString(undefined, {
+      year: "numeric", month: "short", day: "numeric",
+      hour: "2-digit", minute: "2-digit",
+    });
+  } catch {
+    return raw;
+  }
+}
 
 type PlannerReviewPageProps = {
   getPendingOverrides?: typeof api.getPendingOverrides;
@@ -29,6 +41,11 @@ export default function PlannerReviewPage({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [rowState, setRowState] = useState<RowState>({});
+  const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
+
+  useEffect(() => {
+    api.getCurrentUser().then(setCurrentUser).catch(() => null);
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -130,6 +147,18 @@ export default function PlannerReviewPage({
         </p>
       </header>
 
+      {/* Role notice */}
+      {currentUser && currentUser.role !== "planner" && (
+        <div className="mb-6 rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
+          <p className="font-medium text-amber-100">Read-only view</p>
+          <p className="mt-1">
+            You are signed in as <span className="font-mono">{currentUser.username}</span> with role{" "}
+            <span className="font-mono">{currentUser.role}</span>. Only planners can approve or
+            reject overrides.
+          </p>
+        </div>
+      )}
+
       {loading && (
         <div className="grid gap-4">
           {[1, 2].map((i) => (
@@ -181,7 +210,7 @@ export default function PlannerReviewPage({
                 <div>
                   <h2 className="text-lg font-semibold text-slate-100">{item.exception_id}</h2>
                   <p className="text-sm text-slate-400">
-                    Submitted by {item.analyst_username} on {item.submitted_at}
+                    Submitted by {item.analyst_username} on {formatTimestamp(item.submitted_at)}
                   </p>
                 </div>
                 <span className="rounded-full border border-blue-500/30 bg-blue-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-blue-300">
