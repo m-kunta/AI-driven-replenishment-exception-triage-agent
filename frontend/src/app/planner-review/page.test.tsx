@@ -128,7 +128,9 @@ describe("PlannerReviewPage", () => {
 
   it("shows a link to planner review from the dashboard", async () => {
     render(<Home />);
-    expect(await screen.findByRole("link", { name: /planner review/i })).toBeInTheDocument();
+    expect(
+      await screen.findByRole("link", { name: /planner.*override review/i })
+    ).toBeInTheDocument();
   });
 
   it("re-fetches queues when the window regains focus", async () => {
@@ -136,7 +138,7 @@ describe("PlannerReviewPage", () => {
     (api.getQueue as jest.Mock).mockResolvedValue([]);
 
     render(<Home />);
-    await screen.findByRole("link", { name: /planner review/i });
+    await screen.findByRole("link", { name: /planner.*override review/i });
 
     const initialCalls = (api.getQueue as jest.Mock).mock.calls.length;
     fireEvent.focus(window);

@@ -240,6 +240,17 @@ class TestOpenAIProvider:
             with pytest.raises(ValueError, match="not found"):
                 provider.complete("sys", "usr")
 
+    def test_list_models_surfaces_invalid_key_error(self):
+        from src.agent.llm_provider import OpenAIProvider
+        mock_openai = MagicMock()
+        mock_client = mock_openai.OpenAI.return_value
+        mock_client.models.list.side_effect = Exception("401 invalid_api_key")
+
+        with patch.dict("sys.modules", {"openai": mock_openai}):
+            provider = OpenAIProvider(api_key="sk-valid", model="gpt-4.1", max_tokens=100)
+            with pytest.raises(ValueError, match="invalid or expired"):
+                provider.list_models()
+
 
 class TestGeminiProvider:
     def _make_provider(self, mock_modules=None):
@@ -287,6 +298,16 @@ class TestGeminiProvider:
             provider._client.models.generate_content.side_effect = Exception("404 not found")
             with pytest.raises(ValueError, match="not found"):
                 provider.complete("sys", "usr")
+
+    def test_list_models_surfaces_quota_error(self):
+        from src.agent.llm_provider import GeminiProvider
+        modules = _make_mock_google()
+
+        with patch.dict("sys.modules", modules):
+            provider = GeminiProvider(api_key="gm-key", model="gemini-2.0-flash", max_tokens=200)
+            provider._client.models.list.side_effect = Exception("429 quota exceeded")
+            with pytest.raises(ValueError, match="quota exceeded"):
+                provider.list_models()
 
 
 class TestOllamaProvider:
@@ -353,3 +374,14 @@ class TestOllamaProvider:
             provider = OllamaProvider(base_url="http://localhost:11434", model="llama3.2", max_tokens=100)
             with pytest.raises(ValueError, match="ollama pull"):
                 provider.complete("sys", "usr")
+
+    def test_list_models_surfaces_connection_error(self):
+        from src.agent.llm_provider import OllamaProvider
+        with patch("httpx.Client") as mock_client_cls:
+            mock_client = MagicMock()
+            mock_client_cls.return_value = mock_client
+            mock_client.get.side_effect = Exception("connection refused")
+
+            provider = OllamaProvider(base_url="http://localhost:11434", model="llama3.2", max_tokens=100)
+            with pytest.raises(ValueError, match="Cannot connect to Ollama"):
+                provider.list_models()

@@ -37,7 +37,13 @@ from src.utils.config_loader import AppConfig
 # ---------------------------------------------------------------------------
 
 def _make_config() -> AppConfig:
-    return AppConfig()
+    return AppConfig(
+        agent={
+            "provider": "claude",
+            "model": "claude-sonnet-4-20250514",
+            "anthropic_api_key": "test-anthropic-key",
+        }
+    )
 
 
 def _make_enriched_exception(exception_id: str = "exc-001") -> EnrichedExceptionSchema:

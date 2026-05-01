@@ -122,7 +122,7 @@ export default function PlannerReviewPage({
           </svg>
           Command Center
         </Link>
-        <p className="text-xs uppercase tracking-wider text-slate-500">Planner Review</p>
+        <p className="text-xs uppercase tracking-wider text-slate-500">Planner — Override Review</p>
         <h1 className="mt-2 text-3xl font-bold text-slate-100">Pending Override Decisions</h1>
         <p className="mt-2 text-sm text-slate-400">
           Review analyst-submitted corrections and promote only the overrides that should

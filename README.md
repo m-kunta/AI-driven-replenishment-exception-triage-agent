@@ -13,7 +13,7 @@
 **GitHub:** [github.com/m-kunta](https://github.com/m-kunta)  
 **Domain:** Supply Chain Planning / Retail Replenishment
 
-> All four pipeline layers are complete and tested. The full pipeline runs end-to-end via `python scripts/run_triage.py`. Phase 8 (Backtesting) is fully implemented. Phase 11 (Web UI) MVP is live with a FastAPI backend, Next.js Command Center dashboard, BFF proxy for secure credential handling, and full Markdown briefing rendering. Phase 12 (Active Learning) is complete with analyst override submission, planner approval, and approved-override prompt injection. Phase 13 (Agentic Engagement) is in progress: the first execution slice is live with an action modal, exception-card action history, FastAPI action endpoints, `ActionStore`, adapter-driven delivery, audit-tracked retry, planner-only gating, and per-user role resolution via backend-authenticated actor profiles.
+> All four pipeline layers are complete and tested. The full pipeline runs end-to-end via `python scripts/run_triage.py`. Phase 8 (Backtesting) is fully implemented. Phase 11 (Web UI) MVP is live with a FastAPI backend, Next.js Command Center dashboard, BFF proxy for secure credential handling, and full Markdown briefing rendering. Phase 12 (Active Learning) is complete with analyst override submission, planner approval, and approved-override prompt injection. Phase 13 (Agentic Engagement) is in progress: the first execution slice is live with an action modal, exception-card action history, FastAPI action endpoints, `ActionStore`, adapter-driven delivery, audit-tracked retry, planner-only gating, per-user role resolution via backend-authenticated actor profiles, and a Settings page that can inspect runtime provider/model configuration and verify available models against the live provider API.
 
 ---
 
@@ -488,7 +488,7 @@ python scripts/run_backtest.py --date 2026-04-11 --week 4 --sample
 | **Phase 8 — Backtesting** | ✅ Complete | `scripts/run_backtest.py` — outcome accuracy scoring at Week 4/8 after exception date |
 | **Phase 11 — Web UI** | ✅ MVP Complete | FastAPI backend + Next.js Command Center. BFF proxy keeps credentials server-side. Markdown briefing panel, exception queue tabs, and pipeline trigger are live. |
 | **Phase 12 — Active Learning** | ✅ Complete | Analyst override DB layer, FastAPI override endpoints, analyst inline override modal, planner review screen, approved-override prompt injection, and startup auto-approval are live. |
-| **Phase 13 — Agentic Engagement** | 🚧 In Progress | The first execution slice is live with an action modal, exception-card action history, FastAPI action endpoints, `ActionStore`, action service/adapter, retry, audit logging, planner-only gating for `STORE_CHECK` / `VENDOR_FOLLOW_UP`, and per-user role resolution through backend-authenticated actor profiles. Broader ERP integrations and deeper RBAC remain future work. |
+| **Phase 13 — Agentic Engagement** | 🚧 In Progress | The first execution slice is live with an action modal, exception-card action history, FastAPI action endpoints, `ActionStore`, action service/adapter, retry, audit logging, planner-only gating for `STORE_CHECK` / `VENDOR_FOLLOW_UP`, per-user role resolution through backend-authenticated actor profiles, and a runtime Settings flow (`/settings`, `/models`) for provider/model inspection and model availability checks. Broader ERP integrations and deeper RBAC remain future work. |
 
 ### Layer 2 — Implementation
 
@@ -538,7 +538,7 @@ This project is intentionally staged. To avoid confusion, use this guide when ev
 | Web UI Backend (FastAPI) | ✅ Implemented | Exposes queues and triggers pipeline asynchronously (`src/api/app.py`) |
 | Web UI Frontend (Next.js) | ✅ Implemented | Command Center dashboard: Markdown briefing panel (react-markdown + remark-gfm), exception queue tabs by priority, pipeline trigger, BFF proxy for secure server-side auth (`/frontend`) |
 | Active Learning Override Workflow | ✅ Implemented | Analyst inline override submission, planner review screen, approval/rejection endpoints, and approved override feedback loop into prompt composition |
-| Phase 13 Action Execution | 🚧 In Progress | Typed execution actions from the UI into backend action services with idempotent request IDs, authenticated requester injection, per-user role resolution, inline status/history, retry, and webhook-style adapter delivery |
+| Phase 13 Action Execution | 🚧 In Progress | Typed execution actions from the UI into backend action services with idempotent request IDs, authenticated requester injection, per-user role resolution, inline status/history, retry, webhook-style adapter delivery, and runtime provider/model verification support in the Settings UI |
 
 Run `python scripts/run_triage.py --help` to see all available options.
 

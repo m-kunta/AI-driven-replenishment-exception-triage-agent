@@ -22,10 +22,17 @@ Implemented in the current codebase:
 - `frontend/src/components/ActionModal.tsx` for action confirmation,
 - action entry points and inline history on `frontend/src/components/ExceptionCard.tsx`,
 - typed client methods in `frontend/src/lib/api.ts`,
+- runtime settings inspection in `frontend/src/app/settings/page.tsx`,
 - `src/db/action_store.py` plus `action_records` DDL in `src/db/schema.sql`,
 - `src/actions/service.py` and `src/actions/adapters.py`,
-- FastAPI endpoints in `src/api/app.py`,
+- FastAPI endpoints in `src/api/app.py`, including `/me`, `/settings`, and `/models`,
 - targeted backend tests for API, service, and store behavior.
+
+Recent hardening now also includes:
+
+- actionable provider initialization/runtime errors across Claude, OpenAI, Gemini, and Ollama,
+- placeholder API-key rejection before any live provider call is attempted,
+- provider-backed `list_models()` support so the Settings page can verify real model IDs against the configured provider.
 
 ## Goals
 

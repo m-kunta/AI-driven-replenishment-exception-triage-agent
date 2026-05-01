@@ -161,6 +161,12 @@ class TestAuthentication:
     def test_briefing_requires_auth(self, client):
         assert client.get(f"/briefing/{DATE}").status_code == 401
 
+    def test_models_requires_auth(self, client):
+        assert client.get("/models").status_code == 401
+
+    def test_settings_requires_auth(self, client):
+        assert client.get("/settings").status_code == 401
+
     def test_trigger_requires_auth(self, client):
         resp = client.post(
             "/pipeline/trigger",
@@ -386,6 +392,82 @@ class TestBriefingEndpoint:
         file_path = (briefings_dir / f"briefing_{run_date}.md").resolve()
         is_within_bounds = str(file_path).startswith(str(briefings_dir.resolve()))
         assert not is_within_bounds, "Traversal path should escape the output directory"
+
+
+# ===========================================================================
+# GET /models and GET /settings
+# ===========================================================================
+
+
+class TestModelsAndSettingsEndpoints:
+    def test_models_returns_current_model_and_availability(self, client):
+        with (
+            patch("src.api.app.load_config") as mock_load_config,
+            patch("src.api.app.get_provider") as mock_get_provider,
+        ):
+            cfg = mock_load_config.return_value
+            cfg.agent.provider = "openai"
+            cfg.agent.model = "gpt-4.1"
+            mock_get_provider.return_value.list_models.return_value = ["gpt-4.1", "gpt-4o"]
+
+            resp = client.get("/models", auth=VALID_CREDS)
+
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["provider"] == "openai"
+        assert data["current_model"] == "gpt-4.1"
+        assert data["current_model_available"] is True
+        assert "gpt-4.1" in data["models"]
+
+    def test_models_returns_actionable_error_when_listing_fails(self, client):
+        with (
+            patch("src.api.app.load_config") as mock_load_config,
+            patch("src.api.app.get_provider") as mock_get_provider,
+        ):
+            cfg = mock_load_config.return_value
+            cfg.agent.provider = "gemini"
+            cfg.agent.model = "gemini-2.0-flash"
+            mock_get_provider.return_value.list_models.side_effect = ValueError(
+                "GEMINI_API_KEY is invalid or expired. Update it in your .env file."
+            )
+
+            resp = client.get("/models", auth=VALID_CREDS)
+
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["provider"] == "gemini"
+        assert data["current_model"] == "gemini-2.0-flash"
+        assert data["models"] == []
+        assert data["current_model_available"] is None
+        assert "invalid or expired" in data["error"]
+
+    def test_settings_returns_non_secret_runtime_fields(self, client, monkeypatch):
+        monkeypatch.setenv("AGENT_PROVIDER", "openai")
+        monkeypatch.setenv("AGENT_MODEL", "gpt-4.1")
+        monkeypatch.setenv("BACKEND_PORT", "8002")
+        monkeypatch.setenv("API_USER_ROLES", "admin:planner,analyst1:analyst")
+
+        with patch("src.api.app.load_config") as mock_load_config:
+            cfg = mock_load_config.return_value
+            cfg.agent.provider = "claude"
+            cfg.agent.model = "claude-sonnet-4-20250514"
+            cfg.agent.batch_size = 5
+            cfg.agent.max_tokens = 800
+            cfg.agent.retry_attempts = 3
+            cfg.agent.ollama_base_url = "http://localhost:11434"
+
+            resp = client.get("/settings", auth=VALID_CREDS)
+
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["agent"]["provider"] == "claude"
+        assert data["agent"]["model"] == "claude-sonnet-4-20250514"
+        assert data["env_overrides"]["AGENT_PROVIDER"] == "openai"
+        assert data["env_overrides"]["AGENT_MODEL"] == "gpt-4.1"
+        assert data["env_overrides"]["BACKEND_PORT"] == "8002"
+        assert data["current_user"]["username"] == _USERNAME
+        assert data["current_user"]["role"] == "planner"
+        assert data["user_roles"]["admin"] == "planner"
 
 
 # ===========================================================================

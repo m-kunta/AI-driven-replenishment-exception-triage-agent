@@ -25,7 +25,7 @@ frontend/                      # [Phase 11] Next.js Web UI — start with `bash 
 ## Current Delivery Status
 - **Phase 11 — MVP Command Center:** Complete.
 - **Phase 12 — Active Learning:** Complete.
-- **Phase 13 — Agentic Engagement:** In progress. The first execution slice is live with action modal submission, inline action history/status, FastAPI action endpoints, retry support, planner-only gating for `STORE_CHECK` / `VENDOR_FOLLOW_UP`, and per-user role resolution through backend-authenticated actor profiles.
+- **Phase 13 — Agentic Engagement:** In progress. The first execution slice is live with action modal submission, inline action history/status, FastAPI action endpoints, retry support, planner-only gating for `STORE_CHECK` / `VENDOR_FOLLOW_UP`, per-user role resolution through backend-authenticated actor profiles, and a Settings page backed by runtime `/settings` and `/models` inspection endpoints.
 
 ## Tech Stack & Architecture Constraints
 - **Language:** Python 3.9+ (`from __future__ import annotations` required).
@@ -34,6 +34,7 @@ frontend/                      # [Phase 11] Next.js Web UI — start with `bash 
   You must never hardcode Anthropic specific API calls. Utilize `get_provider(config.agent)`.
   Available configured providers: `claude`, `openai`, `gemini`, `ollama`.
   Auth flows via `.env`.
+  Model verification and provider capability checks should flow through provider `list_models()` and the authenticated FastAPI `/models` endpoint, not through frontend-only constants.
 
 ## Implementation Rules
 1. **Adapters:** Base adapters must always return `List[Dict]`.
@@ -49,6 +50,7 @@ frontend/                      # [Phase 11] Next.js Web UI — start with `bash 
 - Loguru lazy format only: `logger.error("msg: {}", e)` — no f-strings in any logger call.
 - Phase 13 auth rules: `POST /actions` must inject `requested_by` and resolve `requested_by_role` server-side from the authenticated username. Never trust browser-supplied actor metadata.
 - `GET /me` is the source of truth for the frontend's current actor profile. Do not reintroduce build-time role flags as the active UI permission source.
+- `GET /settings` and `GET /models` must never expose secret API key values. They may expose only safe runtime metadata, env override names/values, and model-list verification results.
 - New general API endpoints belong in `tests/test_api.py`; Phase 13 action endpoints and role-gating coverage live in `tests/test_api_actions.py`.
 
 ## Frontend Proxy Rules (frontend/src/app/api/proxy/)

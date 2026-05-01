@@ -117,13 +117,28 @@ class ClaudeProvider(LLMProvider):
             output_tokens=response.usage.output_tokens,
         )
 
+    def _normalize_error(self, error: Exception, *, context: str) -> ValueError | Exception:
+        msg = str(error)
+        if "model" in msg.lower() and ("not found" in msg.lower() or "404" in msg):
+            return ValueError(
+                f"Claude model {self._model!r} was not found while {context}. "
+                "Set AGENT_MODEL in your .env to a valid model. "
+                "Check available models at: https://docs.anthropic.com/en/docs/about-claude/models"
+            )
+        if "401" in msg or "authentication" in msg.lower() or "invalid x-api-key" in msg.lower():
+            return ValueError(
+                "ANTHROPIC_API_KEY is invalid or expired. "
+                "Update it in your .env file."
+            )
+        return error
+
     def list_models(self) -> List[str]:
         """Return available Claude model IDs from the Anthropic API."""
         try:
             models = self._client.models.list()
             return sorted(m.id for m in models.data)
-        except Exception:
-            return []
+        except Exception as e:
+            raise self._normalize_error(e, context="listing available models") from e
 
 
 class OpenAIProvider(LLMProvider):
@@ -180,6 +195,21 @@ class OpenAIProvider(LLMProvider):
             output_tokens=response.usage.completion_tokens,
         )
 
+    def _normalize_error(self, error: Exception, *, context: str) -> ValueError | Exception:
+        msg = str(error)
+        if "model" in msg.lower() and ("not found" in msg.lower() or "404" in msg or "does not exist" in msg.lower()):
+            return ValueError(
+                f"OpenAI model {self._model!r} was not found while {context}. "
+                "Set AGENT_MODEL in your .env to a valid model (e.g. gpt-4.1, gpt-4o). "
+                "Check available models at: https://platform.openai.com/docs/models"
+            )
+        if "401" in msg or "incorrect api key" in msg.lower() or "invalid_api_key" in msg.lower():
+            return ValueError(
+                "OPENAI_API_KEY is invalid or expired. "
+                "Update it in your .env file."
+            )
+        return error
+
     def list_models(self) -> List[str]:
         """Return available OpenAI model IDs (filters to GPT/o-series chat models)."""
         try:
@@ -190,8 +220,8 @@ class OpenAIProvider(LLMProvider):
                 if any(m.id.startswith(p) for p in chat_prefixes)
             ]
             return sorted(ids)
-        except Exception:
-            return []
+        except Exception as e:
+            raise self._normalize_error(e, context="listing available models") from e
 
 
 class GeminiProvider(LLMProvider):
@@ -263,6 +293,26 @@ class GeminiProvider(LLMProvider):
             output_tokens=output_tokens,
         )
 
+    def _normalize_error(self, error: Exception, *, context: str) -> ValueError | Exception:
+        msg = str(error)
+        if "not found" in msg.lower() or "404" in msg:
+            return ValueError(
+                f"Gemini model {self._model!r} was not found while {context}. "
+                "Set AGENT_MODEL in your .env (e.g. gemini-2.0-flash, gemini-1.5-flash). "
+                "List available models: https://ai.google.dev/gemini-api/docs/models"
+            )
+        if "429" in msg or "quota" in msg.lower() or "rate" in msg.lower():
+            return ValueError(
+                f"Gemini API quota exceeded for model {self._model!r}. "
+                "Upgrade your Google AI plan or switch to a different provider."
+            )
+        if "401" in msg or "api_key" in msg.lower() or "invalid" in msg.lower():
+            return ValueError(
+                "GEMINI_API_KEY is invalid or expired. "
+                "Update it in your .env file."
+            )
+        return error
+
     def list_models(self) -> List[str]:
         """Return available Gemini model IDs that support generateContent."""
         try:
@@ -274,8 +324,8 @@ class GeminiProvider(LLMProvider):
                 or hasattr(m, "name") and "gemini" in m.name.lower()
             ]
             return sorted(set(ids))
-        except Exception:
-            return []
+        except Exception as e:
+            raise self._normalize_error(e, context="listing available models") from e
 
 
 class OllamaProvider(LLMProvider):
@@ -327,14 +377,28 @@ class OllamaProvider(LLMProvider):
             output_tokens=data.get("eval_count", 0),
         )
 
+    def _normalize_error(self, error: Exception, *, context: str) -> ValueError | Exception:
+        msg = str(error)
+        if "connection" in msg.lower() or "connect" in msg.lower():
+            return ValueError(
+                f"Cannot connect to Ollama at {self._base_url} while {context}. "
+                "Make sure Ollama is running: https://ollama.com"
+            )
+        if "404" in msg or "not found" in msg.lower():
+            return ValueError(
+                f"Ollama model {self._model!r} is not available locally. "
+                f"Pull it first with: ollama pull {self._model}"
+            )
+        return error
+
     def list_models(self) -> List[str]:
         """Return locally available Ollama model names via GET /api/tags."""
         try:
             response = self._client.get("/api/tags")
             data = response.json()
             return sorted(m["name"] for m in data.get("models", []))
-        except Exception:
-            return []
+        except Exception as e:
+            raise self._normalize_error(e, context="listing available models") from e
 
 
 def get_provider(config: "AgentConfig") -> LLMProvider:
