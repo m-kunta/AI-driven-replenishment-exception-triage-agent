@@ -488,7 +488,7 @@ python scripts/run_backtest.py --date 2026-04-11 --week 4 --sample
 | **Phase 8 — Backtesting** | ✅ Complete | `scripts/run_backtest.py` — outcome accuracy scoring at Week 4/8 after exception date |
 | **Phase 11 — Web UI** | ✅ MVP Complete | FastAPI backend + Next.js Command Center. BFF proxy keeps credentials server-side. Markdown briefing panel, exception queue tabs, and pipeline trigger are live. |
 | **Phase 12 — Active Learning** | ✅ Complete | Analyst override DB layer, FastAPI override endpoints, analyst inline override modal, planner review screen, approved-override prompt injection, and startup auto-approval are live. |
-| **Phase 13 — Agentic Engagement** | 🚧 In Progress | The first execution slice is live with an action modal, exception-card action history, FastAPI action endpoints, `ActionStore`, action service/adapter, retry, audit logging, planner-only gating for `STORE_CHECK` / `VENDOR_FOLLOW_UP`, per-user role resolution through backend-authenticated actor profiles, and a runtime Settings flow (`/settings`, `/models`) for provider/model inspection and model availability checks. Broader ERP integrations and deeper RBAC remain future work. |
+| **Phase 13 — Agentic Engagement** | 🚧 In Progress | The execution MVP is live with an action modal, exception-card action history, FastAPI action endpoints, `ActionStore`, action service/adapter, retry, audit logging, planner-only gating for `STORE_CHECK` / `VENDOR_FOLLOW_UP`, planner-only override approval/rejection, per-user role resolution through backend-authenticated actor profiles, and a runtime Settings flow (`/settings`, `/models`) for provider/model inspection and model availability checks. Broader ERP integrations, deeper RBAC, and cross-run action history remain future work. |
 
 ### Layer 2 — Implementation
 
@@ -538,7 +538,16 @@ This project is intentionally staged. To avoid confusion, use this guide when ev
 | Web UI Backend (FastAPI) | ✅ Implemented | Exposes queues and triggers pipeline asynchronously (`src/api/app.py`) |
 | Web UI Frontend (Next.js) | ✅ Implemented | Command Center dashboard: Markdown briefing panel (react-markdown + remark-gfm), exception queue tabs by priority, pipeline trigger, BFF proxy for secure server-side auth (`/frontend`) |
 | Active Learning Override Workflow | ✅ Implemented | Analyst inline override submission, planner review screen, approval/rejection endpoints, and approved override feedback loop into prompt composition |
-| Phase 13 Action Execution | 🚧 In Progress | Typed execution actions from the UI into backend action services with idempotent request IDs, authenticated requester injection, per-user role resolution, inline status/history, retry, webhook-style adapter delivery, and runtime provider/model verification support in the Settings UI |
+| Phase 13 Action Execution | 🚧 In Progress | Typed execution actions from the UI into backend action services with idempotent request IDs, authenticated requester injection, per-user role resolution, inline status/history, retry, webhook-style adapter delivery, runtime provider/model verification support in the Settings UI, and planner-only override approval/rejection for the review workflow |
+
+### Current Open Work
+
+The main remaining backlog is concentrated in the post-MVP portion of Phase 13:
+
+- broader ERP-specific adapters beyond the current generic adapter boundary
+- fuller RBAC beyond the current planner-only gates
+- cross-run action history beyond the inline per-exception card history
+- final manual browser click-through before calling the UI broadly launch-ready
 
 Run `python scripts/run_triage.py --help` to see all available options.
 

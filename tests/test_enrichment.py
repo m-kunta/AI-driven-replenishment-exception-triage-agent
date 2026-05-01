@@ -278,14 +278,6 @@ class TestDataLoader:
         for promos in data.promo_calendar.values():
             assert isinstance(promos, list)
             assert len(promos) >= 1
-
-
-
-# TODO: implement tests above once DataLoader and EnrichmentEngine are built.
-# Follow the same fixture/class patterns used in tests/test_ingestion.py.
-# Use tmp_path fixture for any file-based tests.
-
-
 # ---------------------------------------------------------------------------
 # Shared fixtures
 # ---------------------------------------------------------------------------

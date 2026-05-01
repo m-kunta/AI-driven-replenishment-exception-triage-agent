@@ -9,6 +9,8 @@ The UI is functional and close to launch-ready for an internal pilot. Core backe
 
 The main remaining gap is not a code failure but an operational one: a final human click-through with a real browser session should still be completed before broader launch, especially for the override, planner review, and Phase 13 action flows.
 
+This note should now be read as an operational backlog document, not as evidence of major missing implementation work from earlier phases.
+
 ## What Was Verified
 
 ### Automated Verification
@@ -67,6 +69,14 @@ These are the remaining items before calling the UI fully launch-ready beyond an
    - Phase 13 action submission and retry
 3. Confirm the intended role mappings for real users in `API_USER_ROLES` or the production-equivalent configuration.
 4. Decide whether current Phase 13 planner-only gating is sufficient for launch, or whether a broader action-role matrix is required first.
+
+## Open Backlog Relationship
+
+These remaining items map to active project backlog rather than incomplete earlier phases:
+
+- manual UI validation before a broader launch,
+- deployment credential and role-mapping confirmation,
+- the remaining post-MVP Phase 13 work such as fuller RBAC and deeper downstream integrations.
 
 ## Recommendation
 

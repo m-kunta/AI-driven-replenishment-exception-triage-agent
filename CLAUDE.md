@@ -25,7 +25,7 @@ frontend/                      # [Phase 11] Next.js Web UI — start with `bash 
 ## Current Delivery Status
 - **Phase 11 — MVP Command Center:** Complete.
 - **Phase 12 — Active Learning:** Complete.
-- **Phase 13 — Agentic Engagement:** Complete. Action modal submission, inline action history/status, FastAPI action endpoints, retry support, planner-only gating for `STORE_CHECK` / `VENDOR_FOLLOW_UP` and for override approve/reject, per-user role resolution through backend-authenticated actor profiles, and a Settings page backed by runtime `/settings` and `/models` inspection endpoints.
+- **Phase 13 — Agentic Engagement:** In progress. The first execution slice is complete with action modal submission, inline action history/status, FastAPI action endpoints, retry support, planner-only gating for `STORE_CHECK` / `VENDOR_FOLLOW_UP` and for override approve/reject, per-user role resolution through backend-authenticated actor profiles, and a Settings page backed by runtime `/settings` and `/models` inspection endpoints. Broader ERP-specific adapters, fuller RBAC, and cross-run action history remain future work.
 
 ## Tech Stack & Architecture Constraints
 - **Language:** Python 3.9+ (`from __future__ import annotations` required).
