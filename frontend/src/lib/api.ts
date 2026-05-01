@@ -104,6 +104,30 @@ export function getAllowedActionTypes(role: ActorRole): ActionType[] {
   return role === "planner" ? PLANNER_ACTION_TYPES : ANALYST_ACTION_TYPES;
 }
 
+export interface AgentSettings {
+  provider: string;
+  model: string;
+  batch_size: number;
+  max_tokens: number;
+  retry_attempts: number;
+  ollama_base_url: string;
+}
+
+export interface AppSettings {
+  agent: AgentSettings;
+  user_roles: Record<string, string>;
+  current_user: { username: string; role: string };
+  env_overrides: { AGENT_PROVIDER: string; AGENT_MODEL: string; BACKEND_PORT: string };
+}
+
+export interface ModelList {
+  provider: string;
+  current_model: string;
+  models: string[];
+  current_model_available: boolean | null;
+  error?: string;
+}
+
 export type ActionStatus = "queued" | "sent" | "failed" | "completed";
 
 export interface ActionRequest {
@@ -306,6 +330,28 @@ export const api = {
     });
     if (!res.ok) {
       throw await toApiError(res, `Failed to retry action: ${res.statusText}`);
+    }
+    return res.json();
+  },
+
+  getSettings: async (): Promise<AppSettings> => {
+    const res = await fetch(`${PROXY_BASE}/settings`, {
+      method: "GET",
+      headers: JSON_HEADERS,
+    });
+    if (!res.ok) {
+      throw await toApiError(res, `Failed to fetch settings: ${res.statusText}`);
+    }
+    return res.json();
+  },
+
+  listModels: async (): Promise<ModelList> => {
+    const res = await fetch(`${PROXY_BASE}/models`, {
+      method: "GET",
+      headers: JSON_HEADERS,
+    });
+    if (!res.ok) {
+      throw await toApiError(res, `Failed to list models: ${res.statusText}`);
     }
     return res.json();
   },

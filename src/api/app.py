@@ -17,6 +17,8 @@ from src.db.store import OverrideStore
 from src.db.action_store import ActionStore
 from src.actions.service import ActionService
 from src.models import ActionRequest
+from src.utils.config_loader import load_config
+from src.agent.llm_provider import get_provider
 
 # Configure base FastAPI app
 app = FastAPI(
@@ -134,6 +136,79 @@ def get_current_user_profile(
 ) -> Dict[str, str]:
     """Return the authenticated username and resolved role."""
     return {"username": username, "role": get_current_user_role(username)}
+
+
+@app.get("/settings")
+def get_settings(
+    username: Annotated[str, Depends(get_current_username)],
+) -> Dict[str, Any]:
+    """Return current runtime configuration (safe, non-secret fields only).
+
+    API keys are never returned — only provider/model/behavioural settings that
+    are useful to display or edit in the UI Settings panel.
+    """
+    try:
+        cfg = load_config()
+        user_roles = parse_user_roles()
+        return {
+            "agent": {
+                "provider": cfg.agent.provider,
+                "model": cfg.agent.model,
+                "batch_size": cfg.agent.batch_size,
+                "max_tokens": cfg.agent.max_tokens,
+                "retry_attempts": cfg.agent.retry_attempts,
+                "ollama_base_url": cfg.agent.ollama_base_url,
+            },
+            "user_roles": user_roles,
+            "current_user": {
+                "username": username,
+                "role": get_current_user_role(username),
+            },
+            "env_overrides": {
+                "AGENT_PROVIDER": os.environ.get("AGENT_PROVIDER", ""),
+                "AGENT_MODEL": os.environ.get("AGENT_MODEL", ""),
+                "BACKEND_PORT": os.environ.get("BACKEND_PORT", "8000"),
+            },
+        }
+    except Exception as e:
+        logger.error("get_settings failed: {}", e)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/models")
+def list_available_models(
+    username: Annotated[str, Depends(get_current_username)],
+) -> Dict[str, Any]:
+    """Return available model IDs for the currently configured LLM provider.
+
+    Queries the provider API in real-time so the response always reflects what
+    is actually accessible with the configured API key.  The current model set
+    in config is highlighted so the frontend can warn when it is no longer valid.
+    """
+    try:
+        cfg = load_config()
+        provider = get_provider(cfg.agent)
+        models = provider.list_models()
+        return {
+            "provider": cfg.agent.provider,
+            "current_model": cfg.agent.model,
+            "models": models,
+            "current_model_available": cfg.agent.model in models if models else None,
+        }
+    except Exception as e:
+        logger.warning("list_available_models failed: {}", e)
+        # Return what we know even if model listing fails
+        try:
+            cfg = load_config()
+            return {
+                "provider": cfg.agent.provider,
+                "current_model": cfg.agent.model,
+                "models": [],
+                "current_model_available": None,
+                "error": str(e),
+            }
+        except Exception:
+            return {"models": [], "error": str(e)}
 
 
 @app.get("/exceptions/queue/{priority}/{run_date}")

@@ -18,7 +18,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, List
 
 if TYPE_CHECKING:
     from src.utils.config_loader import AgentConfig
@@ -47,6 +47,15 @@ class LLMProvider(ABC):
             LLMResponse with response text and token counts.
         """
         ...
+
+    def list_models(self) -> List[str]:
+        """Return available model IDs for this provider (best-effort).
+
+        Implementations should query the provider API and return a sorted list
+        of model IDs. Returns an empty list if the API is unreachable or the
+        provider does not support model enumeration.
+        """
+        return []
 
 
 def _check_placeholder(key: str, var_name: str) -> None:
@@ -108,6 +117,14 @@ class ClaudeProvider(LLMProvider):
             output_tokens=response.usage.output_tokens,
         )
 
+    def list_models(self) -> List[str]:
+        """Return available Claude model IDs from the Anthropic API."""
+        try:
+            models = self._client.models.list()
+            return sorted(m.id for m in models.data)
+        except Exception:
+            return []
+
 
 class OpenAIProvider(LLMProvider):
     """OpenAI provider via the openai SDK."""
@@ -162,6 +179,19 @@ class OpenAIProvider(LLMProvider):
             input_tokens=response.usage.prompt_tokens,
             output_tokens=response.usage.completion_tokens,
         )
+
+    def list_models(self) -> List[str]:
+        """Return available OpenAI model IDs (filters to GPT/o-series chat models)."""
+        try:
+            all_models = self._client.models.list()
+            chat_prefixes = ("gpt-", "o1", "o3", "o4", "chatgpt-")
+            ids = [
+                m.id for m in all_models.data
+                if any(m.id.startswith(p) for p in chat_prefixes)
+            ]
+            return sorted(ids)
+        except Exception:
+            return []
 
 
 class GeminiProvider(LLMProvider):
@@ -233,6 +263,20 @@ class GeminiProvider(LLMProvider):
             output_tokens=output_tokens,
         )
 
+    def list_models(self) -> List[str]:
+        """Return available Gemini model IDs that support generateContent."""
+        try:
+            models = self._client.models.list()
+            ids = [
+                m.name.removeprefix("models/")
+                for m in models
+                if hasattr(m, "supported_actions") and "generateContent" in (m.supported_actions or [])
+                or hasattr(m, "name") and "gemini" in m.name.lower()
+            ]
+            return sorted(set(ids))
+        except Exception:
+            return []
+
 
 class OllamaProvider(LLMProvider):
     """Ollama local model provider via HTTP (uses httpx, already a project dependency)."""
@@ -282,6 +326,15 @@ class OllamaProvider(LLMProvider):
             input_tokens=data.get("prompt_eval_count", 0),
             output_tokens=data.get("eval_count", 0),
         )
+
+    def list_models(self) -> List[str]:
+        """Return locally available Ollama model names via GET /api/tags."""
+        try:
+            response = self._client.get("/api/tags")
+            data = response.json()
+            return sorted(m["name"] for m in data.get("models", []))
+        except Exception:
+            return []
 
 
 def get_provider(config: "AgentConfig") -> LLMProvider:

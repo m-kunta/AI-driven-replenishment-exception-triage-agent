@@ -147,12 +147,20 @@ export default function Home() {
             Exception Copilot
           </h1>
           <p className="text-slate-400 mt-1">AI-Driven Triage Command Center</p>
-          <Link
-            href="/planner-review"
-            className="mt-3 inline-flex rounded-lg border border-slate-700 px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-slate-300 transition-colors hover:border-blue-400 hover:text-blue-300"
-          >
-            Planner Review
-          </Link>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <Link
+              href="/planner-review"
+              className="inline-flex rounded-lg border border-slate-700 px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-slate-300 transition-colors hover:border-blue-400 hover:text-blue-300"
+            >
+              Planner — Override Review
+            </Link>
+            <Link
+              href="/settings"
+              className="inline-flex rounded-lg border border-slate-700 px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-slate-300 transition-colors hover:border-slate-500 hover:text-slate-100"
+            >
+              ⚙ Settings
+            </Link>
+          </div>
         </div>
         <div className="flex items-center gap-4 glass px-4 py-2 rounded-lg">
           <span className="text-xs text-slate-500 uppercase tracking-wider">Run</span>
