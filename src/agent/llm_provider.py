@@ -49,10 +49,20 @@ class LLMProvider(ABC):
         ...
 
 
+def _check_placeholder(key: str, var_name: str) -> None:
+    """Raise a clear error if the API key is still the .env.example placeholder."""
+    if not key or key.startswith("your_") or key.endswith("_here"):
+        raise ValueError(
+            f"{var_name} looks like a placeholder value. "
+            f"Set a real API key in your .env file before running the pipeline."
+        )
+
+
 class ClaudeProvider(LLMProvider):
     """Anthropic Claude provider via the anthropic SDK."""
 
     def __init__(self, api_key: str, model: str, max_tokens: int) -> None:
+        _check_placeholder(api_key, "ANTHROPIC_API_KEY")
         try:
             import anthropic
         except ImportError:
@@ -65,12 +75,27 @@ class ClaudeProvider(LLMProvider):
         self._max_tokens = max_tokens
 
     def complete(self, system_prompt: str, user_prompt: str) -> LLMResponse:
-        response = self._client.messages.create(
-            model=self._model,
-            max_tokens=self._max_tokens,
-            system=system_prompt,
-            messages=[{"role": "user", "content": user_prompt}],
-        )
+        try:
+            response = self._client.messages.create(
+                model=self._model,
+                max_tokens=self._max_tokens,
+                system=system_prompt,
+                messages=[{"role": "user", "content": user_prompt}],
+            )
+        except Exception as e:
+            msg = str(e)
+            if "model" in msg.lower() and ("not found" in msg.lower() or "404" in msg):
+                raise ValueError(
+                    f"Claude model {self._model!r} was not found. "
+                    f"Set AGENT_MODEL in your .env to a valid model. "
+                    f"Check available models at: https://docs.anthropic.com/en/docs/about-claude/models"
+                ) from e
+            if "401" in msg or "authentication" in msg.lower() or "invalid x-api-key" in msg.lower():
+                raise ValueError(
+                    "ANTHROPIC_API_KEY is invalid or expired. "
+                    "Update it in your .env file."
+                ) from e
+            raise
         if not response.content:
             raise ValueError(
                 f"ClaudeProvider received an empty content block "
@@ -88,6 +113,7 @@ class OpenAIProvider(LLMProvider):
     """OpenAI provider via the openai SDK."""
 
     def __init__(self, api_key: str, model: str, max_tokens: int) -> None:
+        _check_placeholder(api_key, "OPENAI_API_KEY")
         try:
             import openai
         except ImportError:
@@ -100,14 +126,29 @@ class OpenAIProvider(LLMProvider):
         self._max_tokens = max_tokens
 
     def complete(self, system_prompt: str, user_prompt: str) -> LLMResponse:
-        response = self._client.chat.completions.create(
-            model=self._model,
-            max_tokens=self._max_tokens,
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_prompt},
-            ],
-        )
+        try:
+            response = self._client.chat.completions.create(
+                model=self._model,
+                max_completion_tokens=self._max_tokens,
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_prompt},
+                ],
+            )
+        except Exception as e:
+            msg = str(e)
+            if "model" in msg.lower() and ("not found" in msg.lower() or "404" in msg or "does not exist" in msg.lower()):
+                raise ValueError(
+                    f"OpenAI model {self._model!r} was not found. "
+                    f"Set AGENT_MODEL in your .env to a valid model (e.g. gpt-4.1, gpt-4o). "
+                    f"Check available models at: https://platform.openai.com/docs/models"
+                ) from e
+            if "401" in msg or "incorrect api key" in msg.lower() or "invalid_api_key" in msg.lower():
+                raise ValueError(
+                    "OPENAI_API_KEY is invalid or expired. "
+                    "Update it in your .env file."
+                ) from e
+            raise
         choice = response.choices[0]
         content = choice.message.content
         if content is None:
@@ -124,48 +165,70 @@ class OpenAIProvider(LLMProvider):
 
 
 class GeminiProvider(LLMProvider):
-    """Google Gemini provider via the google-generativeai SDK."""
+    """Google Gemini provider via the google-genai SDK (v1+)."""
 
     def __init__(self, api_key: str, model: str, max_tokens: int) -> None:
-        import sys
+        _check_placeholder(api_key, "GEMINI_API_KEY")
         try:
-            import google.generativeai  # noqa: F401 — ensure it's importable
+            from google import genai
+            from google.genai import types as genai_types
         except ImportError:
             raise ImportError(
-                "google-generativeai package is required for GeminiProvider. "
-                "Install it with: pip install google-generativeai"
+                "google-genai package is required for GeminiProvider. "
+                "Install it with: pip install google-genai"
             )
-        # Resolve through sys.modules so mocks applied via patch.dict are honoured
-        genai = sys.modules["google.generativeai"]
-        genai.configure(api_key=api_key)
-        self._genai = genai
-        # Store GenerationConfig at init time so complete() doesn't re-import
-        self._GenerationConfig = genai.types.GenerationConfig
-        self._model_name = model
+        self._client = genai.Client(api_key=api_key)
+        self._types = genai_types
+        self._model = model
         self._max_tokens = max_tokens
 
     def complete(self, system_prompt: str, user_prompt: str) -> LLMResponse:
-        model = self._genai.GenerativeModel(
-            model_name=self._model_name,
-            system_instruction=system_prompt,
-        )
-        result = model.generate_content(
-            user_prompt,
-            generation_config=self._GenerationConfig(max_output_tokens=self._max_tokens),
-        )
-        if not getattr(result, "parts", None):
-            finish_reason = "unknown"
-            if getattr(result, "candidates", None):
-                finish_reason = str(result.candidates[0].finish_reason)
+        try:
+            response = self._client.models.generate_content(
+                model=self._model,
+                contents=user_prompt,
+                config=self._types.GenerateContentConfig(
+                    system_instruction=system_prompt,
+                    max_output_tokens=self._max_tokens,
+                ),
+            )
+        except Exception as e:
+            msg = str(e)
+            if "not found" in msg.lower() or "404" in msg:
+                raise ValueError(
+                    f"Gemini model {self._model!r} was not found. "
+                    f"Set AGENT_MODEL in your .env (e.g. gemini-2.0-flash, gemini-1.5-flash). "
+                    f"List available models: https://ai.google.dev/gemini-api/docs/models"
+                ) from e
+            if "429" in msg or "quota" in msg.lower() or "rate" in msg.lower():
+                raise ValueError(
+                    f"Gemini API quota exceeded for model {self._model!r}. "
+                    "Upgrade your Google AI plan or switch to a different provider."
+                ) from e
+            if "401" in msg or "api_key" in msg.lower() or "invalid" in msg.lower():
+                raise ValueError(
+                    "GEMINI_API_KEY is invalid or expired. "
+                    "Update it in your .env file."
+                ) from e
+            raise
+
+        if not response.candidates:
+            raise ValueError(
+                "GeminiProvider received an empty response (no candidates). "
+                "Check for content filtering or an invalid prompt."
+            )
+        text = response.text
+        if not text:
+            finish_reason = str(response.candidates[0].finish_reason) if response.candidates else "unknown"
             raise ValueError(
                 f"GeminiProvider received an empty response "
                 f"(finish_reason={finish_reason!r}). "
                 "Check for content filtering or an invalid prompt."
             )
-        input_tokens = getattr(result.usage_metadata, "prompt_token_count", 0)
-        output_tokens = getattr(result.usage_metadata, "candidates_token_count", 0)
+        input_tokens = getattr(response.usage_metadata, "prompt_token_count", 0) or 0
+        output_tokens = getattr(response.usage_metadata, "candidates_token_count", 0) or 0
         return LLMResponse(
-            text=result.text,
+            text=text,
             input_tokens=input_tokens,
             output_tokens=output_tokens,
         )
@@ -176,6 +239,7 @@ class OllamaProvider(LLMProvider):
 
     def __init__(self, base_url: str, model: str, max_tokens: int) -> None:
         import httpx
+        self._base_url = base_url
         self._client = httpx.Client(base_url=base_url, timeout=120.0)
         self._model = model
         self._max_tokens = max_tokens
@@ -190,8 +254,22 @@ class OllamaProvider(LLMProvider):
             "stream": False,
             "options": {"num_predict": self._max_tokens},
         }
-        response = self._client.post("/api/chat", json=payload)
-        response.raise_for_status()
+        try:
+            response = self._client.post("/api/chat", json=payload)
+            response.raise_for_status()
+        except Exception as e:
+            msg = str(e)
+            if "connection" in msg.lower() or "connect" in msg.lower():
+                raise ValueError(
+                    f"Cannot connect to Ollama at {self._base_url}. "
+                    "Make sure Ollama is running: https://ollama.com"
+                ) from e
+            if "404" in msg or "not found" in msg.lower():
+                raise ValueError(
+                    f"Ollama model {self._model!r} is not available locally. "
+                    f"Pull it first with: ollama pull {self._model}"
+                ) from e
+            raise
         data = response.json()
         content = data.get("message", {}).get("content")
         if not content:

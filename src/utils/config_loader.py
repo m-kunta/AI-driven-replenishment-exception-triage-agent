@@ -134,9 +134,12 @@ _SUPPORTED_PROVIDERS = ("claude", "openai", "gemini", "ollama")
 _DEFAULT_MODELS = {
     "claude": "claude-sonnet-4-20250514",
     "openai": "gpt-4.1",
-    "gemini": "gemini-1.5-pro",
-    "ollama": "llama3.1",
+    "gemini": "gemini-2.0-flash",
+    "ollama": "llama3.2",
 }
+# Placeholder values that ship in .env.example — treat as unset
+_PLACEHOLDER_PREFIXES = ("your_", "replace_with_")
+_PLACEHOLDER_SUFFIXES = ("_here",)
 
 
 def _apply_agent_env_overrides(resolved_config: Dict[str, Any]) -> Dict[str, Any]:
@@ -223,6 +226,16 @@ def load_config(config_path: str = "config/config.yaml") -> AppConfig:
     return config
 
 
+def _is_placeholder(value: str) -> bool:
+    """Return True if the value looks like an unfilled .env.example placeholder."""
+    v = value.strip().lower()
+    return (
+        not v
+        or any(v.startswith(p) for p in _PLACEHOLDER_PREFIXES)
+        or any(v.endswith(s) for s in _PLACEHOLDER_SUFFIXES)
+    )
+
+
 def validate_required_env_vars(config: AppConfig, adapter: str = "csv") -> None:
     """Validate that required environment variables are set based on runtime mode.
 
@@ -231,7 +244,7 @@ def validate_required_env_vars(config: AppConfig, adapter: str = "csv") -> None:
         adapter: The active ingestion adapter type.
 
     Raises:
-        ConfigurationError: If a required env var is missing.
+        ConfigurationError: If a required env var is missing or still a placeholder.
     """
     provider = config.agent.provider.lower()
     if provider not in _SUPPORTED_PROVIDERS:
@@ -239,12 +252,19 @@ def validate_required_env_vars(config: AppConfig, adapter: str = "csv") -> None:
             f"Invalid agent.provider: {config.agent.provider!r}. "
             f"Must be one of: {', '.join(_SUPPORTED_PROVIDERS)}"
         )
-    if provider == "claude" and not config.agent.anthropic_api_key:
-        raise ConfigurationError("Missing required environment variable: ANTHROPIC_API_KEY (provider=claude)")
-    elif provider == "openai" and not config.agent.openai_api_key:
-        raise ConfigurationError("Missing required environment variable: OPENAI_API_KEY (provider=openai)")
-    elif provider == "gemini" and not config.agent.gemini_api_key:
-        raise ConfigurationError("Missing required environment variable: GEMINI_API_KEY (provider=gemini)")
+
+    _KEY_REQUIREMENTS = {
+        "claude":  ("ANTHROPIC_API_KEY", config.agent.anthropic_api_key),
+        "openai":  ("OPENAI_API_KEY",    config.agent.openai_api_key),
+        "gemini":  ("GEMINI_API_KEY",    config.agent.gemini_api_key),
+    }
+    if provider in _KEY_REQUIREMENTS:
+        var_name, value = _KEY_REQUIREMENTS[provider]
+        if not value or _is_placeholder(value):
+            raise ConfigurationError(
+                f"Missing required environment variable: {var_name} (provider={provider}). "
+                f"Set it in your .env file."
+            )
 
     if adapter == "api":
         if not config.ingestion.api.endpoint:
