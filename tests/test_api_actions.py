@@ -140,3 +140,32 @@ def test_get_current_user_profile_returns_resolved_role():
         "username": "planner1",
         "role": "planner",
     }
+
+def test_get_all_actions_pagination_and_filtering():
+    # Insert multiple actions
+    payloads = [
+        {"request_id": "api-req-global-1", "exception_id": "exc-1", "run_date": "2026-04-20", "action_type": "CREATE_REVIEW", "payload": {}},
+        {"request_id": "api-req-global-2", "exception_id": "exc-2", "run_date": "2026-04-21", "action_type": "DEFER", "payload": {}},
+        {"request_id": "api-req-global-3", "exception_id": "exc-3", "run_date": "2026-04-21", "action_type": "DEFER", "payload": {}},
+    ]
+    for p in payloads:
+        client.post("/actions", json=p, auth=auth)
+    
+    # Test pagination
+    res = client.get("/actions?limit=2&offset=0", auth=auth)
+    assert res.status_code == 200
+    data = res.json()
+    assert len(data["items"]) == 2
+    assert data["limit"] == 2
+    assert data["offset"] == 0
+    assert data["total"] >= 3
+
+    # Test filtering by run_date
+    res_date = client.get("/actions?run_date=2026-04-21", auth=auth)
+    assert res_date.status_code == 200
+    assert len(res_date.json()["items"]) == 2
+
+    # Test filtering by action_type
+    res_type = client.get("/actions?action_type=CREATE_REVIEW", auth=auth)
+    assert res_type.status_code == 200
+    assert all(item["action_type"] == "CREATE_REVIEW" for item in res_type.json()["items"])

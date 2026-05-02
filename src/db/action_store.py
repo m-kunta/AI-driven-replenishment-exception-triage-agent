@@ -73,6 +73,50 @@ class ActionStore:
         )
         return [self._row_to_dict(r) for r in cur.fetchall()]
 
+    def get_all_actions(
+        self, 
+        limit: int = 50, 
+        offset: int = 0, 
+        status: Optional[str] = None, 
+        action_type: Optional[str] = None,
+        run_date: Optional[str] = None
+    ) -> dict:
+        query = "SELECT * FROM action_records"
+        count_query = "SELECT COUNT(*) FROM action_records"
+        params = []
+        conditions = []
+
+        if status:
+            conditions.append("status = ?")
+            params.append(status)
+        if action_type:
+            conditions.append("action_type = ?")
+            params.append(action_type)
+        if run_date:
+            conditions.append("run_date = ?")
+            params.append(run_date)
+
+        if conditions:
+            where_clause = " WHERE " + " AND ".join(conditions)
+            query += where_clause
+            count_query += where_clause
+
+        query += " ORDER BY created_at DESC LIMIT ? OFFSET ?"
+        
+        count_cur = self._conn.execute(count_query, params)
+        total_count = count_cur.fetchone()[0]
+        
+        params.extend([limit, offset])
+        cur = self._conn.execute(query, params)
+        items = [self._row_to_dict(r) for r in cur.fetchall()]
+
+        return {
+            "items": items,
+            "total": total_count,
+            "limit": limit,
+            "offset": offset
+        }
+
     def update_action_status(
         self, 
         request_id: str, 

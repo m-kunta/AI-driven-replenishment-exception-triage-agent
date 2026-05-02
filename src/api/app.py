@@ -422,6 +422,29 @@ async def submit_action(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@app.get("/actions")
+def get_all_actions(
+    username: Annotated[str, Depends(get_current_username)],
+    limit: int = 50,
+    offset: int = 0,
+    status: Optional[str] = None,
+    action_type: Optional[str] = None,
+    run_date: Optional[str] = None,
+) -> Dict[str, Any]:
+    """Get all actions across all exceptions with pagination and filtering."""
+    try:
+        return action_store.get_all_actions(
+            limit=limit,
+            offset=offset,
+            status=status,
+            action_type=action_type,
+            run_date=run_date
+        )
+    except Exception as e:
+        logger.error("Failed to get all actions: {}", e)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @app.get("/actions/{exception_id}")
 def get_actions(
     exception_id: str,

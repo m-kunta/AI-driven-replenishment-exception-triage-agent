@@ -153,6 +153,13 @@ export interface ActionRecord {
   downstream_response?: Record<string, unknown> | null;
 }
 
+export interface PaginatedActions {
+  items: ActionRecord[];
+  total: number;
+  limit: number;
+  offset: number;
+}
+
 // All requests route through the Next.js server-side proxy at /api/proxy,
 // which injects Basic Auth credentials from server-only env vars. No credential
 // is ever sent to the browser.
@@ -319,6 +326,27 @@ export const api = {
     });
     if (!res.ok) {
       throw await toApiError(res, `Failed to fetch actions: ${res.statusText}`);
+    }
+    return res.json();
+  },
+
+  getGlobalActions: async (params: { limit?: number; offset?: number; status?: string; action_type?: string; run_date?: string } = {}): Promise<PaginatedActions> => {
+    const searchParams = new URLSearchParams();
+    if (params.limit !== undefined) searchParams.append("limit", params.limit.toString());
+    if (params.offset !== undefined) searchParams.append("offset", params.offset.toString());
+    if (params.status) searchParams.append("status", params.status);
+    if (params.action_type) searchParams.append("action_type", params.action_type);
+    if (params.run_date) searchParams.append("run_date", params.run_date);
+
+    const query = searchParams.toString();
+    const url = `${PROXY_BASE}/actions${query ? `?${query}` : ''}`;
+
+    const res = await fetch(url, {
+      method: "GET",
+      headers: JSON_HEADERS,
+    });
+    if (!res.ok) {
+      throw await toApiError(res, `Failed to fetch global actions: ${res.statusText}`);
     }
     return res.json();
   },

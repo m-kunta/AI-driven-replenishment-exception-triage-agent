@@ -239,4 +239,20 @@ describe('API Client', () => {
     );
     expect(result).toEqual({ username: 'planner1', role: 'planner' });
   });
+
+  it('fetches global actions with filters and pagination', async () => {
+    const mockResponse = { items: [], total: 0, limit: 10, offset: 5 };
+    (fetch as jest.Mock).mockResolvedValueOnce({
+      ok: true,
+      json: async () => mockResponse,
+    });
+
+    const result = await api.getGlobalActions({ limit: 10, offset: 5, run_date: '2026-04-24', status: 'failed' });
+
+    expect(fetch).toHaveBeenCalledWith(
+      expect.stringContaining('/api/proxy/actions?limit=10&offset=5&status=failed&run_date=2026-04-24'),
+      expect.objectContaining({ method: 'GET' })
+    );
+    expect(result).toEqual(mockResponse);
+  });
 });
