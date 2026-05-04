@@ -1,6 +1,9 @@
+from __future__ import annotations
+
 import textwrap
 
 import pytest
+import yaml
 
 from src.utils.config_loader import ConfigurationError, load_config, validate_required_env_vars
 
@@ -65,3 +68,43 @@ def test_invalid_agent_provider_override_raises_configuration_error(tmp_path, mo
 
     with pytest.raises(ConfigurationError):
         load_config(write_config(tmp_path))
+
+
+_MINIMAL_YAML = yaml.dump({
+    "agent": {
+        "provider": "ollama",
+        "model": "llama3.2",
+        "batch_size": 10,
+        "max_tokens": 8000,
+        "retry_attempts": 3,
+        "ollama_base_url": "http://localhost:11434",
+    },
+    "ingestion": {"adapter": "csv"},
+    "output": {"log_dir": "output/logs"},
+})
+
+
+def test_ollama_base_url_env_override(monkeypatch, tmp_path):
+    monkeypatch.setenv("OLLAMA_BASE_URL", "http://custom-ollama:9999")
+    monkeypatch.delenv("AGENT_PROVIDER", raising=False)
+    monkeypatch.delenv("AGENT_MODEL", raising=False)
+
+    cfg_path = tmp_path / "config.yaml"
+    cfg_path.write_text(_MINIMAL_YAML)
+
+    cfg = load_config(config_path=str(cfg_path))
+
+    assert cfg.agent.ollama_base_url == "http://custom-ollama:9999"
+
+
+def test_ollama_base_url_env_override_absent_uses_yaml(monkeypatch, tmp_path):
+    monkeypatch.delenv("OLLAMA_BASE_URL", raising=False)
+    monkeypatch.delenv("AGENT_PROVIDER", raising=False)
+    monkeypatch.delenv("AGENT_MODEL", raising=False)
+
+    cfg_path = tmp_path / "config.yaml"
+    cfg_path.write_text(_MINIMAL_YAML)
+
+    cfg = load_config(config_path=str(cfg_path))
+
+    assert cfg.agent.ollama_base_url == "http://localhost:11434"

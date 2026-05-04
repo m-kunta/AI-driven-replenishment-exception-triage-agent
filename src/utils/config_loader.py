@@ -166,6 +166,10 @@ def _apply_agent_env_overrides(resolved_config: Dict[str, Any]) -> Dict[str, Any
     elif model_override:
         agent_cfg["model"] = model_override
 
+    ollama_base_url_override = os.environ.get("OLLAMA_BASE_URL", "").strip()
+    if ollama_base_url_override:
+        agent_cfg["ollama_base_url"] = ollama_base_url_override
+
     return resolved_config
 
 
