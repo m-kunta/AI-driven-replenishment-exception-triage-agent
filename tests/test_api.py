@@ -18,8 +18,10 @@ from __future__ import annotations
 
 import json
 import os
+import uuid
+from datetime import date
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 from fastapi.testclient import TestClient
@@ -690,3 +692,158 @@ class TestOverrideEndpoints:
 
         resp = client.post(f"/overrides/{row_id}/reject", json={"reason": "nope"}, auth=VALID_CREDS)
         assert resp.status_code == 403
+
+
+# ===========================================================================
+# PATCH /settings
+# ===========================================================================
+
+class TestPatchSettingsEndpoint:
+    def test_analyst_gets_403(self, client, monkeypatch):
+        monkeypatch.setenv("API_USER_ROLE", "analyst")
+        monkeypatch.delenv("API_USER_ROLES", raising=False)
+        resp = client.patch(
+            "/settings",
+            json={"AGENT_PROVIDER": "openai"},
+            auth=VALID_CREDS,
+        )
+        assert resp.status_code == 403
+
+    def test_invalid_provider_returns_422_with_error_map(self, tmp_path, monkeypatch):
+        monkeypatch.setenv("API_USER_ROLES", f"{_USERNAME}:planner")
+        cli = TestClient(app)
+        with patch("src.api.app.EnvWriter.validate", return_value={"AGENT_PROVIDER": "Must be one of: claude, gemini, ollama, openai."}):
+            resp = cli.patch(
+                "/settings",
+                json={"AGENT_PROVIDER": "bad_value"},
+                auth=VALID_CREDS,
+            )
+        assert resp.status_code == 422
+        assert "AGENT_PROVIDER" in resp.json()["errors"]
+
+    def test_valid_payload_writes_env_and_returns_200(self, tmp_path, monkeypatch):
+        monkeypatch.setenv("API_USER_ROLES", f"{_USERNAME}:planner")
+        cli = TestClient(app)
+
+        with patch("src.api.app.EnvWriter.validate", return_value={}), \
+             patch("src.api.app.EnvWriter.apply", return_value={
+                 "applied": ["AGENT_PROVIDER"],
+                 "restart_required": ["AGENT_PROVIDER"],
+                 "errors": {},
+             }) as mock_apply, \
+             patch("src.api.app.action_store") as mock_store:
+            mock_store.insert_action.return_value = {}
+            resp = cli.patch(
+                "/settings",
+                json={"AGENT_PROVIDER": "openai"},
+                auth=VALID_CREDS,
+            )
+
+        assert resp.status_code == 200
+        data = resp.json()
+        assert "AGENT_PROVIDER" in data["applied"]
+        assert "AGENT_PROVIDER" in data["restart_required"]
+
+    def test_audit_record_written_per_applied_key(self, tmp_path, monkeypatch):
+        monkeypatch.setenv("API_USER_ROLES", f"{_USERNAME}:planner")
+        cli = TestClient(app)
+
+        with patch("src.api.app.EnvWriter.validate", return_value={}), \
+             patch("src.api.app.EnvWriter.apply", return_value={
+                 "applied": ["AGENT_PROVIDER", "AGENT_MODEL"],
+                 "restart_required": ["AGENT_PROVIDER", "AGENT_MODEL"],
+                 "errors": {},
+             }), \
+             patch("src.api.app.action_store") as mock_store:
+            mock_store.insert_action.return_value = {}
+            resp = cli.patch(
+                "/settings",
+                json={"AGENT_PROVIDER": "openai", "AGENT_MODEL": "gpt-4.1"},
+                auth=VALID_CREDS,
+            )
+
+        assert resp.status_code == 200
+        assert mock_store.insert_action.call_count == 2
+        call_kwargs = mock_store.insert_action.call_args_list[0][1]
+        assert call_kwargs["action_type"] == "SETTINGS_CHANGE"
+        assert call_kwargs["status"] == "completed"
+        assert call_kwargs["exception_id"] == "__settings__"
+
+
+# ===========================================================================
+# POST /settings/validate-model
+# ===========================================================================
+
+class TestValidateModelEndpoint:
+    def test_analyst_gets_403(self, client, monkeypatch):
+        monkeypatch.setenv("API_USER_ROLE", "analyst")
+        monkeypatch.delenv("API_USER_ROLES", raising=False)
+        resp = client.post(
+            "/settings/validate-model",
+            json={"provider": "claude", "model": "claude-sonnet-4-20250514"},
+            auth=VALID_CREDS,
+        )
+        assert resp.status_code == 403
+
+    def test_invalid_provider_returns_422(self, client, monkeypatch):
+        monkeypatch.setenv("API_USER_ROLES", f"{_USERNAME}:planner")
+        cli = TestClient(app)
+        resp = cli.post(
+            "/settings/validate-model",
+            json={"provider": "badprovider", "model": "some-model"},
+            auth=VALID_CREDS,
+        )
+        assert resp.status_code == 422
+
+    def test_valid_model_returns_200_with_model_available_true(self, monkeypatch):
+        monkeypatch.setenv("API_USER_ROLES", f"{_USERNAME}:planner")
+        cli = TestClient(app)
+
+        mock_provider = MagicMock()
+        mock_provider.list_models.return_value = ["gpt-4.1", "gpt-4.1-mini"]
+
+        with patch("src.api.app.get_provider", return_value=mock_provider):
+            resp = cli.post(
+                "/settings/validate-model",
+                json={"provider": "openai", "model": "gpt-4.1"},
+                auth=VALID_CREDS,
+            )
+
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["model_available"] is True
+        assert "gpt-4.1" in data["models"]
+
+    def test_model_not_in_list_returns_model_available_false(self, monkeypatch):
+        monkeypatch.setenv("API_USER_ROLES", f"{_USERNAME}:planner")
+        cli = TestClient(app)
+
+        mock_provider = MagicMock()
+        mock_provider.list_models.return_value = ["gpt-4.1"]
+
+        with patch("src.api.app.get_provider", return_value=mock_provider):
+            resp = cli.post(
+                "/settings/validate-model",
+                json={"provider": "openai", "model": "gpt-99"},
+                auth=VALID_CREDS,
+            )
+
+        assert resp.status_code == 200
+        assert resp.json()["model_available"] is False
+
+    def test_provider_api_failure_returns_422(self, monkeypatch):
+        monkeypatch.setenv("API_USER_ROLES", f"{_USERNAME}:planner")
+        cli = TestClient(app)
+
+        mock_provider = MagicMock()
+        mock_provider.list_models.side_effect = Exception("API key missing")
+
+        with patch("src.api.app.get_provider", return_value=mock_provider):
+            resp = cli.post(
+                "/settings/validate-model",
+                json={"provider": "openai", "model": "gpt-4.1"},
+                auth=VALID_CREDS,
+            )
+
+        assert resp.status_code == 422
+        assert "error" in resp.json()

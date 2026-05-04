@@ -3,6 +3,8 @@ from __future__ import annotations
 import json
 import os
 import secrets
+import uuid
+from datetime import date
 from pathlib import Path
 from typing import Annotated, Any, Dict, Optional, List
 
@@ -17,7 +19,8 @@ from src.db.store import OverrideStore
 from src.db.action_store import ActionStore
 from src.actions.service import ActionService
 from src.models import ActionRequest
-from src.utils.config_loader import load_config
+from src.utils.config_loader import load_config, AgentConfig
+from src.api.env_writer import EnvWriter
 from src.agent.llm_provider import get_provider
 
 # Configure base FastAPI app
@@ -120,6 +123,12 @@ class OverrideSubmitRequest(BaseModel):
     analyst_note: Optional[str] = None
 
 
+class ValidateModelRequest(BaseModel):
+    provider: str
+    model: str
+    ollama_base_url: Optional[str] = None
+
+
 class OverrideRejectRequest(BaseModel):
     reason: Optional[str] = None
 
@@ -173,6 +182,77 @@ def get_settings(
     except Exception as e:
         logger.error("get_settings failed: {}", e)
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.patch("/settings")
+def patch_settings(
+    payload: Dict[str, str],
+    username: Annotated[str, Depends(get_current_username)],
+) -> Dict[str, Any]:
+    """Write a partial .env update. Planner-only. Validates all fields before writing."""
+    role = get_current_user_role(username)
+    if role != "planner":
+        raise HTTPException(status_code=403, detail="Planner role required to edit settings.")
+
+    errors = EnvWriter.validate(payload)
+    if errors:
+        return JSONResponse(status_code=422, content={"errors": errors})
+
+    result = EnvWriter.apply(payload)
+
+    run_date_str = str(date.today())
+    for key in result["applied"]:
+        try:
+            action_store.insert_action(
+                request_id=str(uuid.uuid4()),
+                exception_id="__settings__",
+                run_date=run_date_str,
+                action_type="SETTINGS_CHANGE",
+                requested_by=username,
+                requested_by_role=role,
+                payload={"key": key, "restart_required": key in result["restart_required"]},
+                status="completed",
+            )
+        except Exception as e:
+            logger.error("Failed to write settings audit record for key {}: {}", key, e)
+
+    return result
+
+
+@app.post("/settings/validate-model")
+def validate_model(
+    body: ValidateModelRequest,
+    username: Annotated[str, Depends(get_current_username)],
+) -> Dict[str, Any]:
+    """Validate a draft provider/model combination against the provider's live model list."""
+    role = get_current_user_role(username)
+    if role != "planner":
+        raise HTTPException(status_code=403, detail="Planner role required.")
+
+    if body.provider not in {"claude", "openai", "gemini", "ollama"}:
+        raise HTTPException(status_code=422, detail=f"Unsupported provider: {body.provider!r}")
+
+    try:
+        cfg = load_config()
+        draft_agent_cfg = AgentConfig(
+            provider=body.provider,
+            model=body.model,
+            anthropic_api_key=getattr(cfg.agent, "anthropic_api_key", None) or "",
+            openai_api_key=getattr(cfg.agent, "openai_api_key", None) or "",
+            gemini_api_key=getattr(cfg.agent, "gemini_api_key", None) or "",
+            ollama_base_url=body.ollama_base_url or cfg.agent.ollama_base_url,
+        )
+        provider = get_provider(draft_agent_cfg)
+        models = provider.list_models()
+        return {
+            "provider": body.provider,
+            "model": body.model,
+            "models": models,
+            "model_available": body.model in models,
+        }
+    except Exception as e:
+        logger.warning("validate_model failed for provider={} model={}: {}", body.provider, body.model, e)
+        return JSONResponse(status_code=422, content={"error": str(e), "models": []})
 
 
 @app.get("/models")
