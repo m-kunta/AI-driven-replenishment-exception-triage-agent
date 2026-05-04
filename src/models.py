@@ -295,6 +295,7 @@ class ActionType(str, enum.Enum):
     VENDOR_FOLLOW_UP = "VENDOR_FOLLOW_UP"
     STORE_CHECK = "STORE_CHECK"
     DEFER = "DEFER"
+    SETTINGS_CHANGE = "SETTINGS_CHANGE"
 
 class ActionStatus(str, enum.Enum):
     QUEUED = "queued"

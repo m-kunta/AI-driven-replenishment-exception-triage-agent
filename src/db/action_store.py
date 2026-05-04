@@ -30,10 +30,11 @@ class ActionStore:
         requested_by: str,
         requested_by_role: str,
         payload: dict,
+        status: str = "queued",
     ) -> dict:
         """Insert a new action. If request_id exists, return the existing record (idempotency)."""
         now = datetime.now(timezone.utc).isoformat()
-        
+
         try:
             self._conn.execute(
                 """
@@ -41,12 +42,12 @@ class ActionStore:
                     request_id, exception_id, run_date, action_type,
                     requested_by, requested_by_role, payload, status,
                     created_at, updated_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, 'queued', ?, ?)
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     request_id, exception_id, run_date, action_type,
                     requested_by, requested_by_role, json.dumps(payload),
-                    now, now
+                    status, now, now
                 )
             )
             self._conn.commit()
