@@ -79,6 +79,13 @@ export interface OverrideDecisionResponse {
 }
 
 export type ActionType = "CREATE_REVIEW" | "REQUEST_VERIFICATION" | "VENDOR_FOLLOW_UP" | "STORE_CHECK" | "DEFER";
+
+// Audit-only action type — never shown in dropdowns, only in history
+export type AuditActionType = "SETTINGS_CHANGE";
+
+// Union for ActionRecord deserialization (covers both triage and audit types)
+export type AnyActionType = ActionType | AuditActionType;
+
 export type ActorRole = "analyst" | "planner";
 
 export interface CurrentUser {
@@ -128,6 +135,29 @@ export interface ModelList {
   error?: string;
 }
 
+export interface EditableDraft {
+  AGENT_PROVIDER?: string;
+  AGENT_MODEL?: string;
+  API_USER_ROLE?: string;
+  API_USER_ROLES?: string;
+  OLLAMA_BASE_URL?: string;
+  BACKEND_PORT?: string;
+}
+
+export interface PatchSettingsResult {
+  applied: string[];
+  restart_required: string[];
+  errors: Record<string, string>;
+}
+
+export interface ValidateModelResult {
+  provider: string;
+  model: string;
+  models: string[];
+  model_available: boolean;
+  error?: string;
+}
+
 export type ActionStatus = "queued" | "sent" | "failed" | "completed";
 
 export interface ActionRequest {
@@ -142,7 +172,7 @@ export interface ActionRecord {
   request_id: string;
   exception_id: string;
   run_date: string;
-  action_type: ActionType;
+  action_type: AnyActionType;
   requested_by: string;
   requested_by_role: string;
   payload: Record<string, unknown>;
@@ -380,6 +410,45 @@ export const api = {
     });
     if (!res.ok) {
       throw await toApiError(res, `Failed to list models: ${res.statusText}`);
+    }
+    return res.json();
+  },
+
+  patchSettings: async (payload: EditableDraft): Promise<PatchSettingsResult> => {
+    const res = await fetch(`${PROXY_BASE}/settings`, {
+      method: "PATCH",
+      headers: JSON_HEADERS,
+      body: JSON.stringify(payload),
+    });
+    if (res.status === 422) {
+      const body = await res.json().catch(() => ({}));
+      return { applied: [], restart_required: [], errors: body.errors ?? {} };
+    }
+    if (!res.ok) {
+      throw await toApiError(res, `Failed to save settings: ${res.statusText}`);
+    }
+    return res.json();
+  },
+
+  validateDraftModel: async (payload: {
+    provider: string;
+    model: string;
+    ollama_base_url?: string;
+  }): Promise<ValidateModelResult> => {
+    const res = await fetch(`${PROXY_BASE}/settings/validate-model`, {
+      method: "POST",
+      headers: JSON_HEADERS,
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      return {
+        provider: payload.provider,
+        model: payload.model,
+        models: [],
+        model_available: false,
+        error: body.detail?.error ?? body.detail ?? res.statusText,
+      };
     }
     return res.json();
   },
