@@ -5,6 +5,7 @@ import os
 import tempfile
 from pathlib import Path
 from typing import Dict, Any
+from dotenv import dotenv_values
 
 _REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 _DEFAULT_ENV_PATH = _REPO_ROOT / ".env"
@@ -30,6 +31,18 @@ class EnvValidationError(ValueError):
 
 class EnvWriter:
     """Validates and atomically writes a subset of .env keys."""
+
+    @staticmethod
+    def read_persisted_values(env_path: Path = _DEFAULT_ENV_PATH) -> Dict[str, str]:
+        """Read the current persisted editable .env values for safe frontend baselines."""
+        if not env_path.exists():
+            return {}
+        raw_values = dotenv_values(env_path)
+        return {
+            key: value
+            for key, value in raw_values.items()
+            if key in _ALLOWLIST and value is not None
+        }
 
     @staticmethod
     def validate(payload: Dict[str, str]) -> Dict[str, str]:

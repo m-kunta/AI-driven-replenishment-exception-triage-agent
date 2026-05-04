@@ -102,6 +102,14 @@ def get_current_user_role(username: str) -> str:
     return role
 
 
+def require_user_role(username: str, required_role: str = "planner") -> str:
+    """Resolve the user's role and enforce a minimum required role for the action."""
+    role = get_current_user_role(username)
+    if role != required_role:
+        raise HTTPException(status_code=403, detail=f"{required_role.capitalize()} role required.")
+    return role
+
+
 class PipelineTriggerRequest(BaseModel):
     """Payload to trigger the pipeline."""
     run_date: Optional[str] = Field(default=None, description="ISO Date string (YYYY-MM-DD)")
@@ -173,6 +181,8 @@ def get_settings(
                 "username": username,
                 "role": get_current_user_role(username),
             },
+            "default_role": os.environ.get("API_USER_ROLE", "analyst").strip().lower(),
+            "persisted_editable": EnvWriter.read_persisted_values(),
             "env_overrides": {
                 "AGENT_PROVIDER": os.environ.get("AGENT_PROVIDER", ""),
                 "AGENT_MODEL": os.environ.get("AGENT_MODEL", ""),
@@ -190,13 +200,14 @@ def patch_settings(
     username: Annotated[str, Depends(get_current_username)],
 ) -> Dict[str, Any]:
     """Write a partial .env update. Planner-only. Validates all fields before writing."""
-    role = get_current_user_role(username)
-    if role != "planner":
-        raise HTTPException(status_code=403, detail="Planner role required to edit settings.")
+    role = require_user_role(username, required_role="planner")
 
     errors = EnvWriter.validate(payload)
     if errors:
-        return JSONResponse(status_code=422, content={"errors": errors})
+        return JSONResponse(
+            status_code=422,
+            content={"applied": [], "restart_required": [], "errors": errors},
+        )
 
     result = EnvWriter.apply(payload)
 
@@ -225,9 +236,7 @@ def validate_model(
     username: Annotated[str, Depends(get_current_username)],
 ) -> Dict[str, Any]:
     """Validate a draft provider/model combination against the provider's live model list."""
-    role = get_current_user_role(username)
-    if role != "planner":
-        raise HTTPException(status_code=403, detail="Planner role required.")
+    require_user_role(username, required_role="planner")
 
     if body.provider not in {"claude", "openai", "gemini", "ollama"}:
         raise HTTPException(status_code=422, detail=f"Unsupported provider: {body.provider!r}")
@@ -252,7 +261,16 @@ def validate_model(
         }
     except Exception as e:
         logger.warning("validate_model failed for provider={} model={}: {}", body.provider, body.model, e)
-        return JSONResponse(status_code=422, content={"error": str(e), "models": []})
+        return JSONResponse(
+            status_code=422,
+            content={
+                "error": (
+                    "Unable to validate the model for the selected provider. "
+                    "Check provider credentials, connectivity, and model access, then try again."
+                ),
+                "models": [],
+            },
+        )
 
 
 @app.get("/models")

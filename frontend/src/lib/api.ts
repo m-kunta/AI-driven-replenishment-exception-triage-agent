@@ -124,6 +124,8 @@ export interface AppSettings {
   agent: AgentSettings;
   user_roles: Record<string, string>;
   current_user: { username: string; role: string };
+  default_role: string;
+  persisted_editable: EditableDraft;
   env_overrides: { AGENT_PROVIDER: string; AGENT_MODEL: string; BACKEND_PORT: string };
 }
 
@@ -422,7 +424,26 @@ export const api = {
     });
     if (res.status === 422) {
       const body = await res.json().catch(() => ({}));
-      return { applied: [], restart_required: [], errors: body.errors ?? {} };
+      const hasExpectedErrorsShape =
+        typeof body?.errors === "object" &&
+        body.errors !== null &&
+        !Array.isArray(body.errors);
+      if (hasExpectedErrorsShape) {
+        return {
+          applied: Array.isArray(body.applied) ? body.applied : [],
+          restart_required: Array.isArray(body.restart_required) ? body.restart_required : [],
+          errors: body.errors as Record<string, string>,
+        };
+      }
+      throw new Error(
+        (typeof body?.detail === "string" && body.detail.length > 0
+          ? body.detail
+          : null) ??
+        (typeof body?.error === "string" && body.error.length > 0
+          ? body.error
+          : null) ??
+        `Failed to save settings: ${res.statusText}`
+      );
     }
     if (!res.ok) {
       throw await toApiError(res, `Failed to save settings: ${res.statusText}`);
@@ -447,7 +468,17 @@ export const api = {
         model: payload.model,
         models: [],
         model_available: false,
-        error: body.detail?.error ?? body.detail ?? res.statusText,
+        error:
+          (typeof body?.error === "string" && body.error.length > 0
+            ? body.error
+            : null) ??
+          (typeof body?.detail?.error === "string" && body.detail.error.length > 0
+            ? body.detail.error
+            : null) ??
+          (typeof body?.detail === "string" && body.detail.length > 0
+            ? body.detail
+            : null) ??
+          res.statusText,
       };
     }
     return res.json();
