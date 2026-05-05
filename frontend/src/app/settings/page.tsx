@@ -493,7 +493,7 @@ export default function SettingsPage() {
                             model: selectedModel,
                             ollama_base_url: selectedOllamaBaseUrl,
                           });
-                          if (result.error || !result.model_available) {
+                          if (result.error || result.model_available !== true) {
                             setFieldErrors((fe) => ({
                               ...fe,
                               AGENT_MODEL: result.error ?? `Model not found for provider ${selectedProvider}`,

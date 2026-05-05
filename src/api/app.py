@@ -202,6 +202,9 @@ def patch_settings(
     """Write a partial .env update. Planner-only. Validates all fields before writing."""
     role = require_user_role(username, required_role="planner")
 
+    if not payload:
+        return {"applied": [], "restart_required": [], "errors": {}}
+
     errors = EnvWriter.validate(payload)
     if errors:
         return JSONResponse(

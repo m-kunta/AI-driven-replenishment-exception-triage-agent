@@ -156,7 +156,7 @@ export interface ValidateModelResult {
   provider: string;
   model: string;
   models: string[];
-  model_available: boolean;
+  model_available?: boolean;
   error?: string;
 }
 
