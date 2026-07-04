@@ -921,3 +921,32 @@ class TestApiUsers:
         resp = c.get("/me", auth=("admin", "secret"))
         assert resp.status_code == 200
         assert resp.json()["username"] == "admin"
+
+
+# ===========================================================================
+# API Hardening Tests
+# ===========================================================================
+
+
+class TestHardening:
+    def test_queue_rejects_path_traversal(self, client):
+        """GET /exceptions/queue/ rejects path traversal attempts."""
+        resp = client.get("/exceptions/queue/CRITICAL/..%2F..%2Fetc%2Fpasswd", auth=VALID_CREDS)
+        assert resp.status_code in (400, 404)
+
+    def test_settings_hides_user_roles_from_analyst(self, monkeypatch):
+        """GET /settings hides user_roles dict from non-planner users."""
+        monkeypatch.setenv("API_USERNAME", "analyst1")
+        monkeypatch.setenv("API_PASSWORD", "secret123")
+        monkeypatch.setenv("API_USER_ROLE", "analyst")
+        monkeypatch.setenv("API_USER_ROLES", "planner1:planner")
+
+        import importlib
+        import src.api.app as api_module
+        importlib.reload(api_module)
+        c = TestClient(api_module.app)
+
+        analyst_auth = ("analyst1", "secret123")
+        resp = c.get("/settings", auth=analyst_auth)
+        assert resp.status_code == 200
+        assert resp.json()["user_roles"] == {}

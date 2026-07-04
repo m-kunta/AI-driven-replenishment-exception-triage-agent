@@ -169,3 +169,11 @@ def test_get_all_actions_pagination_and_filtering():
     res_type = client.get("/actions?action_type=CREATE_REVIEW", auth=auth)
     assert res_type.status_code == 200
     assert all(item["action_type"] == "CREATE_REVIEW" for item in res_type.json()["items"])
+
+
+def test_get_all_actions_clamps_limit():
+    """GET /actions clamps limit to maximum of 200."""
+    resp = client.get("/actions", params={"limit": 100000}, auth=auth)
+    assert resp.status_code == 200  # clamped, not rejected
+    data = resp.json()
+    assert data["limit"] == 200  # clamped to max

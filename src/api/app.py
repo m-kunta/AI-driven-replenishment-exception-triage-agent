@@ -150,6 +150,17 @@ def require_user_role(username: str, required_role: str = "planner") -> str:
     return role
 
 
+def _resolve_output_file(base_dir: Path, file_name: str) -> Path:
+    """Resolve file_name inside base_dir, rejecting any traversal outside it."""
+    file_path = (base_dir / file_name).resolve()
+    base = base_dir.resolve()
+    try:
+        file_path.relative_to(base)  # Path.is_relative_to needs 3.9+; relative_to works on 3.9
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid path")
+    return file_path
+
+
 class PipelineTriggerRequest(BaseModel):
     """Payload to trigger the pipeline."""
     run_date: Optional[str] = Field(default=None, description="ISO Date string (YYYY-MM-DD)")
@@ -203,10 +214,13 @@ def get_settings(
 
     API keys are never returned — only provider/model/behavioural settings that
     are useful to display or edit in the UI Settings panel.
+
+    The user_roles map is only exposed to planner users for security.
     """
     try:
         cfg = load_config()
-        user_roles = parse_user_roles()
+        current_role = get_current_user_role(username)
+        user_roles = parse_user_roles() if current_role == "planner" else {}
         return {
             "agent": {
                 "provider": cfg.agent.provider,
@@ -219,7 +233,7 @@ def get_settings(
             "user_roles": user_roles,
             "current_user": {
                 "username": username,
-                "role": get_current_user_role(username),
+                "role": current_role,
             },
             "default_role": os.environ.get("API_USER_ROLE", "analyst").strip().lower(),
             "persisted_editable": EnvWriter.read_persisted_values(),
@@ -364,9 +378,7 @@ def get_queue(
         raise HTTPException(status_code=400, detail="Invalid priority level")
 
     file_name = f"{priority}_{run_date}.json"
-    file_path = (OUTPUT_LOGS_DIR / file_name).resolve()
-    if not str(file_path).startswith(str(OUTPUT_LOGS_DIR.resolve())):
-        raise HTTPException(status_code=400, detail="Invalid run_date")
+    file_path = _resolve_output_file(OUTPUT_LOGS_DIR, file_name)
 
     if not file_path.exists():
         raise HTTPException(
@@ -444,9 +456,7 @@ def get_briefing(
     username: Annotated[str, Depends(get_current_username)],
 ) -> Dict[str, Any]:
     """Return the morning briefing markdown for a given run date."""
-    file_path = (OUTPUT_BRIEFINGS_DIR / f"briefing_{run_date}.md").resolve()
-    if not str(file_path).startswith(str(OUTPUT_BRIEFINGS_DIR.resolve())):
-        raise HTTPException(status_code=400, detail="Invalid run_date")
+    file_path = _resolve_output_file(OUTPUT_BRIEFINGS_DIR, f"briefing_{run_date}.md")
 
     if not file_path.exists():
         raise HTTPException(
@@ -573,6 +583,8 @@ def get_all_actions(
     run_date: Optional[str] = None,
 ) -> Dict[str, Any]:
     """Get all actions across all exceptions with pagination and filtering."""
+    limit = max(1, min(limit, 200))
+    offset = max(0, offset)
     try:
         return action_store.get_all_actions(
             limit=limit,
