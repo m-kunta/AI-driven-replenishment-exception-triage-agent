@@ -64,9 +64,45 @@ def parse_user_roles() -> Dict[str, str]:
     return mappings
 
 
+def parse_api_users() -> Dict[str, tuple]:
+    """Parse API_USERS='user:password:role,...' into {username: (password, role)}."""
+    raw = os.environ.get("API_USERS", "").strip()
+    users: Dict[str, tuple] = {}
+    if not raw:
+        return users
+    for entry in raw.split(","):
+        item = entry.strip()
+        if not item:
+            continue
+        parts = item.split(":")
+        if len(parts) != 3:
+            raise RuntimeError("API_USERS entries must use username:password:role format")
+        username, password, role = (p.strip() for p in parts)
+        role = role.lower()
+        if not username or not password:
+            raise RuntimeError("API_USERS entries must include a username and password")
+        if role not in {"analyst", "planner"}:
+            raise RuntimeError("API_USERS roles must be either 'analyst' or 'planner'")
+        users[username] = (password, role)
+    return users
+
+
 def get_current_username(credentials: Annotated[HTTPBasicCredentials, Depends(security)]) -> str:
     """Verifies HTTP Basic Auth credentials from environment variables."""
-    # Pull secrets from environment — both vars are required at runtime
+    users = parse_api_users()
+    if users:
+        # Per-user credentials mode (API_USERS set)
+        for username, (password, _role) in users.items():
+            if secrets.compare_digest(credentials.username.encode("utf8"), username.encode("utf8")) and \
+               secrets.compare_digest(credentials.password.encode("utf8"), password.encode("utf8")):
+                return credentials.username
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect username or password",
+            headers={"WWW-Authenticate": "Basic"},
+        )
+
+    # Legacy shared-password mode (API_USERS unset)
     expected_username = os.environ.get("API_USERNAME", "admin")
     expected_password = os.environ.get("API_PASSWORD")
     if expected_password is None:
@@ -92,6 +128,10 @@ def get_current_username(credentials: Annotated[HTTPBasicCredentials, Depends(se
 
 def get_current_user_role(username: str) -> str:
     """Resolve the authenticated user's role from server-side configuration."""
+    users = parse_api_users()
+    if username in users:
+        return users[username][1]
+
     role = parse_user_roles().get(username)
     if role:
         return role

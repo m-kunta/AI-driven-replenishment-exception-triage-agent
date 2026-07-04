@@ -847,3 +847,77 @@ class TestValidateModelEndpoint:
 
         assert resp.status_code == 422
         assert "error" in resp.json()
+
+
+# ===========================================================================
+# API_USERS — Per-user credentials with legacy fallback
+# ===========================================================================
+
+class TestApiUsers:
+    def test_api_users_login_and_role(self, monkeypatch):
+        """Parse API_USERS and authenticate users with per-user passwords and roles."""
+        monkeypatch.delenv("API_USERNAME", raising=False)
+        monkeypatch.delenv("API_PASSWORD", raising=False)
+        monkeypatch.delenv("API_USER_ROLES", raising=False)
+        monkeypatch.setenv("API_USERS", "alice:pw1:planner,bob:pw2:analyst")
+
+        # Re-import app to pick up new env vars
+        import importlib
+        import src.api.app as api_module
+        importlib.reload(api_module)
+        c = TestClient(api_module.app)
+
+        resp = c.get("/me", auth=("alice", "pw1"))
+        assert resp.status_code == 200
+        assert resp.json() == {"username": "alice", "role": "planner"}
+
+        resp = c.get("/me", auth=("bob", "pw2"))
+        assert resp.status_code == 200
+        assert resp.json() == {"username": "bob", "role": "analyst"}
+
+    def test_api_users_wrong_password_rejected(self, monkeypatch):
+        """Reject password mismatch in API_USERS mode."""
+        monkeypatch.delenv("API_USERNAME", raising=False)
+        monkeypatch.delenv("API_PASSWORD", raising=False)
+        monkeypatch.delenv("API_USER_ROLES", raising=False)
+        monkeypatch.setenv("API_USERS", "alice:pw1:planner,bob:pw2:analyst")
+
+        import importlib
+        import src.api.app as api_module
+        importlib.reload(api_module)
+        c = TestClient(api_module.app)
+
+        # bob's password must not work for alice
+        resp = c.get("/me", auth=("alice", "pw2"))
+        assert resp.status_code == 401
+
+    def test_api_users_malformed_entry_raises(self, monkeypatch):
+        """Malformed API_USERS entry (missing role) causes 500."""
+        monkeypatch.delenv("API_USERNAME", raising=False)
+        monkeypatch.delenv("API_PASSWORD", raising=False)
+        monkeypatch.delenv("API_USER_ROLES", raising=False)
+        monkeypatch.setenv("API_USERS", "alice:pw1")  # missing role
+
+        import importlib
+        import src.api.app as api_module
+        importlib.reload(api_module)
+        c = TestClient(api_module.app, raise_server_exceptions=False)
+
+        resp = c.get("/me", auth=("alice", "pw1"))
+        assert resp.status_code == 500
+
+    def test_legacy_fallback_still_works(self, monkeypatch):
+        """When API_USERS is unset, legacy API_USERNAME/API_PASSWORD mode works."""
+        monkeypatch.delenv("API_USERS", raising=False)
+        monkeypatch.setenv("API_USERNAME", "admin")
+        monkeypatch.setenv("API_PASSWORD", "secret")
+        monkeypatch.delenv("API_USER_ROLES", raising=False)
+
+        import importlib
+        import src.api.app as api_module
+        importlib.reload(api_module)
+        c = TestClient(api_module.app)
+
+        resp = c.get("/me", auth=("admin", "secret"))
+        assert resp.status_code == 200
+        assert resp.json()["username"] == "admin"
