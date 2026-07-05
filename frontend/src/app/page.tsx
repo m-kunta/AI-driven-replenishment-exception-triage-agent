@@ -165,6 +165,10 @@ export default function Home() {
       cancelled = true;
       clearInterval(intervalId);
     };
+    // fetchQueues is intentionally omitted: it's useCallback-memoized (see below)
+    // and stable across renders unless its own deps change, so including it
+    // would not affect behavior but would require re-deriving that stability
+    // guarantee here. If fetchQueues' dependencies ever change, revisit this.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pipelineStatus.kind === "running" ? pipelineStatus.runId : undefined]);
 
