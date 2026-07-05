@@ -25,6 +25,21 @@ describe('API Client', () => {
     expect(result).toEqual({ status: 'queued' });
   });
 
+  it('fetches pipeline status successfully', async () => {
+    (fetch as jest.Mock).mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ run_id: 'abc-123', status: 'running' }),
+    });
+
+    const result = await api.getPipelineStatus('abc-123');
+
+    expect(fetch).toHaveBeenCalledWith(
+      expect.stringContaining('/api/proxy/pipeline/status/abc-123'),
+      expect.objectContaining({ method: 'GET' })
+    );
+    expect(result).toEqual({ run_id: 'abc-123', status: 'running' });
+  });
+
   it('fetches a queue successfully', async () => {
     const mockQueue = [{ exception_id: '123', priority: 'CRITICAL' }];
     (fetch as jest.Mock).mockResolvedValueOnce({

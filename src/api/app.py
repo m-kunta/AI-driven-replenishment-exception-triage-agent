@@ -21,6 +21,7 @@ from src.actions.service import ActionService
 from src.models import ActionRequest
 from src.utils.config_loader import load_config, AgentConfig
 from src.api.env_writer import EnvWriter
+from src.api.run_registry import run_registry
 from src.agent.llm_provider import get_provider
 
 # Configure base FastAPI app
@@ -404,9 +405,12 @@ def trigger_pipeline(
     username: Annotated[str, Depends(get_current_username)],
 ) -> Dict[str, Any]:
     """Triggers the massive daily batch logic asynchronously."""
-    
+
+    run_id = run_registry.create()
+
     def run_pipeline_task():
         logger.info("Background execution starting for API User: {}", username)
+        run_registry.mark_running(run_id)
         try:
             run_triage_pipeline(
                 config_path="config/config.yaml",
@@ -416,17 +420,32 @@ def trigger_pipeline(
                 sample=payload.sample,
                 verbose=True,
             )
+            run_registry.mark_completed(run_id)
             logger.info("Background execution completed.")
         except Exception as e:
+            run_registry.mark_failed(run_id, str(e))
             logger.error("Pipeline crashed during API execution: {}", e)
 
     background_tasks.add_task(run_pipeline_task)
 
     return {
         "status": "queued",
-        "message": "Pipeline triggered asynchronously. You can monitor the system logs.",
+        "run_id": run_id,
+        "message": "Pipeline triggered asynchronously. Poll /pipeline/status/{run_id}.",
         "params": payload.model_dump()
     }
+
+
+@app.get("/pipeline/status/{run_id}")
+def get_pipeline_status(
+    run_id: str,
+    username: Annotated[str, Depends(get_current_username)],
+) -> Dict[str, Any]:
+    """Return the status of a background pipeline run."""
+    rec = run_registry.get(run_id)
+    if rec is None:
+        raise HTTPException(status_code=404, detail="Unknown run_id")
+    return rec
 
 
 @app.get("/runs")

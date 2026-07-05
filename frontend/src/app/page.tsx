@@ -10,9 +10,11 @@ const PRIORITIES: Priority[] = ["CRITICAL", "HIGH", "MEDIUM", "LOW"];
 
 type PipelineStatus =
   | { kind: "idle" }
-  | { kind: "running" }
+  | { kind: "running"; runId?: string; polledStatus?: string }
   | { kind: "success"; message: string }
   | { kind: "error"; message: string };
+
+const POLL_INTERVAL_MS = 3000;
 
 export default function Home() {
   const [queues, setQueues] = useState<Record<Priority, TriageResult[]>>({
@@ -119,16 +121,52 @@ export default function Home() {
   const handleTrigger = async (triggerPayload: PipelineTriggerRequest) => {
     setPipelineStatus({ kind: "running" });
     try {
-      await api.triggerPipeline(triggerPayload);
-      setPipelineStatus({
-        kind: "success",
-        message: "Pipeline queued — refresh in ~30s to see results.",
-      });
+      const resp = await api.triggerPipeline(triggerPayload);
+      setPipelineStatus({ kind: "running", runId: resp.run_id, polledStatus: "queued" });
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "Unknown error";
       setPipelineStatus({ kind: "error", message: `Trigger failed: ${message}` });
     }
   };
+
+  // Poll pipeline run status after a trigger, until it reaches a terminal state.
+  useEffect(() => {
+    if (pipelineStatus.kind !== "running" || !pipelineStatus.runId) return;
+    const runId = pipelineStatus.runId;
+    let cancelled = false;
+
+    const poll = async () => {
+      try {
+        const statusResp = await api.getPipelineStatus(runId);
+        if (cancelled) return;
+        if (statusResp.status === "completed") {
+          setPipelineStatus({
+            kind: "success",
+            message: "Pipeline completed — refresh to see results.",
+          });
+          fetchQueues();
+        } else if (statusResp.status === "failed") {
+          setPipelineStatus({
+            kind: "error",
+            message: `Pipeline failed: ${statusResp.error ?? "Unknown error"}`,
+          });
+        } else {
+          setPipelineStatus({ kind: "running", runId, polledStatus: statusResp.status });
+        }
+      } catch (err: unknown) {
+        if (cancelled) return;
+        const message = err instanceof Error ? err.message : "Unknown error";
+        setPipelineStatus({ kind: "error", message: `Status check failed: ${message}` });
+      }
+    };
+
+    const intervalId = setInterval(poll, POLL_INTERVAL_MS);
+    return () => {
+      cancelled = true;
+      clearInterval(intervalId);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pipelineStatus.kind === "running" ? pipelineStatus.runId : undefined]);
 
   const activeQueue = queues[activeTab] || [];
   const totalLostSales = activeQueue.reduce(

@@ -38,6 +38,23 @@ export interface PipelineTriggerRequest {
   dry_run?: boolean;
 }
 
+export interface PipelineTriggerResponse {
+  status: string;
+  run_id: string;
+  message?: string;
+  params?: Record<string, unknown>;
+}
+
+export type PipelineRunStatus = "queued" | "running" | "completed" | "failed";
+
+export interface PipelineStatusResponse {
+  run_id: string;
+  status: PipelineRunStatus;
+  error?: string | null;
+  created_at?: string;
+  updated_at?: string;
+}
+
 export interface OverrideSubmitRequest {
   exception_id: string;
   run_date: string;
@@ -220,7 +237,9 @@ async function toApiError(
 }
 
 export const api = {
-  triggerPipeline: async (payload: PipelineTriggerRequest) => {
+  triggerPipeline: async (
+    payload: PipelineTriggerRequest
+  ): Promise<PipelineTriggerResponse> => {
     const res = await fetch(`${PROXY_BASE}/pipeline/trigger`, {
       method: "POST",
       headers: JSON_HEADERS,
@@ -228,6 +247,17 @@ export const api = {
     });
     if (!res.ok) {
       throw await toApiError(res, `Failed to trigger pipeline: ${res.statusText}`);
+    }
+    return res.json();
+  },
+
+  getPipelineStatus: async (runId: string): Promise<PipelineStatusResponse> => {
+    const res = await fetch(`${PROXY_BASE}/pipeline/status/${runId}`, {
+      method: "GET",
+      headers: JSON_HEADERS,
+    });
+    if (!res.ok) {
+      throw await toApiError(res, `Failed to fetch pipeline status: ${res.statusText}`);
     }
     return res.json();
   },

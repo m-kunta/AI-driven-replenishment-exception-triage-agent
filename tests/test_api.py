@@ -43,6 +43,7 @@ os.environ.setdefault("API_USERNAME", _USERNAME)
 os.environ.setdefault("API_PASSWORD", _PASSWORD)
 
 from src.api.app import app  # noqa: E402
+from src.api.run_registry import RunRegistry  # noqa: E402
 
 # ---------------------------------------------------------------------------
 # Shared test data
@@ -597,6 +598,48 @@ class TestPipelineTriggerEndpoint:
             )
         # The HTTP response itself must still be 202 regardless of task outcome
         assert resp.status_code == 202
+
+# ===========================================================================
+# Pipeline run registry + status endpoint
+# ===========================================================================
+
+
+class TestRunRegistry:
+    def test_lifecycle(self):
+        reg = RunRegistry()
+        run_id = reg.create()
+        assert reg.get(run_id)["status"] == "queued"
+        reg.mark_running(run_id)
+        assert reg.get(run_id)["status"] == "running"
+        reg.mark_completed(run_id)
+        assert reg.get(run_id)["status"] == "completed"
+
+    def test_failed_captures_error(self):
+        reg = RunRegistry()
+        run_id = reg.create()
+        reg.mark_failed(run_id, "boom")
+        rec = reg.get(run_id)
+        assert rec["status"] == "failed" and rec["error"] == "boom"
+
+    def test_unknown_run_id_is_none(self):
+        assert RunRegistry().get("nope") is None
+
+
+class TestPipelineStatusEndpoint:
+    def test_trigger_returns_run_id_and_status_readable(self, client):
+        with patch("src.api.app.run_triage_pipeline"):
+            resp = client.post(
+                "/pipeline/trigger", json={"dry_run": True}, auth=VALID_CREDS
+            )
+        assert resp.status_code == 202
+        run_id = resp.json()["run_id"]
+        status_resp = client.get(f"/pipeline/status/{run_id}", auth=VALID_CREDS)
+        assert status_resp.status_code == 200
+        assert status_resp.json()["status"] in {"queued", "running", "completed", "failed"}
+
+    def test_unknown_run_id_404(self, client):
+        assert client.get("/pipeline/status/does-not-exist", auth=VALID_CREDS).status_code == 404
+
 
 # ===========================================================================
 # Override Endpoints
