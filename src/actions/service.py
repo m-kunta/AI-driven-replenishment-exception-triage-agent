@@ -2,7 +2,7 @@ import logging
 from typing import Optional, List
 from src.db.action_store import ActionStore
 from src.models import ActionRequest, ActionStatus, ActionType
-from src.actions.adapters import BaseActionAdapter, GenericWebhookAdapter
+from src.actions.adapters import BaseActionAdapter, build_default_adapter
 
 logger = logging.getLogger(__name__)
 
@@ -14,7 +14,7 @@ PLANNER_ONLY_ACTIONS = {
 class ActionService:
     def __init__(self, store: ActionStore, adapter: Optional[BaseActionAdapter] = None):
         self.store = store
-        self.adapter = adapter or GenericWebhookAdapter()
+        self.adapter = adapter or build_default_adapter()
 
     def validate_action_permissions(self, request: ActionRequest) -> None:
         """Reject action types that the current role is not allowed to execute."""

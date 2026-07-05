@@ -61,3 +61,47 @@ def test_action_service_rejects_planner_only_action_for_analyst():
         asyncio.run(service.submit_action(req))
 
     assert store.get_action("req-3") is None
+
+
+# Tests for SlackWebhookAdapter
+import httpx
+from src.actions.adapters import SlackWebhookAdapter, build_default_adapter, GenericWebhookAdapter
+
+
+class TestSlackAdapter:
+    def test_posts_payload_and_succeeds(self, monkeypatch):
+        # Mock httpx.AsyncClient.post to verify the call
+        post_called = []
+
+        async def fake_post(self, url, json=None, **kwargs):
+            post_called.append({"url": url, "json": json})
+            return httpx.Response(200, text="ok")
+
+        monkeypatch.setattr(httpx.AsyncClient, "post", fake_post)
+        adapter = SlackWebhookAdapter("https://hooks.slack.example/T000/B000/XXX")
+        ok, reason, resp = asyncio.run(adapter.execute("VENDOR_FOLLOW_UP", {"note": "check PO 123"}))
+
+        assert ok is True and reason == ""
+        assert len(post_called) == 1
+        assert "hooks.slack" in post_called[0]["url"]
+        assert "VENDOR_FOLLOW_UP" in post_called[0]["json"]["text"]
+
+    def test_http_error_reports_failure(self, monkeypatch):
+        async def fake_post(self, url, json=None, **kwargs):
+            return httpx.Response(500, text="internal error")
+
+        monkeypatch.setattr(httpx.AsyncClient, "post", fake_post)
+        adapter = SlackWebhookAdapter("https://hooks.slack.example/T000/B000/XXX")
+        ok, reason, resp = asyncio.run(adapter.execute("STORE_CHECK", {}))
+
+        assert ok is False and "500" in reason
+
+    def test_factory_uses_slack_when_env_set(self, monkeypatch):
+        monkeypatch.setenv("SLACK_WEBHOOK_URL", "https://hooks.slack.example/x")
+        result = build_default_adapter()
+        assert isinstance(result, SlackWebhookAdapter)
+
+    def test_factory_falls_back_to_mock(self, monkeypatch):
+        monkeypatch.delenv("SLACK_WEBHOOK_URL", raising=False)
+        result = build_default_adapter()
+        assert isinstance(result, GenericWebhookAdapter)
