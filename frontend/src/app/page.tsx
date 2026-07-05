@@ -197,6 +197,12 @@ export default function Home() {
               Planner — Override Review
             </Link>
             <Link
+              href="/actions"
+              className="inline-flex rounded-lg border border-slate-700 px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-slate-300 transition-colors hover:border-slate-500 hover:text-slate-100"
+            >
+              Action History
+            </Link>
+            <Link
               href="/settings"
               className="inline-flex rounded-lg border border-slate-700 px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-slate-300 transition-colors hover:border-slate-500 hover:text-slate-100"
             >
