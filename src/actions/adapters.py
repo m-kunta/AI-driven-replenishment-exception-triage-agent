@@ -42,7 +42,7 @@ class SlackWebhookAdapter(BaseActionAdapter):
         self.webhook_url = webhook_url
 
     async def execute(self, action_type: str, payload: dict) -> Tuple[bool, str, Dict[str, Any]]:
-        note = payload.get("note") or payload.get("comment") or ""
+        note = payload.get("notes") or payload.get("note") or payload.get("comment") or ""
         exception_id = payload.get("exception_id", "unknown")
         text = (
             f":package: *Triage Action: {action_type}*\n"

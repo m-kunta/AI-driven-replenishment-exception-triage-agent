@@ -105,3 +105,23 @@ class TestSlackAdapter:
         monkeypatch.delenv("SLACK_WEBHOOK_URL", raising=False)
         result = build_default_adapter()
         assert isinstance(result, GenericWebhookAdapter)
+
+    def test_reads_notes_key_from_real_frontend_payload(self, monkeypatch):
+        """Test that payload with 'notes' key (from real frontend) is correctly included in Slack message."""
+        post_called = []
+
+        async def fake_post(self, url, json=None, **kwargs):
+            post_called.append({"url": url, "json": json})
+            return httpx.Response(200, text="ok")
+
+        monkeypatch.setattr(httpx.AsyncClient, "post", fake_post)
+        adapter = SlackWebhookAdapter("https://hooks.slack.example/T000/B000/XXX")
+        ok, reason, resp = asyncio.run(
+            adapter.execute("VENDOR_FOLLOW_UP", {"notes": "check PO 123", "exception_id": "EXC-1"})
+        )
+
+        assert ok is True and reason == ""
+        assert len(post_called) == 1
+        # Verify that the notes text appears in the posted Slack message
+        assert "check PO 123" in post_called[0]["json"]["text"]
+        assert "EXC-1" in post_called[0]["json"]["text"]
