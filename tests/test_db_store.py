@@ -94,6 +94,23 @@ def test_insert_override_invalid_run_date(store):
         )
 
 
+def test_get_override_stats(store):
+    store.insert_override(
+        exception_id="EXC-1", run_date="2026-07-01", analyst_username="a",
+        enriched_input_snapshot={}, override_priority="CRITICAL",
+    )
+    store.insert_override(
+        exception_id="EXC-2", run_date="2026-07-01", analyst_username="a",
+        enriched_input_snapshot={}, override_priority="LOW",
+    )
+    store.approve_override(1, approved_by="p")
+    stats = store.get_override_stats()
+    assert stats["total"] == 2
+    assert stats["by_status"]["approved"] == 1
+    assert stats["by_status"]["pending"] == 1
+    assert stats["by_override_priority"]["CRITICAL"] == 1
+
+
 def test_insert_override_analyst_note_only(store):
     row_id = store.insert_override(
         exception_id="EXC-001",

@@ -533,6 +533,18 @@ def list_pending_overrides(
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
+@app.get("/overrides/stats")
+def get_override_stats(
+    username: Annotated[str, Depends(get_current_username)],
+) -> Dict[str, Any]:
+    """Aggregate override statistics for the active-learning dashboard."""
+    try:
+        return override_store.get_override_stats()
+    except Exception as e:
+        logger.error("Failed to compute override stats: {}", e)
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
 @app.post("/overrides/{override_id}/approve")
 def approve_override(
     override_id: int,

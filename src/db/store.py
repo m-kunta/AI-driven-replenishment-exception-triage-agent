@@ -187,6 +187,24 @@ class OverrideStore:
             results.append(d)
         return results
 
+    def get_override_stats(self) -> dict:
+        """Aggregate override counts for the analytics strip."""
+        total = self._conn.execute("SELECT COUNT(*) FROM analyst_overrides").fetchone()[0]
+        by_status = {
+            row[0]: row[1]
+            for row in self._conn.execute(
+                "SELECT approval_status, COUNT(*) FROM analyst_overrides GROUP BY approval_status"
+            )
+        }
+        by_priority = {
+            row[0]: row[1]
+            for row in self._conn.execute(
+                "SELECT override_priority, COUNT(*) FROM analyst_overrides "
+                "WHERE override_priority IS NOT NULL GROUP BY override_priority"
+            )
+        }
+        return {"total": total, "by_status": by_status, "by_override_priority": by_priority}
+
     def _row_to_few_shot(self, row) -> dict:
         output: dict = {}
         field_map = {

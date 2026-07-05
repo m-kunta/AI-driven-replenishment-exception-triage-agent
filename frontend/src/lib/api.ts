@@ -90,6 +90,12 @@ export interface PendingOverride {
   analyst_note?: string | null;
 }
 
+export interface OverrideStats {
+  total: number;
+  by_status: Record<string, number>;
+  by_override_priority: Record<string, number>;
+}
+
 export interface OverrideDecisionResponse {
   status: "approved" | "rejected";
   override_id: number;
@@ -283,6 +289,17 @@ export const api = {
     });
     if (!res.ok) {
       throw await toApiError(res, `Failed to fetch pending overrides: ${res.statusText}`);
+    }
+    return res.json();
+  },
+
+  getOverrideStats: async (): Promise<OverrideStats> => {
+    const res = await fetch(`${PROXY_BASE}/overrides/stats`, {
+      method: "GET",
+      headers: JSON_HEADERS,
+    });
+    if (!res.ok) {
+      throw await toApiError(res, `Failed to fetch override stats: ${res.statusText}`);
     }
     return res.json();
   },

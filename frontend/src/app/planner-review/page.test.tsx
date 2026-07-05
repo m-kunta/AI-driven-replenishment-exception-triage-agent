@@ -14,6 +14,7 @@ jest.mock("../../lib/api", () => {
       ...actual.api,
       getCurrentUser: jest.fn(),
       getPendingOverrides: jest.fn(),
+      getOverrideStats: jest.fn(),
       getRuns: jest.fn(),
       getQueue: jest.fn(),
       getBriefing: jest.fn(),
@@ -46,6 +47,11 @@ describe("PlannerReviewPage", () => {
     jest.clearAllMocks();
     (api.getCurrentUser as jest.Mock).mockResolvedValue({ username: "admin", role: "analyst" });
     (api.getPendingOverrides as jest.Mock).mockResolvedValue([]);
+    (api.getOverrideStats as jest.Mock).mockResolvedValue({
+      total: 0,
+      by_status: {},
+      by_override_priority: {},
+    });
     (api.getRuns as jest.Mock).mockResolvedValue([]);
     (api.getQueue as jest.Mock).mockResolvedValue([]);
     (api.getBriefing as jest.Mock).mockResolvedValue(null);
@@ -57,6 +63,25 @@ describe("PlannerReviewPage", () => {
     render(<PlannerReviewPage getPendingOverrides={getPendingOverrides} />);
 
     expect(await screen.findByText(/EXC-001/i)).toBeInTheDocument();
+  });
+
+  it("renders the override stats strip", async () => {
+    const getPendingOverrides = jest.fn().mockResolvedValue([]);
+    const getOverrideStats = jest.fn().mockResolvedValue({
+      total: 4,
+      by_status: { pending: 1, approved: 2, rejected: 1 },
+      by_override_priority: { CRITICAL: 2, LOW: 2 },
+    });
+
+    render(
+      <PlannerReviewPage
+        getPendingOverrides={getPendingOverrides}
+        getOverrideStats={getOverrideStats}
+      />
+    );
+
+    expect(await screen.findByText(/^4$/)).toBeInTheDocument();
+    expect(screen.getByText(/CRITICAL/i)).toBeInTheDocument();
   });
 
   it("shows an empty state when no overrides are pending", async () => {

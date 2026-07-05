@@ -7,6 +7,7 @@ import {
   api,
   PendingOverride,
   CurrentUser,
+  OverrideStats,
 } from "../../lib/api";
 
 function formatTimestamp(raw: string): string {
@@ -24,6 +25,7 @@ type PlannerReviewPageProps = {
   getPendingOverrides?: typeof api.getPendingOverrides;
   approveOverride?: typeof api.approveOverride;
   rejectOverride?: typeof api.rejectOverride;
+  getOverrideStats?: typeof api.getOverrideStats;
 };
 
 type RowState = Record<number, { busy: boolean; error?: string; rejectionReason: string }>;
@@ -36,16 +38,31 @@ export default function PlannerReviewPage({
   getPendingOverrides = api.getPendingOverrides,
   approveOverride = api.approveOverride,
   rejectOverride = api.rejectOverride,
+  getOverrideStats = api.getOverrideStats,
 }: PlannerReviewPageProps) {
   const [items, setItems] = useState<PendingOverride[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [rowState, setRowState] = useState<RowState>({});
   const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
+  const [stats, setStats] = useState<OverrideStats | null>(null);
 
   useEffect(() => {
     api.getCurrentUser().then(setCurrentUser).catch(() => null);
   }, []);
+
+  useEffect(() => {
+    let active = true;
+    getOverrideStats()
+      .then((result) => {
+        if (!active) return;
+        setStats(result);
+      })
+      .catch(() => null);
+    return () => {
+      active = false;
+    };
+  }, [getOverrideStats]);
 
   useEffect(() => {
     let active = true;
@@ -156,6 +173,43 @@ export default function PlannerReviewPage({
             <span className="font-mono">{currentUser.role}</span>. Only planners can approve or
             reject overrides.
           </p>
+        </div>
+      )}
+
+      {stats && (
+        <div className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="rounded-2xl border border-slate-700 bg-slate-900/80 p-4">
+            <p className="text-xs uppercase tracking-wider text-slate-500">Total</p>
+            <p className="mt-1 text-2xl font-bold text-slate-100">{stats.total}</p>
+          </div>
+          <div className="rounded-2xl border border-slate-700 bg-slate-900/80 p-4">
+            <p className="text-xs uppercase tracking-wider text-slate-500">Pending</p>
+            <p className="mt-1 text-2xl font-bold text-amber-300">
+              {stats.by_status.pending ?? 0}
+            </p>
+          </div>
+          <div className="rounded-2xl border border-slate-700 bg-slate-900/80 p-4">
+            <p className="text-xs uppercase tracking-wider text-slate-500">Approved</p>
+            <p className="mt-1 text-2xl font-bold text-emerald-300">
+              {stats.by_status.approved ?? 0}
+            </p>
+          </div>
+          <div className="rounded-2xl border border-slate-700 bg-slate-900/80 p-4">
+            <p className="text-xs uppercase tracking-wider text-slate-500">Rejected</p>
+            <p className="mt-1 text-2xl font-bold text-rose-300">
+              {stats.by_status.rejected ?? 0}
+            </p>
+          </div>
+          {Object.keys(stats.by_override_priority).length > 0 && (
+            <div className="rounded-2xl border border-slate-700 bg-slate-900/80 p-4 sm:col-span-2 lg:col-span-4">
+              <p className="text-xs uppercase tracking-wider text-slate-500">By Priority</p>
+              <p className="mt-1 text-sm text-slate-300">
+                {Object.entries(stats.by_override_priority)
+                  .map(([priority, count]) => `${priority}: ${count}`)
+                  .join(" · ")}
+              </p>
+            </div>
+          )}
         </div>
       )}
 

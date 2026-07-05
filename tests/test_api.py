@@ -678,6 +678,12 @@ class TestOverrideEndpoints:
         assert len(resp.json()) == 1
         assert resp.json()[0]["exception_id"] == "EXC-123"
 
+    def test_override_stats_endpoint(self, client):
+        resp = client.get("/overrides/stats", auth=VALID_CREDS)
+        assert resp.status_code == 200
+        body = resp.json()
+        assert set(body) == {"total", "by_status", "by_override_priority"}
+
     def test_approve_override(self, client, monkeypatch):
         monkeypatch.setenv("API_USER_ROLE", "planner")
         payload = {

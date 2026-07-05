@@ -174,6 +174,26 @@ describe('API Client', () => {
     expect(result).toEqual(pending);
   });
 
+  it('fetches override stats successfully', async () => {
+    const stats = {
+      total: 2,
+      by_status: { pending: 1, approved: 1 },
+      by_override_priority: { CRITICAL: 1 },
+    };
+    (fetch as jest.Mock).mockResolvedValueOnce({
+      ok: true,
+      json: async () => stats,
+    });
+
+    const result = await api.getOverrideStats();
+
+    expect(fetch).toHaveBeenCalledWith(
+      expect.stringContaining('/api/proxy/overrides/stats'),
+      expect.objectContaining({ method: 'GET' })
+    );
+    expect(result).toEqual(stats);
+  });
+
   it('approves an override through the proxy', async () => {
     (fetch as jest.Mock).mockResolvedValueOnce({
       ok: true,
