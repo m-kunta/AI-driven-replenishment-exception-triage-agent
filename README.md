@@ -474,6 +474,16 @@ cd frontend && API_PASSWORD=yourpass API_USERNAME=admin npm run dev
 python scripts/run_backtest.py --date 2026-04-11 --week 4 --sample
 ```
 
+### Scheduling a Daily Run
+
+Run the pipeline every weekday at 6:00 AM and post the briefing to Slack:
+
+```cron
+0 6 * * 1-5 cd /path/to/AI-driven-replenishment-exception-triage-agent && .venv/bin/python scripts/run_daily.py >> output/cron.log 2>&1
+```
+
+Set `SLACK_WEBHOOK_URL` in `.env` to enable briefing dispatch; without it the pipeline still runs and writes `output/briefings/`.
+
 ---
 
 ## Project Status
