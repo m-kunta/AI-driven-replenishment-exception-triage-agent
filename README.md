@@ -13,7 +13,7 @@
 **GitHub:** [github.com/m-kunta](https://github.com/m-kunta)  
 **Domain:** Supply Chain Planning / Retail Replenishment
 
-> All four pipeline layers are complete and tested. The full pipeline runs end-to-end via `python scripts/run_triage.py`. Phase 8 (Backtesting) is fully implemented. Phase 11 (Web UI) MVP is live with a FastAPI backend, Next.js Command Center dashboard, BFF proxy for secure credential handling, and full Markdown briefing rendering. Phase 12 (Active Learning) is complete with analyst override submission, planner approval, and approved-override prompt injection. Phase 13 (Agentic Engagement) is in progress: the first execution slice is live with an action modal, exception-card action history, FastAPI action endpoints, `ActionStore`, adapter-driven delivery, audit-tracked retry, planner-only gating, per-user role resolution via backend-authenticated actor profiles, and a Settings page that can inspect runtime provider/model configuration and verify available models against the live provider API.
+> All four pipeline layers are complete and tested. The full pipeline runs end-to-end via `python scripts/run_triage.py`, and can be scheduled daily via `scripts/run_daily.py` (cron-friendly, with optional Slack briefing dispatch). Phase 8 (Backtesting) is fully implemented. Phase 11 (Web UI) MVP is live with a FastAPI backend, Next.js Command Center dashboard, BFF proxy for secure credential handling, full Markdown briefing rendering, and live pipeline-run status polling. Phase 12 (Active Learning) is complete with analyst override submission, planner approval, approved-override prompt injection, and an override-analytics stats strip. Phase 13 (Agentic Engagement) is in progress: the execution slice is live with an action modal, exception-card action history, a global paginated/filterable Action History page, FastAPI action endpoints, `ActionStore`, adapter-driven delivery (including a real Slack webhook adapter), audit-tracked retry, planner-only gating, per-user credentials (`API_USERS`) with per-user role resolution, and a Settings page that can inspect runtime provider/model configuration and verify available models against the live provider API.
 
 ---
 
@@ -243,7 +243,9 @@ The agent ingests raw replenishment exceptions, enriches them with 15+ contextua
 ├──────────────────────────────────────────────────────────────────┤
 │  Phase 13: Agentic Engagement        ← 🚧 IN PROGRESS                     │
 │  ✅ Action modal + card history · ✅ FastAPI action endpoints             │
-│  ✅ ActionStore + service + adapter · ✅ Retry + audit trail              │
+│  ✅ ActionStore + service + Slack adapter · ✅ Retry + audit trail        │
+│  ✅ Global Action History page · ✅ Pipeline run status polling          │
+│  ✅ Per-user credentials (API_USERS) · ✅ Override analytics             │
 │  ✅ Planner-only gating · ✅ Full frontend + backend test coverage        │
 └──────────────────────────────────────────────────────────────────┘
 ```
@@ -302,6 +304,16 @@ AI-driven-replenishment-exception-triage-agent/
 │   │   ├── alert_dispatcher.py    # Email/webhook/SLA timer alerts for CRITICAL & HIGH
 │   │   ├── briefing_generator.py  # Daily markdown briefing with LLM executive summary
 │   │   └── exception_logger.py    # Appends 26-field CSV audit row per exception; idempotent
+│   ├── actions/                    # ← Phase 13 action service + adapter boundary
+│   │   ├── service.py              # ActionService — permission checks, submit/retry
+│   │   └── adapters.py             # BaseActionAdapter, GenericWebhookAdapter, SlackWebhookAdapter
+│   ├── db/
+│   │   ├── store.py                # OverrideStore (Phase 12 override persistence + stats)
+│   │   └── action_store.py         # ActionStore — SQLite-backed action audit persistence
+│   ├── api/                        # ← Phase 11+ FastAPI interface layer
+│   │   ├── app.py                  # All API endpoints (queues, pipeline, overrides, actions, settings)
+│   │   ├── run_registry.py         # In-memory pipeline run status registry
+│   │   └── env_writer.py           # Atomic, validated .env read/write for Settings edit mode
 │   └── utils/
 │       ├── config_loader.py       # YAML + ${ENV_VAR} resolution → AppConfig
 │       ├── validators.py          # Pydantic validators
@@ -348,15 +360,17 @@ AI-driven-replenishment-exception-triage-agent/
 │   │   │   ├── api/proxy/[...path]/   # BFF Route Handler (server-side auth)
 │   │   │   │   └── route.ts
 │   │   │   ├── layout.tsx
-│   │   │   ├── page.tsx               # Command Center dashboard
-│   │   │   ├── planner-review/        # Phase 12 planner approval screen
+│   │   │   ├── page.tsx               # Command Center dashboard + pipeline run status polling
+│   │   │   ├── planner-review/        # Phase 12 planner approval screen + override stats strip
+│   │   │   ├── actions/                # Phase 13 global Action History page (filters + pagination)
+│   │   │   ├── settings/               # Runtime provider/model settings + edit mode
 │   │   │   └── globals.css
 │   │   ├── components/
 │   │   │   ├── ActionModal.tsx        # Phase 13 action confirmation modal
 │   │   │   ├── ExceptionCard.tsx      # Priority exception card + override/action entry points
 │   │   │   └── MarkdownBriefing.tsx   # Styled Markdown renderer (GFM tables, etc.)
 │   │   └── lib/
-│   │       └── api.ts                 # Type-safe API client (queues, briefing, overrides, actions)
+│   │       └── api.ts                 # Type-safe API client (queues, briefing, overrides, actions, settings)
 │   ├── __mocks__/                     # Jest manual mocks for ESM packages
 │   │   ├── react-markdown.tsx
 │   │   └── remark-gfm.ts
@@ -365,7 +379,8 @@ AI-driven-replenishment-exception-triage-agent/
 ├── scripts/
 │   ├── generate_sample_data.py    # Synthetic data generator
 │   ├── run_triage.py              # CLI entry point for the full pipeline
-│   └── run_backtest.py            # Backtesting pipeline evaluation script
+│   ├── run_backtest.py            # Backtesting pipeline evaluation script
+│   └── run_daily.py               # Cron-friendly daily run + Slack briefing dispatch
 ├── output/
 │   ├── backtest/                  # Generated backtest evaluation reports (git-ignored)
 │   ├── briefings/                 # Generated morning briefings (git-ignored)
@@ -449,6 +464,8 @@ Start both the backend and frontend from the project root with a single command:
 # 1. Copy and configure the root .env (one-time setup)
 cp .env.example .env
 # Edit .env — set API_PASSWORD, API_USERNAME, API_URL, and your AI provider key
+# For per-user login (separate password + role per analyst/planner), set API_USERS
+# instead — see .env.example for the "username:password:role" format.
 
 # 2. Start both services (backend + frontend) together
 bash scripts/dev.sh
@@ -496,9 +513,9 @@ Set `SLACK_WEBHOOK_URL` in `.env` to enable briefing dispatch; without it the pi
 | **Layer 4 — Output & Alerts** | ✅ Complete | Priority Router · Alert Dispatcher · Morning Briefing · Exception Logger (CSV audit log) |
 | **Main Orchestrator & CLI** | ✅ Complete | `src/main.py` wires all 4 layers; `scripts/run_triage.py` provides full CLI |
 | **Phase 8 — Backtesting** | ✅ Complete | `scripts/run_backtest.py` — outcome accuracy scoring at Week 4/8 after exception date |
-| **Phase 11 — Web UI** | ✅ MVP Complete | FastAPI backend + Next.js Command Center. BFF proxy keeps credentials server-side. Markdown briefing panel, exception queue tabs, and pipeline trigger are live. |
-| **Phase 12 — Active Learning** | ✅ Complete | Analyst override DB layer, FastAPI override endpoints, analyst inline override modal, planner review screen, approved-override prompt injection, and startup auto-approval are live. |
-| **Phase 13 — Agentic Engagement** | 🚧 In Progress | The execution MVP is live with an action modal, exception-card action history, FastAPI action endpoints, `ActionStore`, action service/adapter, retry, audit logging, planner-only gating for `STORE_CHECK` / `VENDOR_FOLLOW_UP`, planner-only override approval/rejection, per-user role resolution through backend-authenticated actor profiles, and a runtime Settings flow (`/settings`, `/models`) for provider/model inspection and model availability checks. Broader ERP integrations, deeper RBAC, and cross-run action history remain future work. |
+| **Phase 11 — Web UI** | ✅ MVP Complete | FastAPI backend + Next.js Command Center. BFF proxy keeps credentials server-side. Markdown briefing panel, exception queue tabs, pipeline trigger, and live pipeline-run status polling (`GET /pipeline/status/{run_id}`) are live. |
+| **Phase 12 — Active Learning** | ✅ Complete | Analyst override DB layer, FastAPI override endpoints, analyst inline override modal, planner review screen, approved-override prompt injection, startup auto-approval, and an override-analytics stats strip (`GET /overrides/stats`) are live. |
+| **Phase 13 — Agentic Engagement** | 🚧 In Progress | The execution MVP is live with an action modal, exception-card action history, a global paginated/filterable Action History page, FastAPI action endpoints, `ActionStore`, action service/adapter (including a real Slack webhook adapter), retry, audit logging, planner-only gating for `STORE_CHECK` / `VENDOR_FOLLOW_UP`, planner-only override approval/rejection, per-user credentials (`API_USERS`) with per-user role resolution, and a runtime Settings flow (`/settings`, `/models`, edit mode) for provider/model inspection and model availability checks. A cron-friendly `scripts/run_daily.py` supports scheduled daily runs with Slack briefing dispatch. Broader ERP-specific adapters and deeper RBAC remain future work. |
 
 ### Layer 2 — Implementation
 
@@ -547,17 +564,19 @@ This project is intentionally staged. To avoid confusion, use this guide when ev
 | Backtesting pipeline | ✅ Implemented | `scripts/run_backtest.py` — Week 4/8 outcome scoring |
 | Web UI Backend (FastAPI) | ✅ Implemented | Exposes queues and triggers pipeline asynchronously (`src/api/app.py`) |
 | Web UI Frontend (Next.js) | ✅ Implemented | Command Center dashboard: Markdown briefing panel (react-markdown + remark-gfm), exception queue tabs by priority, pipeline trigger, BFF proxy for secure server-side auth (`/frontend`) |
-| Active Learning Override Workflow | ✅ Implemented | Analyst inline override submission, planner review screen, approval/rejection endpoints, and approved override feedback loop into prompt composition |
-| Phase 13 Action Execution | 🚧 In Progress | Typed execution actions from the UI into backend action services with idempotent request IDs, authenticated requester injection, per-user role resolution, inline status/history, retry, webhook-style adapter delivery, runtime provider/model verification support in the Settings UI, and planner-only override approval/rejection for the review workflow |
+| Active Learning Override Workflow | ✅ Implemented | Analyst inline override submission, planner review screen, approval/rejection endpoints, approved override feedback loop into prompt composition, and an override-analytics stats strip |
+| Phase 13 Action Execution | 🚧 In Progress | Typed execution actions from the UI into backend action services with idempotent request IDs, authenticated requester injection, per-user credentials + role resolution (`API_USERS`), inline status/history, a global cross-run Action History page, retry, webhook-style adapter delivery (including a real Slack adapter), runtime provider/model verification support in the Settings UI, and planner-only override approval/rejection for the review workflow |
+| Scheduled Daily Runs | ✅ Implemented | `scripts/run_daily.py` — cron-friendly pipeline run with optional Slack briefing dispatch via `SLACK_WEBHOOK_URL` |
 
 ### Current Open Work
 
 The main remaining backlog is concentrated in the post-MVP portion of Phase 13:
 
-- broader ERP-specific adapters beyond the current generic adapter boundary
-- fuller RBAC beyond the current planner-only gates
-- cross-run action history beyond the inline per-exception card history
+- broader ERP-specific adapters beyond the current generic/Slack adapter boundary
+- fuller RBAC beyond the current planner/analyst gates
 - final manual browser click-through before calling the UI broadly launch-ready
+
+**Known prototype limitation:** `scripts/run_daily.py` currently runs against sample data (`sample=True`) unconditionally — it does not yet process real ingested exceptions without a manual code change. Treat scheduled runs as a demonstration of the cron/dispatch mechanism until this is made configurable.
 
 Run `python scripts/run_triage.py --help` to see all available options.
 

@@ -14,7 +14,7 @@ This document defines the specific operational skills (playbooks) available in t
 | **`grade_backtest`** | Executes `scripts/run_backtest.py` | **WHEN** you need to dynamically evaluate precision/recall after modifying the `triage_agent.py` logic. |
 | **`add_enrichment`** | Pipeline for adding new data sources | **WHEN** the user asks to integrate a new signal (e.g. Weather API). You must touch `data_loader.py`, `engine.py`, and `models.py`. |
 | **`tune_prompt`** | Modifies the AI's heuristic behavior | **WHEN** the AI priorities hallucinate. Do not edit `.py` code; you must teach via `prompts/few_shot_library.json`. |
-| **`env_setup`** | Wires `.env` + `frontend/.env.local` | **WHEN** setting up a fresh clone or after rotating API credentials. Run `bash scripts/dev.sh` which auto-syncs passwords. |
+| **`env_setup`** | Wires the root `.env` (no `frontend/.env.local` needed) | **WHEN** setting up a fresh clone or after rotating API credentials. Run `bash scripts/dev.sh` which auto-syncs passwords. |
 | **`build_ui_view`** | Scaffolds Next.js/FastAPI components | **WHEN** extending the UI. You must keep Next.js contained in `/frontend/` and FastAPI in `src/api/`. |
 
 ---
@@ -117,7 +117,7 @@ When transitioning into the Web UI build architecture (FastAPI + Next.js), adher
 
 ### Backend Extensions (FastAPI) — Phase 11
 - **Do not rewrite existing Pytest coverage:** The FastAPI shell (`src/api/app.py`) must cleanly *import* from `src.main` without modifying the core functional boundaries of Layers 1 through 4.
-- **Use sync `def` endpoints:** The pipeline is CPU-bound/blocking — `async def` is not appropriate. Long-running pipeline calls must use `BackgroundTasks` to avoid blocking the server.
+- **Pipeline/file endpoints stay sync `def`:** The pipeline is CPU-bound/blocking. Long-running pipeline calls must use `BackgroundTasks` to avoid blocking the server. Action execution endpoints (`POST /actions`, `POST /actions/{request_id}/retry`) are the one exception — they use `async def` because they call adapter-driven async service methods (`ActionService.submit_action`, `.retry_action`).
 - **Auth on every non-health endpoint:** All endpoints except `/health` must use `Depends(get_current_username)`. `API_PASSWORD` must raise `RuntimeError` if unset — no silent defaults.
 - **`output/logs/` is the source of truth** for triage results. The API reads these files; it does not write to them.
 
@@ -127,8 +127,8 @@ When transitioning into the Web UI build architecture (FastAPI + Next.js), adher
 - **Styling:** Use TailwindCSS v4. Global utility classes (`.glass`, `.glass-hover`, `transition-all-smooth`) live in `frontend/src/app/globals.css` — use them before inventing new ones. Keep components modular in `frontend/src/components/`.
 - **Shadcn/UI is deferred to Phase 12+** — do not install it for Phase 11 work.
 
-### Database Rules — Phase 12 (not yet implemented)
-- Utilize SQLite via `SQLAlchemy ORM` for UI state toggling (Acknowledging/Resolving/Dismissing exceptions). Do not implement this in Phase 11 — `output/logs/` files are the sole source of truth until Phase 12.
+### Database Rules — Phase 12+ (implemented)
+- Phase 12/13 state (analyst overrides, downstream action audit records) is persisted in SQLite via plain `sqlite3` (no ORM) — `src/db/store.py` (`OverrideStore`) and `src/db/action_store.py` (`ActionStore`). `output/logs/` files remain the sole source of truth for triage/queue results; the DB layer is additive for override and action state only.
 
 ---
 
