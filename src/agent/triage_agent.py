@@ -12,15 +12,16 @@ Author: Mohith Kunta <mohith.kunta@gmail.com>
 from __future__ import annotations
 
 import uuid
+from collections.abc import Callable
 from datetime import date, datetime, timezone
-from typing import List
+from typing import List, TypeVar
 
 from loguru import logger
 
 from src.agent.batch_processor import BatchProcessor
-from src.db.store import OverrideStore
 from src.agent.pattern_analyzer import PatternAnalyzer
 from src.agent.phantom_webhook import process_phantom_inventory
+from src.db.store import OverrideStore
 from src.models import (
     EnrichedExceptionSchema,
     MacroPatternReport,
@@ -29,6 +30,16 @@ from src.models import (
     TriageRunResult,
 )
 from src.utils.config_loader import AppConfig
+
+_T = TypeVar("_T")
+
+try:
+    from glassbox import trace
+except ImportError:
+
+    def trace(function: Callable[..., _T]) -> Callable[..., _T]:
+        """Leave the agent untouched until its optional Glassbox package is installed."""
+        return function
 
 
 class TriageAgent:
@@ -48,6 +59,7 @@ class TriageAgent:
         self._batch_processor = BatchProcessor(config, override_store=override_store)
         self._pattern_analyzer = PatternAnalyzer(config)
 
+    @trace
     def run(
         self,
         enriched_exceptions: List[EnrichedExceptionSchema],

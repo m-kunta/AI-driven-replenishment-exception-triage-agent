@@ -8,13 +8,23 @@ Author: Mohith Kunta <mohith.kunta@gmail.com>
 
 from __future__ import annotations
 
+import builtins
+import importlib
+import json
 import re
+import sys
 from dataclasses import dataclass, field
 from datetime import date, datetime
 from typing import List
 from unittest.mock import MagicMock, patch
 
+import glassbox as gb
 import pytest
+from glassbox.cli import main as trace_command
+from glassbox.collector import Collector
+from glassbox.events import TraceEvent
+from glassbox.sdk.config import reset_for_testing
+from glassbox.store import Database, Repository
 
 from src.agent.batch_processor import BatchProcessorResult
 from src.agent.triage_agent import TriageAgent
@@ -30,7 +40,6 @@ from src.models import (
     TriageRunResult,
 )
 from src.utils.config_loader import AppConfig
-
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -138,6 +147,78 @@ def test_run_returns_triage_run_result():
     agent, _, _ = _make_agent_with_mocks()
     result = agent.run([_make_enriched_exception()])
     assert isinstance(result, TriageRunResult)
+
+
+def test_agent_module_imports_when_glassbox_is_not_installed(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    original_module = sys.modules.pop("src.agent.triage_agent")
+    original_import = builtins.__import__
+
+    def without_glassbox(name, globals=None, locals=None, fromlist=(), level=0):
+        if name == "glassbox":
+            raise ImportError("Glassbox is intentionally unavailable")
+        return original_import(name, globals, locals, fromlist, level)
+
+    monkeypatch.setattr(builtins, "__import__", without_glassbox)
+    try:
+        fallback_module = importlib.import_module("src.agent.triage_agent")
+    finally:
+        sys.modules["src.agent.triage_agent"] = original_module
+
+    function = lambda: "domain result"
+    assert fallback_module.trace(function) is function
+
+
+def test_run_emits_a_glassbox_trace_without_changing_its_result():
+    class RecordingCollector:
+        def __init__(self) -> None:
+            self.events: list[object] = []
+
+        def emit(self, event: object) -> bool:
+            self.events.append(event)
+            return True
+
+        def flush(self, timeout: float | None = None) -> bool:
+            del timeout
+            return True
+
+        def shutdown(self, timeout: float | None = None) -> bool:
+            del timeout
+            return True
+
+    collector = RecordingCollector()
+    gb.init(agent="replenishment-triage", version="test", collector=collector)
+    try:
+        agent, _, _ = _make_agent_with_mocks()
+        result = agent.run([_make_enriched_exception()])
+    finally:
+        reset_for_testing()
+
+    assert isinstance(result, TriageRunResult)
+    traces = [event for event in collector.events if isinstance(event, TraceEvent)]
+    assert len(traces) == 2
+    assert traces[0].trace_id == traces[1].trace_id
+
+
+def test_run_persists_a_trace_that_the_cli_can_inspect(tmp_path, capsys):
+    database_path = tmp_path / "glassbox.sqlite3"
+    database = Database.open(database_path)
+    collector = Collector(Repository(database))
+    gb.init(agent="replenishment-triage", version="test", collector=collector)
+    try:
+        agent, _, _ = _make_agent_with_mocks()
+        result = agent.run([_make_enriched_exception()])
+        assert isinstance(result, TriageRunResult)
+        assert gb.flush(timeout=1.0)
+    finally:
+        assert gb.shutdown(timeout=1.0)
+        trace_id = database.connection.execute("SELECT trace_id FROM traces").fetchone()[0]
+        database.close()
+        reset_for_testing()
+
+    assert trace_command(["--database", str(database_path), "trace", trace_id]) == 0
+    assert json.loads(capsys.readouterr().out)["trace"]["trace_id"] == trace_id
 
 
 def test_run_id_format():
