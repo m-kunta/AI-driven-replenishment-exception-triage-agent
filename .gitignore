@@ -48,3 +48,6 @@ output/actions.db-shm
 .DS_Store
 Thumbs.db
 .agents/
+
+# Local agent-workflow evidence
+.superpowers/
