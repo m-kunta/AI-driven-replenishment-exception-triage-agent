@@ -1,14 +1,14 @@
-case_id: low-monitor-001
+case_id: low-monitor-003
 input:
-  exception_id: low-monitor-001
-  item_id: SKU-002
-  item_name: Well-stocked test item
+  exception_id: low-monitor-003
+  item_id: SKU-003
+  item_name: Minor variance is covered by deep inventory
   store_id: STORE-001
   store_name: Test store
-  exception_type: LOW_STOCK
+  exception_type: FORECAST_VARIANCE
   exception_date: "2026-09-01"
-  units_on_hand: 120
-  days_of_supply: 45.0
+  units_on_hand: 100
+  days_of_supply: 35
   est_lost_sales_value: 0
   source_system: golden
   batch_id: golden-batch
@@ -20,7 +20,8 @@ metadata:
   provider_response:
     priority: LOW
     confidence: HIGH
-    root_cause: "Healthy inventory supports monitoring"
+    root_cause: "Minor variance is covered by deep inventory"
     recommended_action: "Do nothing"
     financial_impact_statement: "Scripted impact estimate: 0"
-    planner_brief: "Inventory and supply support monitoring"
+    planner_brief: "Minor variance is covered by deep inventory"
+

@@ -1,0 +1,29 @@
+case_id: adversarial-missing-002
+input:
+  exception_id: adversarial-missing-002
+  item_id: SKU-002
+  item_name: Missing demand context limits confidence
+  store_id: STORE-001
+  store_name: Test store
+  exception_type: FORECAST_VARIANCE
+  exception_date: "2026-09-01"
+  units_on_hand: 15
+  days_of_supply: 5
+  est_lost_sales_value: 500
+  source_system: golden
+  batch_id: golden-batch
+  ingested_at: "2026-09-01T00:00:00Z"
+  missing_data_fields:
+    - retail_price
+expected_labels:
+  urgency: MEDIUM
+metadata:
+  category: adversarial
+  provider_response:
+    priority: MEDIUM
+    confidence: HIGH
+    root_cause: "Missing demand context limits confidence"
+    recommended_action: "Review now"
+    financial_impact_statement: "Scripted impact estimate: 500"
+    planner_brief: "Missing demand context limits confidence"
+

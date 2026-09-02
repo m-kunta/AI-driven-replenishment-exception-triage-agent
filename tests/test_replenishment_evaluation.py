@@ -1,4 +1,5 @@
 from pathlib import Path
+from collections import Counter
 
 import yaml
 
@@ -60,3 +61,25 @@ def test_seed_manifest_passes_through_the_generic_runner() -> None:
         "evidence_present": 1.0,
         "alternatives_present": 1.0,
     }
+
+
+def test_golden_manifest_has_a_balanced_set_of_self_contained_cases() -> None:
+    manifest_path = Path("goldens/replenishment_triage/manifest.yaml")
+    manifest = yaml.safe_load(manifest_path.read_text())
+    cases = [
+        GoldenCase.model_validate(
+            yaml.safe_load((manifest_path.parent / relative_path).read_text())
+        )
+        for relative_path in manifest["cases"]
+    ]
+
+    assert manifest["target"] == "integrations.replenishment_triage:run_case"
+    assert len(cases) == 40
+    assert len({case.case_id for case in cases}) == 40
+    assert Counter(case.metadata["category"] for case in cases) == {
+        "routine": 16,
+        "ambiguous": 12,
+        "adversarial": 8,
+        "do_nothing": 4,
+    }
+    assert all("provider_response" in case.metadata for case in cases)

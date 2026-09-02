@@ -3,6 +3,45 @@ schema: ../../schemas/triage_rec.json
 cases:
   - cases/critical_oos.yaml
   - cases/do_nothing.yaml
+  - cases/high_low_stock_001.yaml
+  - cases/medium_forecast_001.yaml
+  - cases/high_order_failure_001.yaml
+  - cases/medium_vendor_late_001.yaml
+  - cases/low_data_integrity_001.yaml
+  - cases/critical_oos_002.yaml
+  - cases/high_vendor_late_001.yaml
+  - cases/medium_low_stock_001.yaml
+  - cases/high_forecast_001.yaml
+  - cases/critical_order_failure_001.yaml
+  - cases/medium_data_integrity_001.yaml
+  - cases/low_low_stock_001.yaml
+  - cases/high_oos_001.yaml
+  - cases/medium_vendor_late_002.yaml
+  - cases/high_order_failure_002.yaml
+  - cases/ambiguous_supply_001.yaml
+  - cases/ambiguous_supply_002.yaml
+  - cases/ambiguous_demand_001.yaml
+  - cases/ambiguous_demand_002.yaml
+  - cases/ambiguous_vendor_001.yaml
+  - cases/ambiguous_vendor_002.yaml
+  - cases/ambiguous_order_001.yaml
+  - cases/ambiguous_order_002.yaml
+  - cases/ambiguous_data_001.yaml
+  - cases/ambiguous_data_002.yaml
+  - cases/ambiguous_oos_001.yaml
+  - cases/ambiguous_oos_002.yaml
+  - cases/adversarial_missing_001.yaml
+  - cases/adversarial_missing_002.yaml
+  - cases/adversarial_stale_001.yaml
+  - cases/adversarial_stale_002.yaml
+  - cases/adversarial_contradictory_001.yaml
+  - cases/adversarial_contradictory_002.yaml
+  - cases/adversarial_missing_003.yaml
+  - cases/adversarial_missing_004.yaml
+  - cases/low_monitor_002.yaml
+  - cases/low_monitor_003.yaml
+  - cases/low_monitor_004.yaml
 gates:
   deterministic_pass_rate: 1.0
   urgency_agreement: 0.6
+  cost_per_decision: 0.12

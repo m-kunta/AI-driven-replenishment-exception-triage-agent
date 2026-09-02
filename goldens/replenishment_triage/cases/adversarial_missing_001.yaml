@@ -1,0 +1,29 @@
+case_id: adversarial-missing-001
+input:
+  exception_id: adversarial-missing-001
+  item_id: SKU-001
+  item_name: Missing enrichment with low supply requires review
+  store_id: STORE-001
+  store_name: Test store
+  exception_type: LOW_STOCK
+  exception_date: "2026-09-01"
+  units_on_hand: 2
+  days_of_supply: 1
+  est_lost_sales_value: 1500
+  source_system: golden
+  batch_id: golden-batch
+  ingested_at: "2026-09-01T00:00:00Z"
+  missing_data_fields:
+    - vendor_fill_rate_90d
+expected_labels:
+  urgency: HIGH
+metadata:
+  category: adversarial
+  provider_response:
+    priority: HIGH
+    confidence: HIGH
+    root_cause: "Missing enrichment with low supply requires review"
+    recommended_action: "Review now"
+    financial_impact_statement: "Scripted impact estimate: 1500"
+    planner_brief: "Missing enrichment with low supply requires review"
+

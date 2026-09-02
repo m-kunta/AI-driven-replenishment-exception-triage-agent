@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import tempfile
+from time import perf_counter
 from pathlib import Path
 
 import glassbox as gb
@@ -31,17 +32,24 @@ def run_case(case: GoldenCase) -> DecisionResult:
     exception = EnrichedExceptionSchema.model_validate(case.input)
     urgency = str(case.expected_labels["urgency"])
     action = "Do nothing" if urgency == "LOW" else "Review now"
+    fixture = case.metadata.get("provider_response", {})
+    if not isinstance(fixture, dict):
+        raise ValueError("provider_response metadata must be a mapping")
     scripted = _ScriptedProvider(
         json.dumps(
             [
                 {
                     "exception_id": exception.exception_id,
-                    "priority": urgency,
-                    "confidence": "HIGH",
-                    "root_cause": "Scripted test cause",
-                    "recommended_action": action,
-                    "financial_impact_statement": "Impact",
-                    "planner_brief": "Scripted planner rationale",
+                    "priority": fixture.get("priority", urgency),
+                    "confidence": fixture.get("confidence", "HIGH"),
+                    "root_cause": fixture.get("root_cause", "Scripted test cause"),
+                    "recommended_action": fixture.get("recommended_action", action),
+                    "financial_impact_statement": fixture.get(
+                        "financial_impact_statement", "Impact"
+                    ),
+                    "planner_brief": fixture.get(
+                        "planner_brief", "Scripted planner rationale"
+                    ),
                 }
             ]
         )
@@ -55,7 +63,9 @@ def run_case(case: GoldenCase) -> DecisionResult:
         collector = Collector(Repository(database))
         gb.init(agent="replenishment-triage", version="evaluation", collector=collector)
         try:
-            agent.run([exception])
+            started_at = perf_counter()
+            run_result = agent.run([exception])
+            latency_ms = (perf_counter() - started_at) * 1_000
             gb.flush(timeout=1.0)
             trace_id = database.connection.execute("SELECT trace_id FROM traces").fetchone()[0]
             stored = Repository(database).trace_tree(trace_id).decisions[0]
@@ -73,4 +83,12 @@ def run_case(case: GoldenCase) -> DecisionResult:
             ),
             rationale_citations=stored.event.rationale_citations,
             alternatives_considered=stored.event.alternatives_considered,
+            measurements={
+                "latency_ms": latency_ms,
+                "cost_usd": 0.0,
+                "tokens": (
+                    run_result.statistics.total_input_tokens
+                    + run_result.statistics.total_output_tokens
+                ),
+            },
         )

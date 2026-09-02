@@ -1,25 +1,27 @@
-case_id: critical-oos-001
+case_id: ambiguous-oos-001
 input:
-  exception_id: critical-oos-001
+  exception_id: ambiguous-oos-001
   item_id: SKU-001
-  item_name: Essential test item
+  item_name: Out-of-stock and promotion risk require immediate action
   store_id: STORE-001
   store_name: Test store
   exception_type: OOS
   exception_date: "2026-09-01"
   units_on_hand: 0
-  days_of_supply: 0.0
+  days_of_supply: 0
+  est_lost_sales_value: 5000
   source_system: golden
   batch_id: golden-batch
   ingested_at: "2026-09-01T00:00:00Z"
 expected_labels:
   urgency: CRITICAL
 metadata:
-  category: routine
+  category: ambiguous
   provider_response:
     priority: CRITICAL
     confidence: HIGH
-    root_cause: "Out of stock requires immediate action"
+    root_cause: "Out-of-stock and promotion risk require immediate action"
     recommended_action: "Review now"
     financial_impact_statement: "Scripted impact estimate: 5000"
-    planner_brief: "Zero inventory requires immediate action"
+    planner_brief: "Out-of-stock and promotion risk require immediate action"
+
