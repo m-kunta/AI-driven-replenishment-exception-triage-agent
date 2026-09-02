@@ -15,7 +15,7 @@ def test_triage_run_returns_domain_result_without_glassbox():
     """The representative mocked run still works when Glassbox cannot import."""
     script = textwrap.dedent(
         f"""
-        import importlib.util
+        import builtins
         import json
         import sys
         from datetime import date, datetime
@@ -23,7 +23,13 @@ def test_triage_run_returns_domain_result_without_glassbox():
 
         project_root = {str(PROJECT_ROOT)!r}
         sys.path.insert(0, project_root)
-        assert importlib.util.find_spec("glassbox") is None
+
+        original_import = builtins.__import__
+        def no_glassbox_import(name, *args, **kwargs):
+            if name == "glassbox" or name.startswith("glassbox."):
+                raise ImportError("Glassbox intentionally unavailable in this test")
+            return original_import(name, *args, **kwargs)
+        builtins.__import__ = no_glassbox_import
 
         from src.agent.batch_processor import BatchProcessorResult
         from src.agent.triage_agent import TriageAgent

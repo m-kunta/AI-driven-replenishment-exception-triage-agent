@@ -1,0 +1,8 @@
+target: integrations.replenishment_triage:run_case
+schema: ../../schemas/triage_rec.json
+cases:
+  - cases/critical_oos.yaml
+  - cases/do_nothing.yaml
+gates:
+  deterministic_pass_rate: 1.0
+  urgency_agreement: 0.6
