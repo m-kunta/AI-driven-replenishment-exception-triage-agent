@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import uuid
 from collections.abc import Callable
+from contextlib import nullcontext
 from datetime import date, datetime, timezone
 from typing import List, TypeVar
 
@@ -34,12 +35,22 @@ from src.utils.config_loader import AppConfig
 _T = TypeVar("_T")
 
 try:
-    from glassbox import trace
+    from glassbox import decision_context, evidence, trace
 except ImportError:
+
+    class _NoopDecision:
+        def complete(self, **_: object) -> None:
+            return None
 
     def trace(function: Callable[..., _T]) -> Callable[..., _T]:
         """Leave the agent untouched until its optional Glassbox package is installed."""
         return function
+
+    def decision_context(**_: object):
+        return nullcontext(_NoopDecision())
+
+    def evidence(**_: object) -> None:
+        return None
 
 
 class TriageAgent:
@@ -107,6 +118,43 @@ class TriageAgent:
         pattern_report: MacroPatternReport = self._pattern_analyzer.analyze(
             triage_results, enriched_exceptions
         )
+
+        enriched_by_id = {item.exception_id: item for item in enriched_exceptions}
+        for triage_result in triage_results:
+            enriched = enriched_by_id.get(triage_result.exception_id)
+            if enriched is None:
+                continue
+            citations = ["inventory_position", "demand_supply", "business_impact"]
+            with decision_context(
+                entity_type="replenishment_exception",
+                entity_id=triage_result.exception_id,
+                decision_type="triage",
+            ) as decision:
+                evidence(
+                    evidence_id="inventory_position",
+                    source_system=enriched.source_system,
+                    source_ref=enriched.exception_id,
+                    fields={"units_on_hand": enriched.units_on_hand},
+                )
+                evidence(
+                    evidence_id="demand_supply",
+                    source_system=enriched.source_system,
+                    source_ref=enriched.exception_id,
+                    fields={"days_of_supply": enriched.days_of_supply},
+                )
+                evidence(
+                    evidence_id="business_impact",
+                    source_system=enriched.source_system,
+                    source_ref=enriched.exception_id,
+                    fields={"estimated_lost_sales": enriched.est_lost_sales_value or 0.0},
+                )
+                decision.complete(
+                    recommendation={"urgency": triage_result.priority.value, "action": triage_result.recommended_action},
+                    rationale=triage_result.planner_brief,
+                    rationale_citations=citations,
+                    confidence=0.8,
+                    alternatives_considered=[{"action": "defer", "reason": "not selected"}],
+                )
 
         logger.info(
             f"[{run_id}] Pattern analysis complete: "

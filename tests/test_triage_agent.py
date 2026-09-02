@@ -22,7 +22,7 @@ import glassbox as gb
 import pytest
 from glassbox.cli import main as trace_command
 from glassbox.collector import Collector
-from glassbox.events import TraceEvent
+from glassbox.events import DecisionEvent, EvidenceEvent, TraceEvent
 from glassbox.sdk.config import reset_for_testing
 from glassbox.store import Database, Repository
 
@@ -199,6 +199,42 @@ def test_run_emits_a_glassbox_trace_without_changing_its_result():
     traces = [event for event in collector.events if isinstance(event, TraceEvent)]
     assert len(traces) == 2
     assert traces[0].trace_id == traces[1].trace_id
+
+
+def test_run_emits_a_decision_with_cited_decision_owned_evidence():
+    class RecordingCollector:
+        def __init__(self) -> None:
+            self.events: list[object] = []
+
+        def emit(self, event: object) -> bool:
+            self.events.append(event)
+            return True
+
+        def flush(self, timeout: float | None = None) -> bool:
+            del timeout
+            return True
+
+        def shutdown(self, timeout: float | None = None) -> bool:
+            del timeout
+            return True
+
+    collector = RecordingCollector()
+    gb.init(agent="replenishment-triage", version="test", collector=collector)
+    try:
+        agent, _, _ = _make_agent_with_mocks(
+            batch_result=_make_batch_result(triage_results=[_make_triage_result()])
+        )
+        result = agent.run([_make_enriched_exception()])
+    finally:
+        reset_for_testing()
+
+    decisions = [event for event in collector.events if isinstance(event, DecisionEvent)]
+    evidence = [event for event in collector.events if isinstance(event, EvidenceEvent)]
+    assert isinstance(result, TriageRunResult)
+    assert len(decisions) == 1
+    assert len(evidence) >= 3
+    assert {item.decision_id for item in evidence} == {decisions[0].decision_id}
+    assert set(decisions[0].rationale_citations) <= {item.evidence_id for item in evidence}
 
 
 def test_run_persists_a_trace_that_the_cli_can_inspect(tmp_path, capsys):
