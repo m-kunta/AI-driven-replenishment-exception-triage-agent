@@ -235,6 +235,13 @@ def test_run_emits_a_decision_with_cited_decision_owned_evidence():
     assert len(evidence) >= 3
     assert {item.decision_id for item in evidence} == {decisions[0].decision_id}
     assert set(decisions[0].rationale_citations) <= {item.evidence_id for item in evidence}
+    assert decisions[0].confidence == 0.9
+    assert decisions[0].alternatives_considered == (
+        {"action": "defer", "reason": "same-day resolution window is required"},
+    )
+    assert {
+        item.field_name for item in evidence if item.evidence_id == "inventory_position"
+    } == {"exception_type", "units_on_hand"}
 
 
 def test_run_persists_a_trace_that_the_cli_can_inspect(tmp_path, capsys):

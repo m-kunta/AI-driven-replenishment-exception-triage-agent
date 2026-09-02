@@ -25,6 +25,7 @@ from src.agent.phantom_webhook import process_phantom_inventory
 from src.db.store import OverrideStore
 from src.models import (
     EnrichedExceptionSchema,
+    EnrichmentConfidence,
     MacroPatternReport,
     Priority,
     RunStatistics,
@@ -134,26 +135,36 @@ class TriageAgent:
                     evidence_id="inventory_position",
                     source_system=enriched.source_system,
                     source_ref=enriched.exception_id,
-                    fields={"units_on_hand": enriched.units_on_hand},
+                    fields={
+                        "exception_type": enriched.exception_type.value,
+                        "units_on_hand": enriched.units_on_hand,
+                    },
                 )
                 evidence(
                     evidence_id="demand_supply",
                     source_system=enriched.source_system,
                     source_ref=enriched.exception_id,
-                    fields={"days_of_supply": enriched.days_of_supply},
+                    fields={
+                        "days_of_supply": enriched.days_of_supply,
+                        "dc_inventory_days": enriched.dc_inventory_days,
+                        "promo_active": enriched.promo_active,
+                    },
                 )
                 evidence(
                     evidence_id="business_impact",
                     source_system=enriched.source_system,
                     source_ref=enriched.exception_id,
-                    fields={"estimated_lost_sales": enriched.est_lost_sales_value or 0.0},
+                    fields={
+                        "estimated_lost_sales": enriched.est_lost_sales_value or 0.0,
+                        "promo_margin_at_risk": enriched.promo_margin_at_risk or 0.0,
+                    },
                 )
                 decision.complete(
                     recommendation={"urgency": triage_result.priority.value, "action": triage_result.recommended_action},
                     rationale=triage_result.planner_brief,
                     rationale_citations=citations,
-                    confidence=0.8,
-                    alternatives_considered=[{"action": "defer", "reason": "not selected"}],
+                    confidence=_glassbox_confidence(triage_result.confidence),
+                    alternatives_considered=[_rejected_alternative(triage_result.priority)],
                 )
 
         logger.info(
@@ -206,3 +217,19 @@ class TriageAgent:
             statistics=statistics,
             run_timestamp=run_timestamp,
         )
+
+
+def _glassbox_confidence(confidence: EnrichmentConfidence) -> float:
+    return {
+        EnrichmentConfidence.HIGH: 0.9,
+        EnrichmentConfidence.MEDIUM: 0.6,
+        EnrichmentConfidence.LOW: 0.3,
+    }[confidence]
+
+
+def _rejected_alternative(priority: Priority) -> dict[str, str]:
+    if priority in {Priority.CRITICAL, Priority.HIGH}:
+        return {"action": "defer", "reason": "same-day resolution window is required"}
+    if priority is Priority.MEDIUM:
+        return {"action": "escalate_now", "reason": "this-week resolution is sufficient"}
+    return {"action": "escalate_now", "reason": "inventory and supply support monitoring"}
